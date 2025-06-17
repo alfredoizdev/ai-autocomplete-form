@@ -6,6 +6,7 @@ import { useDebounce } from "use-debounce";
 const useFormAutocomplete = () => {
   const [suggestion, setSuggestion] = useState("");
   const [isPending, startTransition] = useTransition();
+  const [lastAcceptedLength, setLastAcceptedLength] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const {
@@ -31,11 +32,16 @@ const useFormAutocomplete = () => {
       return;
     }
 
+    // Only generate new suggestions if user has typed beyond the last accepted suggestion
+    if (debouncedPrompt.length <= lastAcceptedLength) {
+      return;
+    }
+
     startTransition(async () => {
       const result = await askOllamaCompletationAction(debouncedPrompt);
       setSuggestion(result || "");
     });
-  }, [debouncedPrompt]);
+  }, [debouncedPrompt, lastAcceptedLength]);
 
   const onSubmit: SubmitHandler<{ name: string; prompt: string }> = async (
     data
@@ -46,7 +52,9 @@ const useFormAutocomplete = () => {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Tab" && suggestion) {
       e.preventDefault();
-      setValue("prompt", promptValue + " " + suggestion);
+      const newText = promptValue + " " + suggestion;
+      setValue("prompt", newText);
+      setLastAcceptedLength(newText.length);
       setSuggestion("");
     }
   };
