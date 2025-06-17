@@ -71,7 +71,8 @@ const useFormAutocomplete = () => {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Tab" && suggestion) {
       e.preventDefault();
-      const newText = promptValue + " " + suggestion;
+      const space = promptValue && !promptValue.endsWith(" ") ? " " : "";
+      const newText = promptValue + space + suggestion;
       setValue("prompt", newText);
       setLastAcceptedLength(newText.length);
       setSuggestion("");
