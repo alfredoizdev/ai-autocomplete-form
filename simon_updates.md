@@ -63,6 +63,40 @@ _All future changes and improvements will be documented below this line_
 - ✅ **TRACKED**: Added `lastAcceptedLength` state to monitor accepted suggestion boundaries
 - ✅ **IMPROVED**: Prevents endless suggestion building - only suggests when user actively types new content
 
+### Update 3 - Dynamic Textarea Auto-Resize with Smooth Animation - [Current Date]
+
+- ✅ **IMPLEMENTED**: Dynamic height calculation based on content + suggestion text
+- ✅ **ADDED**: Hidden measuring textarea for accurate height calculation
+- ✅ **ENHANCED**: Smooth 300ms CSS transition for height changes (ease-out)
+- ✅ **OPTIMIZED**: Automatic resizing when autocomplete text appears/disappears
+- ✅ **MAINTAINED**: Minimum height of 96px (4 rows) for consistent UX
+- ✅ **PREVENTED**: Layout jank with proper transition timing and easing
+
+### Update 4 - Fixed Text Overlapping Issue - [Current Date]
+
+- ✅ **FIXED**: Eliminated overlapping text between user input and suggestion
+- ✅ **REDESIGNED**: Single textarea approach with positioned suggestion overlay
+- ✅ **IMPROVED**: Invisible spacer text to position suggestion correctly after user text
+- ✅ **ENHANCED**: Clean visual separation - black user text, gray suggestion text
+- ✅ **MAINTAINED**: Smooth animations and dynamic height functionality
+
+### Update 5 - Improved Suggestion Positioning with Canvas Measurement - [Current Date]
+
+- ✅ **IMPLEMENTED**: Canvas-based text measurement for precise positioning
+- ✅ **ENHANCED**: Accurate word wrapping calculation matching textarea behavior
+- ✅ **IMPROVED**: Suggestion text positioned exactly after user's last character
+- ✅ **OPTIMIZED**: Real-time position calculation based on textarea dimensions
+- ✅ **MAINTAINED**: Inline suggestion display within the textarea field
+
+### Update 6 - Simplified Overlay Approach - [Current Date]
+
+- ✅ **REDESIGNED**: Back to layered approach with exact font matching
+- ✅ **FIXED**: Removed complex canvas positioning - using simpler overlay method
+- ✅ **IMPROVED**: Background div shows transparent user text + gray suggestion
+- ✅ **ENHANCED**: Foreground textarea handles input with transparent background
+- ✅ **MATCHED**: Identical styling between background and foreground elements
+- ✅ **SIMPLIFIED**: Cleaner code without complex positioning calculations
+
 **Technical Details:**
 
 - Used absolute positioning with two overlapping textareas

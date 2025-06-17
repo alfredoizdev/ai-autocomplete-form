@@ -7,7 +7,9 @@ const useFormAutocomplete = () => {
   const [suggestion, setSuggestion] = useState("");
   const [isPending, startTransition] = useTransition();
   const [lastAcceptedLength, setLastAcceptedLength] = useState(0);
+  const [textareaHeight, setTextareaHeight] = useState("auto");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const measureRef = useRef<HTMLTextAreaElement>(null);
 
   const {
     register,
@@ -24,6 +26,23 @@ const useFormAutocomplete = () => {
 
   const promptValue = watch("prompt");
   const [debouncedPrompt] = useDebounce(promptValue, 1000);
+
+  // Calculate textarea height based on content
+  const calculateHeight = (text: string) => {
+    if (!measureRef.current) return "auto";
+
+    measureRef.current.value = text;
+    measureRef.current.style.height = "auto";
+    const scrollHeight = measureRef.current.scrollHeight;
+    return `${Math.max(scrollHeight, 96)}px`; // Minimum 4 rows (24px * 4)
+  };
+
+  // Update height when suggestion changes
+  useEffect(() => {
+    const fullText = promptValue + (suggestion ? " " + suggestion : "");
+    const newHeight = calculateHeight(fullText);
+    setTextareaHeight(newHeight);
+  }, [promptValue, suggestion]);
 
   // Obtener sugerencia después del debounce
   useEffect(() => {
@@ -65,12 +84,14 @@ const useFormAutocomplete = () => {
     errors,
     onSubmit,
     textareaRef,
+    measureRef,
     suggestion,
     isPending,
     handleKeyDown,
     setValue,
     setSuggestion,
     promptValue,
+    textareaHeight,
   };
 };
 

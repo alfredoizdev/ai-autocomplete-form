@@ -9,9 +9,11 @@ const Form = () => {
     errors,
     onSubmit,
     textareaRef,
+    measureRef,
     suggestion,
     isPending,
     handleKeyDown,
+    textareaHeight,
     promptValue,
   } = useFormAutocomplete();
 
@@ -54,16 +56,39 @@ const Form = () => {
           Bio Description:
         </label>
 
+        {/* Hidden textarea for height measurement */}
+        <textarea
+          ref={measureRef}
+          className="absolute opacity-0 pointer-events-none -z-10 w-full p-2 border border-gray-300 rounded-none shadow-sm resize-none whitespace-pre-wrap"
+          style={{
+            position: "absolute",
+            left: "-9999px",
+            top: "-9999px",
+          }}
+          tabIndex={-1}
+        />
+
         {/* Container for textarea with overlay */}
         <div className="relative">
-          {/* Background textarea for suggestion text */}
-          <textarea
-            value={promptValue + (suggestion ? " " + suggestion : "")}
-            readOnly
-            rows={4}
-            className="absolute inset-0 w-full p-2 border border-gray-300 rounded-none shadow-sm resize-none text-gray-400 pointer-events-none whitespace-pre-wrap"
-            style={{ zIndex: 1 }}
-          />
+          {/* Background div that shows user text + suggestion */}
+          <div
+            className="absolute inset-0 w-full p-2 border border-gray-300 rounded-none shadow-sm resize-none whitespace-pre-wrap pointer-events-none transition-all duration-300 ease-out"
+            style={{
+              height: textareaHeight,
+              minHeight: "96px",
+              fontSize: "14px",
+              lineHeight: "1.5",
+              fontFamily:
+                "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif",
+              color: "transparent",
+              zIndex: 1,
+            }}
+          >
+            <span style={{ color: "transparent" }}>{promptValue}</span>
+            {suggestion && (
+              <span style={{ color: "#9CA3AF" }}>{suggestion}</span>
+            )}
+          </div>
 
           {/* Actual input textarea */}
           <textarea
@@ -80,10 +105,17 @@ const Form = () => {
               textareaRef.current = e;
             }}
             onKeyDown={handleKeyDown}
-            rows={4}
-            className="relative bg-transparent text-black placeholder:text-gray-400 block w-full p-2 border border-gray-300 rounded-none shadow-sm focus:ring-gray-500 focus:border-gray-500 resize-none"
+            className="relative bg-transparent text-black placeholder:text-gray-400 block w-full p-2 border border-gray-300 rounded-none shadow-sm focus:ring-gray-500 focus:border-gray-500 resize-none transition-all duration-300 ease-out"
             placeholder="Write a brief description about yourself..."
-            style={{ zIndex: 2 }}
+            style={{
+              height: textareaHeight,
+              minHeight: "96px",
+              fontSize: "14px",
+              lineHeight: "1.5",
+              fontFamily:
+                "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif",
+              zIndex: 2,
+            }}
           />
         </div>
 
