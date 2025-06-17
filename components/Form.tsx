@@ -87,7 +87,11 @@ const Form = () => {
             <span style={{ color: "transparent" }}>{promptValue}</span>
             {suggestion && (
               <span style={{ color: "#9CA3AF" }}>
-                {promptValue && !promptValue.endsWith(" ") ? " " : ""}
+                {promptValue &&
+                !promptValue.endsWith(" ") &&
+                !/[.,!?;:]$/.test(promptValue)
+                  ? " "
+                  : ""}
                 {suggestion}
               </span>
             )}

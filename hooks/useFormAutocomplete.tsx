@@ -44,6 +44,26 @@ const useFormAutocomplete = () => {
     setTextareaHeight(newHeight);
   }, [promptValue, suggestion]);
 
+  // Check if text is ready for suggestions (not in middle of typing a word)
+  const isReadyForSuggestions = (text: string): boolean => {
+    if (!text) return false;
+
+    // If text ends with space or punctuation, it's ready
+    const lastChar = text[text.length - 1];
+    if (/[\s.,!?;:]/.test(lastChar)) {
+      return true;
+    }
+
+    // If text doesn't end with space/punctuation, check if last "word" is reasonable length
+    // This allows suggestions after complete words even without trailing space
+    const words = text.trim().split(/\s+/);
+    const lastWord = words[words.length - 1];
+
+    // Allow suggestions if the last word is at least 3 characters and seems complete
+    // (contains vowels or common word patterns)
+    return lastWord.length >= 3 && /[aeiouAEIOU]/.test(lastWord);
+  };
+
   // Obtener sugerencia después del debounce
   useEffect(() => {
     if (!debouncedPrompt || debouncedPrompt.length < 10) {
@@ -53,6 +73,12 @@ const useFormAutocomplete = () => {
 
     // Only generate new suggestions if user has typed beyond the last accepted suggestion
     if (debouncedPrompt.length <= lastAcceptedLength) {
+      return;
+    }
+
+    // Only suggest if text is ready for suggestions
+    if (!isReadyForSuggestions(debouncedPrompt)) {
+      setSuggestion("");
       return;
     }
 
@@ -71,7 +97,12 @@ const useFormAutocomplete = () => {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Tab" && suggestion) {
       e.preventDefault();
-      const space = promptValue && !promptValue.endsWith(" ") ? " " : "";
+      const space =
+        promptValue &&
+        !promptValue.endsWith(" ") &&
+        !/[.,!?;:]$/.test(promptValue)
+          ? " "
+          : "";
       const newText = promptValue + space + suggestion;
       setValue("prompt", newText);
       setLastAcceptedLength(newText.length);
