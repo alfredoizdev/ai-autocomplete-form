@@ -156,6 +156,23 @@ _All future changes and improvements will be documented below this line_
 - ✅ **PREVENTED**: Unwanted suggestions appearing immediately after deletion
 - ✅ **OPTIMIZED**: More intentional suggestion timing respecting user's editing flow
 
+### Update 14 - Automatic Space After Sentence Endings - [Current Date]
+
+- ✅ **ENHANCED**: Suggestions automatically include space after sentence endings (., ?, !)
+- ✅ **SIMPLIFIED**: Removed complex punctuation checking - now always adds space when needed
+- ✅ **IMPROVED**: Better sentence flow when autocomplete follows periods/question marks
+- ✅ **FIXED**: Proper spacing between sentences when deleting text ends at punctuation
+- ✅ **OPTIMIZED**: Cleaner logic that handles all punctuation scenarios consistently
+
+### Update 15 - Smart Capitalization Based on Sentence Context - [Current Date]
+
+- ✅ **IMPLEMENTED**: Intelligent capitalization adjustment for autocomplete suggestions
+- ✅ **ENHANCED**: Detects if suggestion continues same sentence or starts new sentence
+- ✅ **FIXED**: Prevents incorrect capital letters in middle of sentences
+- ✅ **IMPROVED**: Uses lowercase when continuing, uppercase when starting new sentences
+- ✅ **ADDED**: `adjustSuggestionCapitalization` function for context-aware formatting
+- ✅ **OPTIMIZED**: Better grammar and natural text flow in suggestions
+
 **Technical Details:**
 
 - Used absolute positioning with two overlapping textareas

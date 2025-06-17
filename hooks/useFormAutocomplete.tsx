@@ -66,6 +66,26 @@ const useFormAutocomplete = () => {
     return lastWord.length >= 3 && /[aeiouAEIOU]/.test(lastWord);
   };
 
+  // Adjust suggestion capitalization based on sentence context
+  const adjustSuggestionCapitalization = (
+    userText: string,
+    suggestion: string
+  ): string => {
+    if (!suggestion || !userText) return suggestion;
+
+    // Check if we're starting a new sentence (after sentence-ending punctuation + space)
+    const trimmedText = userText.trim();
+    const lastSentenceMatch = trimmedText.match(/[.!?]\s*$/);
+
+    if (lastSentenceMatch) {
+      // We're starting a new sentence, suggestion should start with capital
+      return suggestion.charAt(0).toUpperCase() + suggestion.slice(1);
+    } else {
+      // We're continuing the same sentence, suggestion should start with lowercase
+      return suggestion.charAt(0).toLowerCase() + suggestion.slice(1);
+    }
+  };
+
   // Obtener sugerencia después del debounce
   useEffect(() => {
     // Detect if user has deleted text
@@ -110,7 +130,16 @@ const useFormAutocomplete = () => {
 
     startTransition(async () => {
       const result = await askOllamaCompletationAction(debouncedPrompt);
-      setSuggestion(result || "");
+      if (result) {
+        // Check if we're in the middle of a sentence and adjust capitalization
+        const processedSuggestion = adjustSuggestionCapitalization(
+          debouncedPrompt,
+          result
+        );
+        setSuggestion(processedSuggestion);
+      } else {
+        setSuggestion("");
+      }
     });
   }, [debouncedPrompt, lastAcceptedLength, previousTextLength, justDeleted]);
 
@@ -123,12 +152,7 @@ const useFormAutocomplete = () => {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Tab" && suggestion) {
       e.preventDefault();
-      const space =
-        promptValue &&
-        !promptValue.endsWith(" ") &&
-        !/[.,!?;:]$/.test(promptValue)
-          ? " "
-          : "";
+      const space = promptValue && !promptValue.endsWith(" ") ? " " : "";
       const newText = promptValue + space + suggestion;
       setValue("prompt", newText);
       setLastAcceptedLength(newText.length);
