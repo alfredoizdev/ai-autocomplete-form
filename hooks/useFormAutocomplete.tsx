@@ -7,6 +7,7 @@ const useFormAutocomplete = () => {
   const [suggestion, setSuggestion] = useState("");
   const [isPending, startTransition] = useTransition();
   const [lastAcceptedLength, setLastAcceptedLength] = useState(0);
+  const [previousTextLength, setPreviousTextLength] = useState(0);
   const [textareaHeight, setTextareaHeight] = useState("auto");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const measureRef = useRef<HTMLTextAreaElement>(null);
@@ -66,6 +67,13 @@ const useFormAutocomplete = () => {
 
   // Obtener sugerencia después del debounce
   useEffect(() => {
+    // Detect if user has deleted text and reset tracking
+    if (debouncedPrompt.length < previousTextLength) {
+      // User deleted text, reset the lastAcceptedLength to allow suggestions again
+      setLastAcceptedLength(Math.max(0, debouncedPrompt.length - 2));
+    }
+    setPreviousTextLength(debouncedPrompt.length);
+
     if (!debouncedPrompt || debouncedPrompt.length < 10) {
       setSuggestion("");
       return;
@@ -87,7 +95,7 @@ const useFormAutocomplete = () => {
       const result = await askOllamaCompletationAction(debouncedPrompt);
       setSuggestion(result || "");
     });
-  }, [debouncedPrompt, lastAcceptedLength]);
+  }, [debouncedPrompt, lastAcceptedLength, previousTextLength]);
 
   const onSubmit: SubmitHandler<{ name: string; prompt: string }> = async (
     data
