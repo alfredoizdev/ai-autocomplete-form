@@ -123,6 +123,21 @@ _All future changes and improvements will be documented below this line_
 - ✅ **BALANCED**: Good compromise between preventing interruptions and providing suggestions
 - ✅ **EXAMPLES**: "developer" triggers suggestions, "w" or "dev" does not
 
+### Update 10 - Fixed Autocomplete Stopping After Multiple Uses - [Current Date]
+
+- ✅ **FIXED**: Autocomplete no longer stops working after accepting several suggestions
+- ✅ **IMPROVED**: Changed logic from strict length comparison to requiring 3+ new characters
+- ✅ **ENHANCED**: Allows continuous suggestions while preventing immediate re-suggestions
+- ✅ **RESOLVED**: Issue where `lastAcceptedLength` was blocking all future suggestions
+- ✅ **OPTIMIZED**: Better balance between preventing spam and allowing natural flow
+
+### Update 11 - Reduced Character Requirement to 2 - [Current Date]
+
+- ✅ **ADJUSTED**: Changed minimum new character requirement from 3 to 2
+- ✅ **IMPROVED**: Faster suggestion triggering for more responsive experience
+- ✅ **ENHANCED**: Suggestions appear sooner while still preventing immediate re-suggestions
+- ✅ **OPTIMIZED**: Better balance between responsiveness and spam prevention
+
 **Technical Details:**
 
 - Used absolute positioning with two overlapping textareas

@@ -71,8 +71,9 @@ const useFormAutocomplete = () => {
       return;
     }
 
-    // Only generate new suggestions if user has typed beyond the last accepted suggestion
-    if (debouncedPrompt.length <= lastAcceptedLength) {
+    // Only generate new suggestions if user has typed enough new content since last acceptance
+    // Require at least 2 new characters to prevent immediate re-suggestions
+    if (debouncedPrompt.length < lastAcceptedLength + 2) {
       return;
     }
 
