@@ -147,6 +147,15 @@ _All future changes and improvements will be documented below this line_
 - ✅ **RESOLVED**: Issue where deleting text would permanently disable suggestions
 - ✅ **OPTIMIZED**: Seamless experience for editing and continuing to write
 
+### Update 13 - Wait for New Typing After Deletion - [Current Date]
+
+- ✅ **FIXED**: Autocomplete no longer triggers immediately after deleting sentences
+- ✅ **IMPLEMENTED**: `justDeleted` flag to track when text has been removed
+- ✅ **ENHANCED**: Suggestions only appear after user starts typing new content post-deletion
+- ✅ **IMPROVED**: Clear distinction between "just deleted" and "actively typing"
+- ✅ **PREVENTED**: Unwanted suggestions appearing immediately after deletion
+- ✅ **OPTIMIZED**: More intentional suggestion timing respecting user's editing flow
+
 **Technical Details:**
 
 - Used absolute positioning with two overlapping textareas

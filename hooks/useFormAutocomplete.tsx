@@ -8,6 +8,7 @@ const useFormAutocomplete = () => {
   const [isPending, startTransition] = useTransition();
   const [lastAcceptedLength, setLastAcceptedLength] = useState(0);
   const [previousTextLength, setPreviousTextLength] = useState(0);
+  const [justDeleted, setJustDeleted] = useState(false);
   const [textareaHeight, setTextareaHeight] = useState("auto");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const measureRef = useRef<HTMLTextAreaElement>(null);
@@ -67,14 +68,30 @@ const useFormAutocomplete = () => {
 
   // Obtener sugerencia después del debounce
   useEffect(() => {
-    // Detect if user has deleted text and reset tracking
+    // Detect if user has deleted text
     if (debouncedPrompt.length < previousTextLength) {
-      // User deleted text, reset the lastAcceptedLength to allow suggestions again
+      // User deleted text, reset tracking and mark as just deleted
       setLastAcceptedLength(Math.max(0, debouncedPrompt.length - 2));
+      setJustDeleted(true);
+      setSuggestion(""); // Clear any existing suggestions
+      setPreviousTextLength(debouncedPrompt.length);
+      return;
     }
+
+    // If user has typed new content after deletion, allow suggestions again
+    if (justDeleted && debouncedPrompt.length > previousTextLength) {
+      setJustDeleted(false);
+    }
+
     setPreviousTextLength(debouncedPrompt.length);
 
     if (!debouncedPrompt || debouncedPrompt.length < 10) {
+      setSuggestion("");
+      return;
+    }
+
+    // Don't suggest immediately after deletion - wait for new typing
+    if (justDeleted) {
       setSuggestion("");
       return;
     }
@@ -95,7 +112,7 @@ const useFormAutocomplete = () => {
       const result = await askOllamaCompletationAction(debouncedPrompt);
       setSuggestion(result || "");
     });
-  }, [debouncedPrompt, lastAcceptedLength, previousTextLength]);
+  }, [debouncedPrompt, lastAcceptedLength, previousTextLength, justDeleted]);
 
   const onSubmit: SubmitHandler<{ name: string; prompt: string }> = async (
     data
