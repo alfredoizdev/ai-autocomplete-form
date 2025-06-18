@@ -23,10 +23,10 @@ const Form = () => {
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="flex flex-col gap-4 w-full max-w-[500px] p-8 bg-white shadow-md rounded-[8px] mx-auto "
+      className="flex flex-col gap-4 w-full max-w-[500px] py-6 px-10 bg-white border border-gray-200 rounded-[10px] mx-auto "
     >
       {/* Logo */}
-      <div className="flex justify-center mb-6">
+      <div className="flex justify-center mb-1">
         <Image
           src="/images/logo-swing.svg"
           alt="Swing Logo"
@@ -37,11 +37,13 @@ const Form = () => {
       </div>
 
       {/* Header and description */}
-      <div className="text-center mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">
-          Enter you Bio
+      <div className="text-center mb-3">
+        <h2 className="text-2xl font-semibold text-gray-900 mb-3">
+          Create Bio
         </h2>
-        <p className="text-gray-500">Sign in to your account</p>
+        <p className="text-gray-500 text-sm">
+          Let AI help you craft the perfect bio
+        </p>
       </div>
 
       <div className="mb-3">
@@ -61,7 +63,7 @@ const Form = () => {
           })}
           type="text"
           id="name"
-          className="mt-1 text-gray-900 placeholder:text-gray-400 block w-full h-[48px] p-2 border border-gray-200 rounded-[6px] focus:ring-gray-500 focus:border-gray-500"
+          className="mt-1 text-gray-900 placeholder:text-gray-400 block w-full h-[48px] p-2 border border-gray-200 rounded-[6px] focus:ring-gray-900 focus:border-gray-900"
           placeholder="Enter your name"
         />
         {errors.name && (
@@ -128,7 +130,7 @@ const Form = () => {
               textareaRef.current = e;
             }}
             onKeyDown={handleKeyDown}
-            className="relative bg-transparent text-black placeholder:text-gray-400 block w-full p-2 border border-gray-200 rounded focus:ring-gray-500 focus:border-gray-500 resize-none transition-all duration-300 ease-out"
+            className="relative bg-transparent text-black placeholder:text-gray-400 block w-full p-2 border border-gray-200 rounded focus:ring-gray-900 focus:border-gray-900 resize-none transition-all duration-300 ease-out"
             placeholder="Write a brief description about yourself..."
             style={{
               height: textareaHeight,
@@ -164,7 +166,7 @@ const Form = () => {
       <button
         type="submit"
         disabled={isPending}
-        className="cursor-pointer w-full bg-gray-900 text-white font-semibold py-2 px-4 rounded hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50"
+        className="cursor-pointer w-full bg-gray-900 text-white font-semibold py-2 px-4 rounded hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 "
       >
         Submit
       </button>
@@ -174,7 +176,7 @@ const Form = () => {
           href="https://swing.com"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-gray-700 hover:text-gray-900 underline"
+          className="text-gray-700 font-semibold hover:text-yellow-500"
         >
           Swing.com
         </a>
