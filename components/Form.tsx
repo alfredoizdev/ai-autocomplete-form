@@ -63,7 +63,8 @@ const Form = () => {
           })}
           type="text"
           id="name"
-          className="mt-1 text-gray-900 placeholder:text-gray-400 block w-full h-[46px] p-2 border border-gray-200 rounded-[8px] focus:ring-black focus:border-black"
+          className="mt-1 text-gray-900 placeholder:text-gray-400 block w-full h-[46px] p-2 border border-gray-200 rounded-[8px] focus:border-2 focus:border-black active:border-2 active:border-black focus:outline-none"
+          style={{ WebkitAppearance: "none", appearance: "none" }}
           placeholder="Enter your name"
         />
         {errors.name && (
@@ -130,7 +131,7 @@ const Form = () => {
               textareaRef.current = e;
             }}
             onKeyDown={handleKeyDown}
-            className="relative bg-transparent text-black placeholder:text-gray-400 block w-full p-2 border border-gray-200 rounded focus:ring-gray-900 focus:border-gray-900 resize-none transition-all duration-300 ease-out"
+            className="relative bg-transparent text-black placeholder:text-gray-400 block w-full p-2 border border-gray-200 rounded focus:border-2 focus:border-black active:border-2 active:border-black focus:outline-none resize-none transition-all duration-300 ease-out"
             placeholder="Write a brief description about yourself..."
             style={{
               height: textareaHeight,
@@ -140,6 +141,8 @@ const Form = () => {
               fontFamily:
                 "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif",
               zIndex: 2,
+              WebkitAppearance: "none",
+              appearance: "none",
             }}
           />
         </div>
