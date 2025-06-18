@@ -63,7 +63,7 @@ const Form = () => {
           })}
           type="text"
           id="name"
-          className="mt-1 text-gray-900 placeholder:text-gray-400 block w-full h-[48px] p-2 border border-gray-200 rounded-[6px] focus:ring-gray-900 focus:border-gray-900"
+          className="mt-1 text-gray-900 placeholder:text-gray-400 block w-full h-[46px] p-2 border border-gray-200 rounded-[8px] focus:ring-black focus:border-black"
           placeholder="Enter your name"
         />
         {errors.name && (
@@ -81,7 +81,7 @@ const Form = () => {
         {/* Hidden textarea for height measurement */}
         <textarea
           ref={measureRef}
-          className="absolute opacity-0 pointer-events-none -z-10 w-full p-2 border border-gray-200 rounded-[6px] resize-none whitespace-pre-wrap"
+          className="absolute opacity-0 pointer-events-none -z-10 w-full p-2 border border-gray-200 rounded-[8px] resize-none whitespace-pre-wrap"
           style={{
             position: "absolute",
             left: "-9999px",
