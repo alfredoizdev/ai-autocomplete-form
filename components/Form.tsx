@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import useFormAutocomplete from "@/hooks/useFormAutocomplete";
 
 const Form = () => {
@@ -22,12 +23,31 @@ const Form = () => {
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="flex flex-col gap-4 w-full max-w-md p-6 bg-white shadow-md rounded-none mx-auto"
+      className="flex flex-col gap-4 w-full max-w-[500px] p-8 bg-white shadow-md rounded-[8px] mx-auto "
     >
+      {/* Logo */}
+      <div className="flex justify-center mb-6">
+        <Image
+          src="/images/logo-swing.svg"
+          alt="Swing Logo"
+          width={120}
+          height={40}
+          className="h-20 w-auto"
+        />
+      </div>
+
+      {/* Header and description */}
+      <div className="text-center mb-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-2">
+          Enter you Bio
+        </h2>
+        <p className="text-gray-500">Sign in to your account</p>
+      </div>
+
       <div className="mb-3">
         <label
           htmlFor="name"
-          className="block text-sm font-medium text-gray-700"
+          className="block text-sm font-semibold text-gray-700"
         >
           Name:
         </label>
@@ -41,7 +61,7 @@ const Form = () => {
           })}
           type="text"
           id="name"
-          className="mt-1 text-gray-900 placeholder:text-gray-400 block w-full p-2 border border-gray-300 rounded-none shadow-sm focus:ring-gray-500 focus:border-gray-500"
+          className="mt-1 text-gray-900 placeholder:text-gray-400 block w-full h-[48px] p-2 border border-gray-200 rounded-[6px] focus:ring-gray-500 focus:border-gray-500"
           placeholder="Enter your name"
         />
         {errors.name && (
@@ -51,7 +71,7 @@ const Form = () => {
       <div className="relative w-full">
         <label
           htmlFor="prompt"
-          className="block text-sm font-medium text-gray-700 mb-1"
+          className="block text-sm font-semibold text-gray-700 mb-1"
         >
           Bio Description:
         </label>
@@ -59,7 +79,7 @@ const Form = () => {
         {/* Hidden textarea for height measurement */}
         <textarea
           ref={measureRef}
-          className="absolute opacity-0 pointer-events-none -z-10 w-full p-2 border border-gray-300 rounded-none shadow-sm resize-none whitespace-pre-wrap"
+          className="absolute opacity-0 pointer-events-none -z-10 w-full p-2 border border-gray-200 rounded-[6px] resize-none whitespace-pre-wrap"
           style={{
             position: "absolute",
             left: "-9999px",
@@ -72,7 +92,7 @@ const Form = () => {
         <div className="relative">
           {/* Background div that shows user text + suggestion */}
           <div
-            className="absolute inset-0 w-full p-2 border border-gray-300 rounded-none shadow-sm resize-none whitespace-pre-wrap pointer-events-none transition-all duration-300 ease-out"
+            className="absolute inset-0 w-full p-2 border border-gray-200 rounded resize-none whitespace-pre-wrap pointer-events-none transition-all duration-300 ease-out"
             style={{
               height: textareaHeight,
               minHeight: "96px",
@@ -108,7 +128,7 @@ const Form = () => {
               textareaRef.current = e;
             }}
             onKeyDown={handleKeyDown}
-            className="relative bg-transparent text-black placeholder:text-gray-400 block w-full p-2 border border-gray-300 rounded-none shadow-sm focus:ring-gray-500 focus:border-gray-500 resize-none transition-all duration-300 ease-out"
+            className="relative bg-transparent text-black placeholder:text-gray-400 block w-full p-2 border border-gray-200 rounded focus:ring-gray-500 focus:border-gray-500 resize-none transition-all duration-300 ease-out"
             placeholder="Write a brief description about yourself..."
             style={{
               height: textareaHeight,
@@ -144,10 +164,21 @@ const Form = () => {
       <button
         type="submit"
         disabled={isPending}
-        className="cursor-pointer w-full bg-gray-900 text-white font-semibold py-2 px-4 rounded-none hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50"
+        className="cursor-pointer w-full bg-gray-900 text-white font-semibold py-2 px-4 rounded hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50"
       >
         Submit
       </button>
+      <div className="text-center text-sm text-gray-500 mt-4">
+        Brought to you by{" "}
+        <a
+          href="https://swing.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-gray-700 hover:text-gray-900 underline"
+        >
+          Swing.com
+        </a>
+      </div>
     </form>
   );
 };
