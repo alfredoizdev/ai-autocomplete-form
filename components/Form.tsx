@@ -33,6 +33,7 @@ const Form = () => {
           width={120}
           height={40}
           className="h-20 w-auto"
+          priority
         />
       </div>
 

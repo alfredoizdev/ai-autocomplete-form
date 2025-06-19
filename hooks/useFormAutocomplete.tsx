@@ -3,6 +3,72 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { useDebounce } from "use-debounce";
 
+// Spell correction dictionary for common misspellings (moved outside component for stability)
+const spellCorrections: Record<string, string> = {
+  // Common dating/relationship words
+  beatiful: "beautiful",
+  beautifull: "beautiful",
+  beutiful: "beautiful",
+  awsome: "awesome",
+  realy: "really",
+  definately: "definitely",
+  defintely: "definitely",
+  adventorous: "adventurous",
+  expereinced: "experienced",
+  expirenced: "experienced",
+  experiance: "experience",
+  expiriance: "experience",
+  freindly: "friendly",
+  freinds: "friends",
+  coupl: "couple",
+  sexyy: "sexy",
+  sexxy: "sexy",
+  exciteing: "exciting",
+  excting: "exciting",
+  laidback: "laid back",
+  outgoin: "outgoing",
+  profesional: "professional",
+  proffesional: "professional",
+  profesionnal: "professional",
+  iam: "I am",
+  were: "we are",
+  wer: "we are",
+  lookking: "looking",
+  loking: "looking",
+  meetig: "meeting",
+  meting: "meeting",
+  playfull: "playful",
+  discret: "discreet",
+  discrette: "discreet",
+};
+
+// Auto-correct misspelled words (moved outside component for stability)
+const autoCorrectText = (text: string): string => {
+  if (!text) return text;
+
+  // Split into words while preserving spaces and punctuation
+  const words = text.split(/(\s+|[.,!?;:])/);
+
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i];
+    if (word && /^[a-zA-Z]+$/.test(word)) {
+      // Only check actual words
+      const lowerWord = word.toLowerCase();
+      if (spellCorrections[lowerWord]) {
+        // Preserve original capitalization pattern
+        const correction = spellCorrections[lowerWord];
+        if (word[0] === word[0].toUpperCase()) {
+          words[i] = correction.charAt(0).toUpperCase() + correction.slice(1);
+        } else {
+          words[i] = correction;
+        }
+      }
+    }
+  }
+
+  return words.join("");
+};
+
 const useFormAutocomplete = () => {
   const [suggestion, setSuggestion] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -129,6 +195,31 @@ const useFormAutocomplete = () => {
     return result;
   };
 
+  // Apply only basic capitalization while user is typing (no word corrections like "I" -> "I am")
+  const applyBasicCapitalization = (text: string): string => {
+    if (!text) return text;
+
+    let result = text;
+
+    // Capitalize first character of the entire text
+    if (result.length > 0) {
+      result = result.charAt(0).toUpperCase() + result.slice(1);
+    }
+
+    // Capitalize after sentence-ending punctuation followed by one or more spaces
+    result = result.replace(
+      /([.!?]\s+)([a-z])/g,
+      (match, punctuation, letter) => {
+        return punctuation + letter.toUpperCase();
+      }
+    );
+
+    // Only capitalize standalone "I" if it's followed by a space (completed word)
+    result = result.replace(/\b(i)\s/g, "I ");
+
+    return result;
+  };
+
   // Adjust suggestion capitalization based on sentence context
   const adjustSuggestionCapitalization = (
     userText: string,
@@ -220,15 +311,28 @@ const useFormAutocomplete = () => {
     console.log(data);
   };
 
-  // Auto-capitalize the input text when it changes
+  // Auto-correct and auto-capitalize the input text when it changes
   useEffect(() => {
     if (promptValue) {
-      const capitalizedValue = autoCapitalizeText(promptValue);
+      // Only apply corrections when user just finished typing a word (ends with space or punctuation)
+      const shouldCorrectText = /[\s.,!?;:]$/.test(promptValue);
 
-      // Only update if capitalization changed to avoid infinite loops
-      if (capitalizedValue !== promptValue) {
+      let processedValue = promptValue;
+
+      // Apply spell correction only when word is complete
+      if (shouldCorrectText) {
+        processedValue = autoCorrectText(promptValue);
+        // Apply full capitalization only when word is complete
+        processedValue = autoCapitalizeText(processedValue);
+      } else {
+        // Apply only basic sentence capitalization while typing (first letter and after sentence endings)
+        processedValue = applyBasicCapitalization(promptValue);
+      }
+
+      // Only update if corrections or capitalization changed to avoid infinite loops
+      if (processedValue !== promptValue) {
         const cursorPosition = textareaRef.current?.selectionStart || 0;
-        setValue("prompt", capitalizedValue);
+        setValue("prompt", processedValue);
 
         // Restore cursor position after setValue
         setTimeout(() => {
@@ -248,7 +352,9 @@ const useFormAutocomplete = () => {
       e.preventDefault();
       const space = promptValue && !promptValue.endsWith(" ") ? " " : "";
       const newText = promptValue + space + suggestion;
-      const capitalizedText = autoCapitalizeText(newText);
+      // Apply spell correction and then capitalization
+      const correctedText = autoCorrectText(newText);
+      const capitalizedText = autoCapitalizeText(correctedText);
       setValue("prompt", capitalizedText);
       setLastAcceptedLength(capitalizedText.length);
       setSuggestion("");
