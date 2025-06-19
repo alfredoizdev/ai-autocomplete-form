@@ -10,7 +10,7 @@ export async function analyzeImage(
 ): Promise<{ result?: AnalysisResult; error?: string }> {
   try {
     const file = formData.get("image");
-    if (!(file instanceof File)) {
+    if (!file || typeof file === "string") {
       return { error: "Invalid or missing image file." };
     }
 
