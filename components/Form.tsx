@@ -33,6 +33,7 @@ const Form = () => {
           width={120}
           height={40}
           className="h-20 w-auto"
+          priority
         />
       </div>
 
@@ -63,7 +64,11 @@ const Form = () => {
           })}
           type="text"
           id="name"
-          className="mt-1 text-gray-900 placeholder:text-gray-400 block w-full h-[48px] p-2 border border-gray-200 rounded-[6px] focus:ring-gray-900 focus:border-gray-900"
+          spellCheck={true}
+          autoCorrect="on"
+          autoCapitalize="words"
+          className="mt-1 text-gray-900 placeholder:text-gray-400 block w-full h-[46px] p-2 border border-gray-200 rounded-[8px] focus:border-2 focus:border-black active:border-2 active:border-black focus:outline-none"
+          style={{ WebkitAppearance: "none", appearance: "none" }}
           placeholder="Enter your name"
         />
         {errors.name && (
@@ -81,7 +86,7 @@ const Form = () => {
         {/* Hidden textarea for height measurement */}
         <textarea
           ref={measureRef}
-          className="absolute opacity-0 pointer-events-none -z-10 w-full p-2 border border-gray-200 rounded-[6px] resize-none whitespace-pre-wrap"
+          className="absolute opacity-0 pointer-events-none -z-10 w-full p-2 border border-gray-200 rounded-[8px] resize-none whitespace-pre-wrap"
           style={{
             position: "absolute",
             left: "-9999px",
@@ -104,6 +109,7 @@ const Form = () => {
                 "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif",
               color: "transparent",
               zIndex: 1,
+              top: "1px",
             }}
           >
             <span style={{ color: "transparent" }}>{promptValue}</span>
@@ -130,7 +136,10 @@ const Form = () => {
               textareaRef.current = e;
             }}
             onKeyDown={handleKeyDown}
-            className="relative bg-transparent text-black placeholder:text-gray-400 block w-full p-2 border border-gray-200 rounded focus:ring-gray-900 focus:border-gray-900 resize-none transition-all duration-300 ease-out"
+            spellCheck={true}
+            autoCorrect="on"
+            autoCapitalize="sentences"
+            className="relative bg-transparent text-black placeholder:text-gray-400 block w-full p-2 border border-gray-200 rounded focus:border-2 focus:border-black active:border-2 active:border-black focus:outline-none resize-none transition-all duration-300 ease-out"
             placeholder="Write a brief description about yourself..."
             style={{
               height: textareaHeight,
@@ -140,6 +149,8 @@ const Form = () => {
               fontFamily:
                 "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif",
               zIndex: 2,
+              WebkitAppearance: "none",
+              appearance: "none",
             }}
           />
         </div>
