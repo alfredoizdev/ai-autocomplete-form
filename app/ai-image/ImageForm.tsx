@@ -15,13 +15,21 @@ export default function ImageForm() {
   const [results, setResults] = useState<ImageAnalysis[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [currentProcessing, setCurrentProcessing] = useState<string>("");
 
   async function handleSubmit() {
     setLoading(true);
+    setProgress(0);
+    setCurrentProcessing("");
 
     const analysisResults: ImageAnalysis[] = [];
+    const totalFiles = imageFiles.length;
 
-    for (const file of imageFiles) {
+    for (let i = 0; i < imageFiles.length; i++) {
+      const file = imageFiles[i];
+      setCurrentProcessing(file.name);
+
       const formData = new FormData();
       formData.append("image", file);
 
@@ -29,10 +37,16 @@ export default function ImageForm() {
       const result = response?.result || "Error procesando imagen.";
 
       analysisResults.push({ file, result });
+
+      // Update progress
+      const progressPercentage = ((i + 1) / totalFiles) * 100;
+      setProgress(progressPercentage);
     }
 
     setResults(analysisResults);
     setLoading(false);
+    setProgress(0);
+    setCurrentProcessing("");
   }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -181,16 +195,35 @@ export default function ImageForm() {
           Submit
         </button>
 
+        {/* Progress Bar */}
         {loading && (
-          <span className="animate-pulse text-gray-700">
-            🤔 Analyzing images...
-          </span>
+          <div className="mt-4">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm text-gray-700">
+                Processing images...
+              </span>
+              <span className="text-sm text-gray-500">
+                {Math.round(progress)}%
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
+                style={{ width: `${progress}%` }}
+              ></div>
+            </div>
+            {currentProcessing && (
+              <p className="text-xs text-gray-500 mt-2">
+                Currently processing: {currentProcessing}
+              </p>
+            )}
+          </div>
         )}
 
         {error && <span className="text-red-500"> {error}</span>}
 
         {results.length === 0 && !loading && (
-          <span className="text-gray-500">
+          <span className="text-gray-500 text-center">
             No results yet. Please upload images to analyze.
           </span>
         )}
