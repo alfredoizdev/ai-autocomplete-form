@@ -11,7 +11,7 @@ function cleanCompletion(text: string, originalText: string): string {
 
   // Split into words and take only first 3-5 words
   const words = cleaned.split(/\s+/).filter((word) => word.length > 0);
-  const limitedWords = words.slice(0, 8); // Maximum 5 words
+  const limitedWords = words.slice(0, 8); // Maximum 8 words
 
   // Check for word repetition with original text
   const originalWords = originalText
@@ -25,9 +25,21 @@ function cleanCompletion(text: string, originalText: string): string {
     return !originalWords.includes(lowerWord);
   });
 
-  // Return if we have at least 2 unique words
-  if (filteredWords.length >= 2) {
+  // Debug logging
+  console.log("AI Response:", text);
+  console.log("Cleaned:", cleaned);
+  console.log("Limited words:", limitedWords);
+  console.log("Original words:", originalWords);
+  console.log("Filtered words:", filteredWords);
+
+  // Return if we have at least 1 unique word (relaxed from 2)
+  if (filteredWords.length >= 1) {
     return filteredWords.join(" ");
+  }
+
+  // If no unique words, return the original cleaned response (fallback)
+  if (limitedWords.length >= 2) {
+    return limitedWords.join(" ");
   }
 
   return "";
@@ -64,13 +76,14 @@ Complete naturally:`;
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         role: "user",
-        temperature: 0.2,
-        top_p: 0.8,
+        temperature: 0.6,
+        top_p: 0.9,
         model: "mistral:7b",
         prompt,
         stream: false,
-        max_tokens: 20, // Limit to very short response (3-5 words)
+        max_tokens: 30, // Limit to very short response (3-5 words)
         frequency_penalty: 0.3,
+        stop_tokens: ["\n", ".", "!", "?"],
       }),
     });
 
