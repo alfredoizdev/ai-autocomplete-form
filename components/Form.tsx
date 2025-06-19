@@ -63,6 +63,9 @@ const Form = () => {
           })}
           type="text"
           id="name"
+          spellCheck={true}
+          autoCorrect="on"
+          autoCapitalize="words"
           className="mt-1 text-gray-900 placeholder:text-gray-400 block w-full h-[46px] p-2 border border-gray-200 rounded-[8px] focus:border-2 focus:border-black active:border-2 active:border-black focus:outline-none"
           style={{ WebkitAppearance: "none", appearance: "none" }}
           placeholder="Enter your name"
@@ -132,6 +135,9 @@ const Form = () => {
               textareaRef.current = e;
             }}
             onKeyDown={handleKeyDown}
+            spellCheck={true}
+            autoCorrect="on"
+            autoCapitalize="sentences"
             className="relative bg-transparent text-black placeholder:text-gray-400 block w-full p-2 border border-gray-200 rounded focus:border-2 focus:border-black active:border-2 active:border-black focus:outline-none resize-none transition-all duration-300 ease-out"
             placeholder="Write a brief description about yourself..."
             style={{
