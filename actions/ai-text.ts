@@ -1,29 +1,29 @@
-'use server'
+"use server";
 
 function cleanCompletion(text: string, originalText: string): string {
   // Remove any quotes, punctuation, and unwanted characters
   const cleaned = text
-    .replace(/^["'`\.\s]*/, '') // Remove starting quotes, dots, spaces
-    .replace(/["'`\.\s]*$/, '') // Remove ending quotes, dots, spaces
-    .replace(/\n.*$/g, '') // Remove everything after first line break
-    .replace(/[.!?;:,'""`]/g, '') // Remove all punctuation
-    .trim()
+    .replace(/^["'`\.\s]*/, "") // Remove starting quotes, dots, spaces
+    .replace(/["'`\.\s]*$/, "") // Remove ending quotes, dots, spaces
+    .replace(/\n.*$/g, "") // Remove everything after first line break
+    .replace(/[.!?;:,'""`]/g, "") // Remove all punctuation
+    .trim();
 
   // Split into words and take only first 3-5 words
-  const words = cleaned.split(/\s+/).filter((word) => word.length > 0)
-  const limitedWords = words.slice(0, 8) // Maximum 8 words
+  const words = cleaned.split(/\s+/).filter((word) => word.length > 0);
+  const limitedWords = words.slice(0, 8); // Maximum 8 words
 
   // Check for word repetition with original text
   const originalWords = originalText
     .toLowerCase()
     .split(/\s+/)
-    .filter((w) => w.length > 0)
+    .filter((w) => w.length > 0);
 
   // Filter out any words that already exist in the original text
   const filteredWords = limitedWords.filter((word) => {
-    const lowerWord = word.toLowerCase()
-    return !originalWords.includes(lowerWord)
-  })
+    const lowerWord = word.toLowerCase();
+    return !originalWords.includes(lowerWord);
+  });
 
   // Debug logging
   // console.log("AI Response:", text);
@@ -34,15 +34,15 @@ function cleanCompletion(text: string, originalText: string): string {
 
   // Return if we have at least 1 unique word (relaxed from 2)
   if (filteredWords.length >= 1) {
-    return filteredWords.join(' ')
+    return filteredWords.join(" ");
   }
 
   // If no unique words, return the original cleaned response (fallback)
   if (limitedWords.length >= 2) {
-    return limitedWords.join(' ')
+    return limitedWords.join(" ");
   }
 
-  return ''
+  return "";
 }
 
 export async function askOllamaCompletationAction(
@@ -69,36 +69,36 @@ Examples:
 "We want to" → "meet new friends"
 "Seeking couples and" → "single women"
 
-Complete naturally:`
+Complete naturally:`;
 
     const res = await fetch(`${process.env.OLLAMA_PATH_API}/generate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        role: 'user',
+        role: "user",
         temperature: 0.6,
         top_p: 0.9,
-        model: 'mistral:7b',
+        model: "gemma3:12b",
         prompt,
         stream: false,
         max_tokens: 30, // Limit to very short response (3-5 words)
         frequency_penalty: 0.3,
-        stop_tokens: ['\n', '.', '!', '?'],
+        stop_tokens: ["\n", ".", "!", "?"],
       }),
-    })
+    });
 
     if (!res.ok) {
-      console.error('Ollama API error:', res.statusText)
-      return null
+      console.error("Ollama API error:", res.statusText);
+      return null;
     }
 
-    const data = await res.json()
+    const data = await res.json();
 
-    const raw = data.response?.trim() ?? ''
-    const cleaned = cleanCompletion(raw, userInputs.trim())
-    return cleaned || null
+    const raw = data.response?.trim() ?? "";
+    const cleaned = cleanCompletion(raw, userInputs.trim());
+    return cleaned || null;
   } catch (err) {
-    console.error('Ollama error:', err)
-    return null
+    console.error("Ollama error:", err);
+    return null;
   }
 }
