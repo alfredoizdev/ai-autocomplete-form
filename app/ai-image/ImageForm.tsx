@@ -155,7 +155,7 @@ export default function ImageForm() {
             <h3 className="text-sm font-medium text-gray-700 mb-3">
               Selected Images ({imageFiles.length})
             </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
               {imageFiles.map((file, index) => (
                 <div key={index} className="relative group">
                   <div className="aspect-square relative overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
