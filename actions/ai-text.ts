@@ -1,9 +1,48 @@
-'use server'
+"use server";
 
-import bios from '@/data/bio.json'
+function cleanCompletion(text: string, originalText: string): string {
+  // Remove any quotes, punctuation, and unwanted characters
+  const cleaned = text
+    .replace(/^["'`\.\s]*/, "") // Remove starting quotes, dots, spaces
+    .replace(/["'`\.\s]*$/, "") // Remove ending quotes, dots, spaces
+    .replace(/\n.*$/g, "") // Remove everything after first line break
+    .replace(/[.!?;:,'""`]/g, "") // Remove all punctuation
+    .trim();
 
-function cleanCompletion(text: string): string {
-  return text.replace(/^\.*\s*/, '') // elimina puntos suspensivos iniciales y espacios
+  // Split into words and take only first 3-5 words
+  const words = cleaned.split(/\s+/).filter((word) => word.length > 0);
+  const limitedWords = words.slice(0, 8); // Maximum 8 words
+
+  // Check for word repetition with original text
+  const originalWords = originalText
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((w) => w.length > 0);
+
+  // Filter out any words that already exist in the original text
+  const filteredWords = limitedWords.filter((word) => {
+    const lowerWord = word.toLowerCase();
+    return !originalWords.includes(lowerWord);
+  });
+
+  // Debug logging
+  console.log("AI Response:", text);
+  console.log("Cleaned:", cleaned);
+  console.log("Limited words:", limitedWords);
+  console.log("Original words:", originalWords);
+  console.log("Filtered words:", filteredWords);
+
+  // Return if we have at least 1 unique word (relaxed from 2)
+  if (filteredWords.length >= 1) {
+    return filteredWords.join(" ");
+  }
+
+  // If no unique words, return the original cleaned response (fallback)
+  if (limitedWords.length >= 2) {
+    return limitedWords.join(" ");
+  }
+
+  return "";
 }
 
 export async function askOllamaCompletationAction(
@@ -11,62 +50,55 @@ export async function askOllamaCompletationAction(
 ): Promise<string | null> {
   try {
     // Ensure userInputs is a string and trim it
-    const biosExamples = bios
-      .slice(0, 5) // puedes ajustar cuántos usar
-      .map((bio, i) => `Bio ${i + 1}:\n${bio}`)
-      .join('\n\n')
 
-    // Create the prompt with few-shot examples
-    const prompt = `
-You are writing short, sexy, and confident bios for a swinger dating app.
+    // Create the prompt with few-shot examples for swinger dating profiles
+    const prompt = `You are a respectful, open-minded assistant who helps users write short, engaging bios and messages for swinger and lifestyle dating platforms. Your tone is confident, playful, and tasteful. Avoid explicit language. Emphasize honesty, mutual respect, and fun. Write in short, natural-sounding sentences. Do not judge or shame. Never sound robotic.
 
-The user is writing their profile and wants help making it sound more flirty and bold.
+Complete this dating profile sentence with 2-4 words. Don't repeat words already used:
 
-Instructions:
-- Your sentence should sound sexy, open-minded, and adventurous
-- NO quotes, punctuation, or poetic style
-- Only write 6 to 10 **new words**
-- Do NOT repeat words from the user's input
-- Use direct language suitable for adults looking to meet others
-- NO explanations, only the phrase
-- Keep it concise and impactful
-- Don't use dounle quotes or any other punctuation
+"${userInputs.trim()}"
 
-Example user bios:
-${biosExamples}
+Examples:
+"I am looking" → "for other couples"
+"Young man looking" → "to have fun"
+"Older couple looking" → "to meet others"
+"Older couple looking for" → "new experiences"
+"We love meeting" → "cool new people"
+"Hot couple ready" → "to play tonight"
+"Looking for someone" → "who likes fun"
+"We want to" → "meet new friends"
+"Seeking couples and" → "single women"
 
-User input:
-${userInputs.trim()}
-
-Your continuation:
-`
+Complete naturally:`;
 
     const res = await fetch(`${process.env.OLLAMA_PATH_API}/generate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        role: 'user',
-        temperature: 0.1,
-        top_p: 0.2,
-        model: 'mistral:7b',
+        role: "user",
+        temperature: 0.6,
+        top_p: 0.9,
+        model: "mistral:7b",
         prompt,
         stream: false,
-        max_tokens: 20, // Limit to a short response
+        max_tokens: 30, // Limit to very short response (3-5 words)
+        frequency_penalty: 0.3,
+        stop_tokens: ["\n", ".", "!", "?"],
       }),
-    })
+    });
 
     if (!res.ok) {
-      console.error('Ollama API error:', res.statusText)
-      return null
+      console.error("Ollama API error:", res.statusText);
+      return null;
     }
 
-    const data = await res.json()
+    const data = await res.json();
 
-    const raw = data.response?.trim() ?? ''
-    const cleaned = cleanCompletion(raw)
-    return cleaned || null
+    const raw = data.response?.trim() ?? "";
+    const cleaned = cleanCompletion(raw, userInputs.trim());
+    return cleaned || null;
   } catch (err) {
-    console.error('Ollama error:', err)
-    return null
+    console.error("Ollama error:", err);
+    return null;
   }
 }
