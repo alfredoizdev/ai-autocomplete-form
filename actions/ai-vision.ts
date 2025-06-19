@@ -26,7 +26,7 @@ export async function analyzeImage(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "gemma3:4b",
+        model: "gemma3:12b",
         prompt:
           'Analyze this image and respond only with plain JSON, no extra text: {"naked": true|false, "kids": true|false}',
         role: "user",
