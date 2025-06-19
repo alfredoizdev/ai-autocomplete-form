@@ -63,20 +63,60 @@ const useFormAutocomplete = () => {
   const isReadyForSuggestions = (text: string): boolean => {
     if (!text) return false;
 
-    // If text ends with space or punctuation, it's ready
+    // Check if we're at the end of a sentence (period/question/exclamation + space)
+    const endsWithSentenceSpace = /[.!?]\s+$/.test(text);
+    if (endsWithSentenceSpace) {
+      // Don't suggest immediately after sentence endings - wait for user to start next sentence
+      return false;
+    }
+
+    // Check if we just finished a sentence and user has started typing a new word
+    const sentencePattern = /[.!?]\s+([a-zA-Z]+)$/;
+    const sentenceMatch = text.match(sentencePattern);
+    if (sentenceMatch) {
+      // User has started typing after a sentence ending, check if word is complete enough
+      const newWord = sentenceMatch[1];
+      return newWord.length >= 3 && /[aeiouAEIOU]/.test(newWord);
+    }
+
+    // For non-sentence-ending cases, check normal word completion
     const lastChar = text[text.length - 1];
-    if (/[\s.,!?;:]/.test(lastChar)) {
+    if (/[\s,;:]/.test(lastChar)) {
+      // Ready after comma, semicolon, colon, or regular space (but not after sentence endings)
       return true;
     }
 
     // If text doesn't end with space/punctuation, check if last "word" is reasonable length
-    // This allows suggestions after complete words even without trailing space
     const words = text.trim().split(/\s+/);
     const lastWord = words[words.length - 1];
 
     // Allow suggestions if the last word is at least 3 characters and seems complete
-    // (contains vowels or common word patterns)
     return lastWord.length >= 3 && /[aeiouAEIOU]/.test(lastWord);
+  };
+
+  // Auto-capitalize user input text based on sentence context
+  const autoCapitalizeText = (text: string): string => {
+    if (!text) return text;
+
+    let result = text;
+
+    // Capitalize first character of the entire text
+    if (result.length > 0) {
+      result = result.charAt(0).toUpperCase() + result.slice(1);
+    }
+
+    // Capitalize after sentence-ending punctuation followed by space
+    result = result.replace(
+      /([.!?]\s+)([a-z])/g,
+      (match, punctuation, letter) => {
+        return punctuation + letter.toUpperCase();
+      }
+    );
+
+    // Capitalize "I" when it's a standalone word
+    result = result.replace(/\b(i)\b/g, "I");
+
+    return result;
   };
 
   // Adjust suggestion capitalization based on sentence context
@@ -162,13 +202,37 @@ const useFormAutocomplete = () => {
     console.log(data);
   };
 
+  // Auto-capitalize the input text when it changes
+  useEffect(() => {
+    if (promptValue) {
+      const capitalizedValue = autoCapitalizeText(promptValue);
+
+      // Only update if capitalization changed to avoid infinite loops
+      if (capitalizedValue !== promptValue) {
+        const cursorPosition = textareaRef.current?.selectionStart || 0;
+        setValue("prompt", capitalizedValue);
+
+        // Restore cursor position after setValue
+        setTimeout(() => {
+          if (textareaRef.current) {
+            textareaRef.current.setSelectionRange(
+              cursorPosition,
+              cursorPosition
+            );
+          }
+        }, 0);
+      }
+    }
+  }, [promptValue, setValue]);
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Tab" && suggestion) {
       e.preventDefault();
       const space = promptValue && !promptValue.endsWith(" ") ? " " : "";
       const newText = promptValue + space + suggestion;
-      setValue("prompt", newText);
-      setLastAcceptedLength(newText.length);
+      const capitalizedText = autoCapitalizeText(newText);
+      setValue("prompt", capitalizedText);
+      setLastAcceptedLength(capitalizedText.length);
       setSuggestion("");
     }
   };

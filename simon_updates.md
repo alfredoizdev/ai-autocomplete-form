@@ -173,6 +173,23 @@ _All future changes and improvements will be documented below this line_
 - ✅ **ADDED**: `adjustSuggestionCapitalization` function for context-aware formatting
 - ✅ **OPTIMIZED**: Better grammar and natural text flow in suggestions
 
+### Update 16 - Fixed Autocomplete Positioning Misalignment - [Current Date]
+
+- ✅ **FIXED**: Autocomplete suggestion text now perfectly aligned with user text
+- ✅ **ADJUSTED**: Added `top: "1px"` to background div for precise positioning
+- ✅ **RESOLVED**: 1px vertical misalignment between suggestion and input text
+- ✅ **IMPROVED**: Visual consistency in text overlay positioning
+- ✅ **MAINTAINED**: All existing autocomplete functionality while fixing alignment
+
+### Update 17 - Fixed Text Overlap During Deletion - [Current Date]
+
+- ✅ **FIXED**: Eliminated grayed-out suggestion text overlapping when deleting entire content
+- ✅ **IMPLEMENTED**: Real-time suggestion clearing using `promptValue` instead of debounced value
+- ✅ **ENHANCED**: Immediate suggestion removal when text length drops below 10 characters
+- ✅ **IMPROVED**: Instant suggestion clearing when text deletion is detected
+- ✅ **RESOLVED**: 1-second delay issue that caused visual overlap during deletion
+- ✅ **OPTIMIZED**: Smoother user experience with responsive suggestion management
+
 **Technical Details:**
 
 - Used absolute positioning with two overlapping textareas
@@ -180,3 +197,5 @@ _All future changes and improvements will be documented below this line_
 - Foreground textarea handles user input with transparent background
 - Added proper z-index layering for correct interaction
 - Styled Tab key instruction with `<kbd>` element
+- Added real-time effect monitoring `promptValue` for immediate suggestion clearing
+- Positioned background div with `top: "1px"` for perfect text alignment
