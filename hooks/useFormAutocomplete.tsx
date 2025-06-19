@@ -105,7 +105,7 @@ const useFormAutocomplete = () => {
       result = result.charAt(0).toUpperCase() + result.slice(1);
     }
 
-    // Capitalize after sentence-ending punctuation followed by space
+    // Capitalize after sentence-ending punctuation followed by one or more spaces
     result = result.replace(
       /([.!?]\s+)([a-z])/g,
       (match, punctuation, letter) => {
@@ -113,8 +113,18 @@ const useFormAutocomplete = () => {
       }
     );
 
-    // Capitalize "I" when it's a standalone word
+    // Capitalize "I" when it's a standalone word (but be more specific)
     result = result.replace(/\b(i)\b/g, "I");
+
+    // Capitalize proper nouns and common words that should be capitalized
+    result = result.replace(/\b(we|us|our)\b/gi, (match) => {
+      // Only capitalize if it's at start of sentence or after punctuation
+      const beforeMatch = result.substring(0, result.indexOf(match));
+      if (beforeMatch === "" || /[.!?]\s*$/.test(beforeMatch)) {
+        return match.charAt(0).toUpperCase() + match.slice(1).toLowerCase();
+      }
+      return match.toLowerCase();
+    });
 
     return result;
   };
@@ -126,17 +136,25 @@ const useFormAutocomplete = () => {
   ): string => {
     if (!suggestion || !userText) return suggestion;
 
-    // Check if we're starting a new sentence (after sentence-ending punctuation + space)
-    const trimmedText = userText.trim();
-    const lastSentenceMatch = trimmedText.match(/[.!?]\s*$/);
+    // Make suggestion lowercase by default for natural flow
+    const result = suggestion.toLowerCase();
 
-    if (lastSentenceMatch) {
-      // We're starting a new sentence, suggestion should start with capital
-      return suggestion.charAt(0).toUpperCase() + suggestion.slice(1);
-    } else {
-      // We're continuing the same sentence, suggestion should start with lowercase
-      return suggestion.charAt(0).toLowerCase() + suggestion.slice(1);
+    // Check if we're continuing after sentence-ending punctuation + space + new word
+    const afterSentencePattern = /[.!?]\s+[a-zA-Z]+\s*$/;
+    if (afterSentencePattern.test(userText)) {
+      // We're in the middle of a new sentence, keep lowercase
+      return result;
     }
+
+    // Check if we're immediately after sentence ending (this shouldn't happen with our new logic)
+    const endsWithSentence = /[.!?]\s*$/.test(userText.trim());
+    if (endsWithSentence) {
+      // Capitalize first word of new sentence
+      return result.charAt(0).toUpperCase() + result.slice(1);
+    }
+
+    // For all other cases (continuing same sentence), keep lowercase
+    return result;
   };
 
   // Obtener sugerencia después del debounce

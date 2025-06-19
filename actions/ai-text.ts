@@ -28,29 +28,32 @@ export async function askOllamaCompletationAction(
     // Ensure userInputs is a string and trim it
 
     // Create the prompt with few-shot examples
-    const prompt = `Continue the dating profile with EXACTLY 3-5 words. No punctuation, quotes, or explanations.
+    const prompt = `Complete this dating profile sentence with 3-5 natural words:
 
-User text: ${userInputs.trim()}
+"${userInputs.trim()}"
 
-Add exactly 3-5 words to continue this bio naturally. Make it flirty and confident.
+Continue the sentence naturally. Write how real people talk, not fancy or literary. Keep it conversational and authentic.
 
-RULES:
-- EXACTLY 3-5 words only
-- NO punctuation marks
-- NO quotes or special characters  
-- NO line breaks or paragraphs
-- NO repetition of user's words
-- Keep it sexy and direct
+Examples of good continuations:
+- "We love to explore" → "new places together"
+- "Looking for couples who" → "know how to party"
+- "We are adventurous and" → "love meeting new people"
 
-Your 3-5 word continuation:`;
+Rules:
+- 3-5 words maximum
+- Natural everyday language
+- No punctuation or quotes
+- Complete the thought naturally
+
+Continue with:`;
 
     const res = await fetch(`${process.env.OLLAMA_PATH_API}/generate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         role: "user",
-        temperature: 0.1,
-        top_p: 0.2,
+        temperature: 0.3,
+        top_p: 0.4,
         model: "mistral:7b",
         prompt,
         stream: false,
