@@ -67,7 +67,7 @@ const Form = () => {
           spellCheck={true}
           autoCorrect="on"
           autoCapitalize="words"
-          className="mt-1 text-gray-900 placeholder:text-gray-400 block w-full h-[46px] p-2 border border-gray-200 rounded-[8px] focus:border-2 focus:border-black active:border-2 active:border-black focus:outline-none"
+          className="mt-1 text-gray-900 placeholder:text-gray-400 block w-full h-[46px] p-2 border border-gray-200 rounded-[8px] focus:border-black active:border-black focus:outline-none transition-all duration-300 ease-out"
           style={{ WebkitAppearance: "none", appearance: "none" }}
           placeholder="Enter your name"
         />
@@ -99,17 +99,15 @@ const Form = () => {
         <div className="relative">
           {/* Background div that shows user text + suggestion */}
           <div
-            className="absolute inset-0 w-full p-2 border border-gray-200 rounded resize-none whitespace-pre-wrap pointer-events-none transition-all duration-300 ease-out"
+            className="absolute inset-0 w-full p-2 border border-transparent rounded resize-none whitespace-pre-wrap pointer-events-none transition-all duration-300 ease-out"
             style={{
               height: textareaHeight,
               minHeight: "96px",
               fontSize: "14px",
               lineHeight: "1.5",
-              fontFamily:
-                "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif",
+              fontFamily: "var(--font-inter), Inter, sans-serif",
               color: "transparent",
               zIndex: 1,
-              top: "1px",
             }}
           >
             <span style={{ color: "transparent" }}>{promptValue}</span>
@@ -139,15 +137,14 @@ const Form = () => {
             spellCheck={true}
             autoCorrect="on"
             autoCapitalize="sentences"
-            className="relative bg-transparent text-black placeholder:text-gray-400 block w-full p-2 border border-gray-200 rounded focus:border-2 focus:border-black active:border-2 active:border-black focus:outline-none resize-none transition-all duration-300 ease-out"
+            className="relative bg-transparent text-black placeholder:text-gray-400 block w-full p-2 border border-gray-200 rounded focus:border-black active:border-black focus:outline-none resize-none transition-all duration-300 ease-out"
             placeholder="Write a brief description about yourself..."
             style={{
               height: textareaHeight,
               minHeight: "96px",
               fontSize: "14px",
               lineHeight: "1.5",
-              fontFamily:
-                "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif",
+              fontFamily: "var(--font-inter), Inter, sans-serif",
               zIndex: 2,
               WebkitAppearance: "none",
               appearance: "none",
