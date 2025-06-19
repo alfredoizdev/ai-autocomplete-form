@@ -105,6 +105,7 @@ const Form = () => {
                 "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif",
               color: "transparent",
               zIndex: 1,
+              top: "1px",
             }}
           >
             <span style={{ color: "transparent" }}>{promptValue}</span>
