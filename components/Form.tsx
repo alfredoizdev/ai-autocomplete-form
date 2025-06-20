@@ -68,7 +68,11 @@ const Form = () => {
           autoCorrect="on"
           autoCapitalize="words"
           className="mt-1 text-gray-900 placeholder:text-gray-400 block w-full h-[46px] p-2 border border-gray-200 rounded-[8px] focus:border-black active:border-black focus:outline-none transition-all duration-300 ease-out"
-          style={{ WebkitAppearance: "none", appearance: "none" }}
+          style={{
+            WebkitAppearance: "none",
+            appearance: "none",
+            fontSize: "16px",
+          }}
           placeholder="Enter your name"
         />
         {errors.name && (
@@ -91,6 +95,9 @@ const Form = () => {
             position: "absolute",
             left: "-9999px",
             top: "-9999px",
+            fontSize: "16px",
+            lineHeight: "1.5",
+            fontFamily: "var(--font-inter), Inter, sans-serif",
           }}
           tabIndex={-1}
         />
@@ -103,7 +110,7 @@ const Form = () => {
             style={{
               height: textareaHeight,
               minHeight: "96px",
-              fontSize: "14px",
+              fontSize: "16px",
               lineHeight: "1.5",
               fontFamily: "var(--font-inter), Inter, sans-serif",
               color: "transparent",
@@ -142,7 +149,7 @@ const Form = () => {
             style={{
               height: textareaHeight,
               minHeight: "96px",
-              fontSize: "14px",
+              fontSize: "16px",
               lineHeight: "1.5",
               fontFamily: "var(--font-inter), Inter, sans-serif",
               zIndex: 2,
