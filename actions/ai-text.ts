@@ -1,6 +1,10 @@
 "use server";
 
-function cleanCompletion(text: string, originalText: string): string {
+function cleanCompletion(
+  text: string,
+  originalText: string,
+  conversationHistory: string[] = []
+): string {
   // Remove any quotes, punctuation, and unwanted characters more aggressively
   const cleaned = text
     .replace(/^["'`\.\s*→←↑↓▲▼►◄]*/, "") // Remove starting quotes, dots, spaces, arrows, stars
@@ -24,10 +28,18 @@ function cleanCompletion(text: string, originalText: string): string {
     .filter((w) => w.length > 0)
     .map((w) => w.replace(/[^a-zA-Z]/g, "")); // Clean original words too
 
-  // Filter out any words that already exist in the original text
+  // Check for word repetition with conversation history
+  const historyWords = conversationHistory
+    .flatMap((suggestion) => suggestion.toLowerCase().split(/\s+/))
+    .filter((w) => w.length > 0)
+    .map((w) => w.replace(/[^a-zA-Z]/g, "")); // Clean history words too
+
+  // Filter out any words that already exist in the original text or conversation history
   const filteredWords = words.filter((word) => {
     const lowerWord = word.toLowerCase();
-    return !originalWords.includes(lowerWord);
+    return (
+      !originalWords.includes(lowerWord) && !historyWords.includes(lowerWord)
+    );
   });
 
   // Debug logging
@@ -35,6 +47,7 @@ function cleanCompletion(text: string, originalText: string): string {
   // console.log("Cleaned:", cleaned);
   // console.log("Words:", words);
   // console.log("Original words:", originalWords);
+  // console.log("History words:", historyWords);
   // console.log("Filtered words:", filteredWords);
 
   // Return if we have at least 1 unique word
@@ -51,19 +64,27 @@ function cleanCompletion(text: string, originalText: string): string {
 }
 
 export async function askOllamaCompletationAction(
-  userInputs: string
+  userInputs: string,
+  conversationHistory: string[] = []
 ): Promise<string | null> {
   try {
     // Ensure userInputs is a string and trim it
 
     // Create the prompt with few-shot examples for swinger dating profiles
+    const historyContext =
+      conversationHistory.length > 0
+        ? `\n\nAVOID using these words/phrases that were already suggested in this conversation: ${conversationHistory.join(
+            ", "
+          )}`
+        : "";
+
     const prompt = `You are a respectful, open-minded assistant who helps users write short, engaging bios and messages for swinger and lifestyle dating platforms. Your tone is confident, playful, and tasteful. Avoid explicit language. Emphasize honesty, mutual respect, and fun. Write in short, natural-sounding sentences. Do not judge or shame. Never sound robotic.
 
 IMPORTANT: Only respond with plain words. Do not use any special characters, arrows (→), stars (*), punctuation, or symbols. Just provide 2-4 simple words to complete the sentence.
 
 Complete this dating profile sentence with 2-4 words. Don't repeat words already used:
 
-"${userInputs.trim()}"
+"${userInputs.trim()}"${historyContext}
 
 Examples:
 "I am looking" → for other couples
@@ -102,7 +123,11 @@ Complete naturally with plain words only:`;
     const data = await res.json();
 
     const raw = data.response?.trim() ?? "";
-    const cleaned = cleanCompletion(raw, userInputs.trim());
+    const cleaned = cleanCompletion(
+      raw,
+      userInputs.trim(),
+      conversationHistory
+    );
     return cleaned || null;
   } catch (err) {
     console.error("Ollama error:", err);

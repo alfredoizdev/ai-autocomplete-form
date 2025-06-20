@@ -51,6 +51,46 @@ _All future changes and improvements will be documented below this line_
 - ✅ **COMPLETED**: Added grayed-out suggestion text overlay using layered textareas
 - ✅ **COMPLETED**: Added instructional message for Tab key usage with visual kbd styling
 - ✅ **COMPLETED**: Improved UX with better visual feedback and state indicators
+
+### Update 2 - Conversation Memory Implementation - [Current Date]
+
+- ✅ **COMPLETED**: Added conversation memory to track all accepted suggestions throughout the session
+- ✅ **COMPLETED**: Modified AI action to accept conversation history and avoid repeating previous suggestions
+- ✅ **COMPLETED**: Enhanced cleaning function to filter out words from conversation history
+- ✅ **COMPLETED**: Added visual memory status indicator showing number of remembered suggestions
+- ✅ **COMPLETED**: Implemented manual reset button to clear conversation memory
+- ✅ **COMPLETED**: Added automatic memory reset after 30 minutes of session time
+- ✅ **COMPLETED**: Enhanced AI prompt with conversation history context to improve suggestion quality
+
+#### Technical Changes:
+
+- **`hooks/useFormAutocomplete.tsx`**: Added `conversationHistory` state, `resetConversationMemory` function, and automatic memory reset logic
+- **`actions/ai-text.ts`**: Updated function signature to accept conversation history, enhanced prompt with history context, and improved word filtering
+- **`components/Form.tsx`**: Added memory status display and manual reset functionality
+
+#### Features Added:
+
+- 🧠 **Memory Persistence**: Tracks all accepted suggestions to prevent repetition during bio writing
+- 🔄 **Manual Reset**: Users can manually clear memory when drafting variations
+- 📝 **Smart Auto Reset**: Memory automatically clears when form is submitted or user clears all text
+- 📊 **Visual Feedback**: Shows how many suggestions are remembered
+- 🚫 **Smart Filtering**: AI avoids suggesting previously used words/phrases
+
+### Update 3 - Improved Memory Behavior - [Current Date]
+
+- ✅ **COMPLETED**: Updated memory reset behavior to be more intuitive
+- ✅ **COMPLETED**: Memory now persists during active bio writing (no time-based reset)
+- ✅ **COMPLETED**: Memory automatically resets on form submission
+- ✅ **COMPLETED**: Memory automatically resets when user clears all text
+- ✅ **COMPLETED**: Manual reset button remains for drafting multiple variations
+- ✅ **COMPLETED**: Fixed React Hook dependency warnings with useCallback
+
+#### Behavioral Changes:
+
+- **During Writing**: Memory persists to avoid repetitive suggestions
+- **On Submit**: Memory resets for next bio creation
+- **On Clear Text**: Memory resets when user starts completely fresh
+- **Manual Reset**: Available for users who want to draft variations with repeated words
 - ✅ **FIXED**: Bug in `handleKeyDown` function (undefined `prompt` variable → `promptValue`)
 - ✅ **CLEANED**: Removed unused variables (`setValue`, `setSuggestion`) from Form component
 - ✅ **ENHANCED**: Added dynamic status messages (thinking, suggestion available)

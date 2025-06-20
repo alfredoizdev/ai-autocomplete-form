@@ -1,5 +1,5 @@
 import { askOllamaCompletationAction } from "@/actions/ai-text";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { useDebounce } from "use-debounce";
 
@@ -76,6 +76,7 @@ const useFormAutocomplete = () => {
   const [previousTextLength, setPreviousTextLength] = useState(0);
   const [justDeleted, setJustDeleted] = useState(false);
   const [textareaHeight, setTextareaHeight] = useState("auto");
+  const [conversationHistory, setConversationHistory] = useState<string[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const measureRef = useRef<HTMLTextAreaElement>(null);
 
@@ -94,6 +95,14 @@ const useFormAutocomplete = () => {
 
   const promptValue = watch("prompt");
   const [debouncedPrompt] = useDebounce(promptValue, 1000);
+
+  const resetConversationMemory = useCallback(() => {
+    setConversationHistory([]);
+    console.log("🧠 Conversation memory reset");
+  }, []);
+
+  // Note: Removed automatic time-based reset - memory persists during active bio writing
+  // Memory resets only on form submission or when user clears all text
 
   // Calculate textarea height based on content
   const calculateHeight = (text: string) => {
@@ -116,7 +125,20 @@ const useFormAutocomplete = () => {
     if (promptValue.length < previousTextLength) {
       setSuggestion("");
     }
-  }, [promptValue, previousTextLength]);
+
+    // Reset conversation memory if user clears all text (starts fresh)
+    if (!promptValue || promptValue.trim().length === 0) {
+      if (conversationHistory.length > 0) {
+        resetConversationMemory();
+        console.log("🧠 Memory reset - user cleared all text");
+      }
+    }
+  }, [
+    promptValue,
+    previousTextLength,
+    conversationHistory.length,
+    resetConversationMemory,
+  ]);
 
   // Update height when suggestion changes
   useEffect(() => {
@@ -291,7 +313,10 @@ const useFormAutocomplete = () => {
     }
 
     startTransition(async () => {
-      const result = await askOllamaCompletationAction(debouncedPrompt);
+      const result = await askOllamaCompletationAction(
+        debouncedPrompt,
+        conversationHistory
+      );
       if (result) {
         // Check if we're in the middle of a sentence and adjust capitalization
         const processedSuggestion = adjustSuggestionCapitalization(
@@ -303,12 +328,24 @@ const useFormAutocomplete = () => {
         setSuggestion("");
       }
     });
-  }, [debouncedPrompt, lastAcceptedLength, previousTextLength, justDeleted]);
+  }, [
+    debouncedPrompt,
+    lastAcceptedLength,
+    previousTextLength,
+    justDeleted,
+    conversationHistory,
+  ]);
 
   const onSubmit: SubmitHandler<{ name: string; prompt: string }> = async (
     data
   ) => {
     console.log(data);
+
+    // Reset conversation memory after successful form submission
+    if (conversationHistory.length > 0) {
+      resetConversationMemory();
+      console.log("🧠 Memory reset - form submitted");
+    }
   };
 
   // Auto-correct and auto-capitalize the input text when it changes
@@ -357,6 +394,11 @@ const useFormAutocomplete = () => {
       const capitalizedText = autoCapitalizeText(correctedText);
       setValue("prompt", capitalizedText);
       setLastAcceptedLength(capitalizedText.length);
+
+      // Add accepted suggestion to conversation history
+      setConversationHistory((prev) => [...prev, suggestion]);
+      console.log("🧠 Added to conversation memory:", suggestion);
+
       setSuggestion("");
     }
   };
@@ -375,6 +417,8 @@ const useFormAutocomplete = () => {
     setSuggestion,
     promptValue,
     textareaHeight,
+    resetConversationMemory,
+    conversationHistory,
   };
 };
 
