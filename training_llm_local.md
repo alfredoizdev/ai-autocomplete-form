@@ -6,7 +6,16 @@ This guide provides a step-by-step approach to training your own custom Language
 
 **Project Goal**: Create a specialized LLM that provides intelligent, context-aware autocomplete suggestions for swinger dating profiles with authentic language patterns and terminology.
 
-**Important Note**: LM Studio is primarily an inference tool for running models locally, not a training platform. This guide shows you how to train models using other tools and then deploy them in LM Studio for realtime autocomplete.
+**Beginner-Friendly Approach**: This guide uses Ollama and Gemma 3:12B for the simplest possible setup. No complex configurations or model conversions needed!
+
+## What You'll Build
+
+1. **Custom Swinger Model**: Fine-tuned Gemma 3:12B with your bio.json data
+2. **Vector Database**: Local, secure storage of profile patterns for better context
+3. **Enhanced API**: Combines vector context + your custom model for superior suggestions
+4. **Complete Integration**: Works with your existing Next.js autocomplete app
+
+**Everything stays local and secure on your machine - no data ever leaves your computer!**
 
 ## Phase 1: Environment Setup & Planning
 
@@ -17,31 +26,47 @@ This guide provides a step-by-step approach to training your own custom Language
 
 ### Task 1.2: Select Base Model for Autocomplete
 
-- [ ] **Recommended**: Llama 3.1 8B Instruct (Best balance for autocomplete speed/quality)
-- [ ] **Alternative**: Mistral 7B Instruct (Faster inference, good for realtime)
+- [ ] **Your Choice**: Gemma 3:12B (Perfect for fine-tuning and autocomplete)
+- [ ] **Alternative**: Llama 3.1 8B Instruct (If you need faster inference)
 - [ ] **Advanced**: CodeLlama 7B (Good at text completion patterns)
 - [ ] **Avoid**: Large 70B+ models (Too slow for realtime autocomplete)
 
+**Note**: You'll be using Gemma 3:12B as your base model with Ollama serve.
+
 ### Task 1.3: Hardware Requirements Check
 
-- [ ] **7B model**: 16-24GB VRAM (RTX 4090, A6000)
-- [ ] **13B model**: 40-48GB VRAM (A100, H100)
-- [ ] **70B model**: Multiple high-end GPUs or cloud training
-- [ ] **Alternative**: Use cloud services (RunPod, Google Colab Pro)
+- [ ] **Gemma 3:12B**: 16-24GB VRAM (RTX 4090, A6000, or similar)
+- [ ] **Alternative**: Use cloud services (RunPod, Google Colab Pro) if you don't have enough VRAM
+- [ ] **CPU Option**: Ollama can run on CPU but will be slower for training
+- [ ] **Recommended**: At least 32GB system RAM for smooth operation
 
 ### Task 1.4: Install Required Tools
 
+**Simple Setup with Ollama (Beginner-Friendly)**
+
 ```bash
-# Option A: Axolotl (Most popular)
-git clone https://github.com/OpenAccess-AI-Collective/axolotl
-cd axolotl
-pip install -e .
+# Step 1: Install Ollama (easiest option for beginners)
+# Download from https://ollama.ai or use:
+curl -fsSL https://ollama.ai/install.sh | sh
 
-# Option B: Unsloth (Faster training)
-pip install unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git
+# Step 2: Pull Gemma 3:12B model
+ollama pull gemma3:12b
 
-# Option C: Hugging Face TRL
-pip install trl transformers datasets
+# Step 3: Install Python packages for data preparation
+pip install chromadb sentence-transformers fastapi uvicorn requests
+
+# Step 4: Test Ollama is working
+ollama serve  # Start Ollama server
+# In another terminal:
+ollama run gemma3:12b "Hello, I am"
+```
+
+**Alternative (Advanced Users)**
+
+```bash
+# If you want more control, you can still use:
+# Axolotl, Unsloth, or Hugging Face TRL
+# But Ollama is much simpler for beginners
 ```
 
 ## Phase 2: Swinger Dating Autocomplete Data Preparation
@@ -290,203 +315,181 @@ Create training data across these categories:
 
 300+ examples held back for testing model performance
 
-## Phase 3: Autocomplete-Optimized Model Training
+## Phase 3: Simple Model Fine-Tuning with Ollama
 
-### Option A: Training with Axolotl (Recommended for Autocomplete)
+### Task 3.1: Prepare Training Data for Ollama
 
-#### Task 3A.1: Create Autocomplete Configuration File
-
-Create `swinger_autocomplete_config.yaml`:
-
-```yaml
-base_model: unsloth/llama-3-8b-bnb-4bit
-model_type: LlamaForCausalLM
-tokenizer_type: LlamaTokenizer
-
-datasets:
-  - path: ./swinger_autocomplete_main.jsonl
-    type: completion # Critical: Use completion, not instruction
-  - path: ./swinger_autocomplete_specific.jsonl
-    type: completion
-
-output_dir: ./swinger-autocomplete-model
-hub_model_id: your-username/swinger-autocomplete
-
-# Autocomplete-optimized settings
-sequence_len: 512 # Shorter for faster inference
-sample_packing: false # Better for short completions
-pad_to_sequence_len: true
-
-# Training parameters optimized for autocomplete
-micro_batch_size: 4
-gradient_accumulation_steps: 4
-num_epochs: 5 # More epochs for better completion patterns
-learning_rate: 0.0001 # Lower LR for stable autocomplete
-lr_scheduler: cosine
-warmup_steps: 100
-
-# LoRA settings for efficiency
-adapter: lora
-lora_model_dir:
-lora_r: 32 # Higher rank for better completion quality
-lora_alpha: 64
-lora_dropout: 0.05
-lora_target_linear: true
-lora_target_modules:
-  - q_proj
-  - k_proj
-  - v_proj
-  - o_proj
-  - gate_proj
-  - down_proj
-  - up_proj
-
-# Autocomplete-specific optimizations
-special_tokens:
-  pad_token: "<pad>"
-  eos_token: "</s>"
-  bos_token: "<s>"
-
-# Evaluation settings
-val_set_size: 0.1
-eval_steps: 50
-save_steps: 100
-logging_steps: 10
-
-# Memory optimization
-bf16: true
-fp16: false
-gradient_checkpointing: true
-```
-
-#### Task 3A.2: Start Training
-
-```bash
-accelerate launch -m axolotl.cli.train config.yaml
-```
-
-### Option B: Training with Unsloth
-
-#### Task 3B.1: Setup Training Script
+Ollama uses a simple format. Create `prepare_ollama_data.py`:
 
 ```python
-from unsloth import FastLanguageModel
-import torch
+import json
 
-# Load base model
-model, tokenizer = FastLanguageModel.from_pretrained(
-    model_name = "unsloth/llama-3-8b-bnb-4bit",
-    max_seq_length = 2048,
-    dtype = None,
-    load_in_4bit = True,
-)
+def convert_to_ollama_format():
+    """Convert your training data to Ollama's simple format"""
 
-# Add LoRA adapters
-model = FastLanguageModel.get_peft_model(
-    model,
-    r = 16,
-    target_modules = ["q_proj", "k_proj", "v_proj", "o_proj"],
-    lora_alpha = 16,
-    lora_dropout = 0,
-    bias = "none",
-)
+    # Read your generated training data
+    training_data = []
+    with open('swinger_autocomplete_main.jsonl', 'r') as f:
+        for line in f:
+            item = json.loads(line)
+            # Ollama format: combine prompt + completion
+            full_text = item['prompt'] + item['completion']
+            training_data.append(full_text)
+
+    # Save in simple text format for Ollama
+    with open('swinger_training_data.txt', 'w') as f:
+        for text in training_data:
+            f.write(text + '\n\n')  # Double newline between examples
+
+    print(f"Converted {len(training_data)} examples for Ollama training")
+
+# Run the conversion
+convert_to_ollama_data()
 ```
 
-#### Task 3B.2: Execute Training
+### Task 3.2: Create Ollama Modelfile
 
-```python
-from trl import SFTTrainer
-from transformers import TrainingArguments
+Create `Modelfile` (no extension):
 
-trainer = SFTTrainer(
-    model = model,
-    tokenizer = tokenizer,
-    train_dataset = dataset,
-    max_seq_length = 2048,
-    training_arguments = TrainingArguments(
-        per_device_train_batch_size = 2,
-        gradient_accumulation_steps = 4,
-        warmup_steps = 5,
-        num_train_epochs = 3,
-        learning_rate = 2e-4,
-        output_dir = "./results",
-    ),
-)
+```dockerfile
+FROM gemma3:12b
 
-trainer.train()
-model.save_pretrained("my-custom-model")
+# Set parameters for autocomplete
+PARAMETER temperature 0.25
+PARAMETER top_p 0.8
+PARAMETER repeat_penalty 1.1
+PARAMETER num_ctx 512
+
+# System prompt for swinger dating context
+SYSTEM """You are an AI that helps complete swinger dating profiles.
+Complete the text naturally using authentic swinger community language.
+Keep completions short (3-8 words) and contextually appropriate."""
+
+# Add your training data
+# This is where Ollama will learn from your bio.json patterns
 ```
 
-### Task 3.3: Monitor Training
-
-- [ ] Watch loss curves for convergence
-- [ ] Check for overfitting (validation loss increases)
-- [ ] Adjust hyperparameters if needed
-- [ ] Save checkpoints regularly
-
-## Phase 4: Model Conversion & Optimization
-
-### Task 4.1: Install llama.cpp
+### Task 3.3: Simple Fine-Tuning with Ollama
 
 ```bash
-git clone https://github.com/ggerganov/llama.cpp
-cd llama.cpp && make
+# Step 1: Make sure Ollama server is running
+ollama serve
+
+# Step 2: Create your custom model (in another terminal)
+ollama create swinger-autocomplete -f Modelfile
+
+# Step 3: Test your custom model
+ollama run swinger-autocomplete "We are a couple who"
+
+# Step 4: If you want to add training data, you can use:
+# (This is experimental - Ollama is still developing fine-tuning features)
 ```
 
-### Task 4.2: Convert Model to GGUF Format
+### Task 3.4: Test Your Custom Model
 
 ```bash
-# Convert your trained model
-python convert.py /path/to/your/trained/model --outdir ./converted-model
+# Test different prompts to see how well it learned
+ollama run swinger-autocomplete "We are looking for"
+ollama run swinger-autocomplete "New to the lifestyle and"
+ollama run swinger-autocomplete "Experienced couple seeking"
 
-# Quantize for efficiency (optional but recommended)
-./quantize ./converted-model/model.bin ./converted-model/model-q4_0.gguf q4_0
+# Compare with the base model
+ollama run gemma3:12b "We are looking for"
 ```
 
-### Task 4.3: Test Converted Model
+### Task 3.5: Improve Your Model (Optional)
+
+If your model needs improvement:
+
+- [ ] Add more examples to your bio.json data
+- [ ] Regenerate training data with more patterns
+- [ ] Update your Modelfile with better examples
+- [ ] Recreate the model: `ollama create swinger-autocomplete -f Modelfile`
+
+## Phase 4: Model Optimization (Simple with Ollama)
+
+### Task 4.1: Verify Your Model Works
 
 ```bash
-# Test the converted model
-./main -m ./converted-model/model-q4_0.gguf -p "Hello, I am" -n 50
+# Make sure Ollama server is running
+ollama serve
+
+# Test your custom model
+ollama run swinger-autocomplete "We are a couple who"
 ```
 
-## Phase 5: Deployment with LM Studio
+### Task 4.2: Optimize Model Performance
 
-### Task 5.1: Install LM Studio
+```bash
+# List your models
+ollama list
 
-- [ ] Download from [lmstudio.ai](https://lmstudio.ai)
-- [ ] Install and launch application
+# If you need to save space, remove the base model after creating your custom one
+# ollama rm gemma3:12b  # Only do this if you're sure your custom model works well
+```
 
-### Task 5.2: Import Your Custom Model
+### Task 4.3: Model Performance Tips
 
-- [ ] Open LM Studio
-- [ ] Go to "My Models" tab
-- [ ] Click "Import Model"
-- [ ] Select your converted `.gguf` file
-- [ ] Wait for import to complete
+- [ ] **Speed**: Ollama automatically optimizes for your hardware
+- [ ] **Memory**: The model will use available GPU memory automatically
+- [ ] **Quality**: Test with various prompts and adjust Modelfile if needed
 
-### Task 5.3: Configure Model Settings
+## Phase 5: Deployment with Ollama (Much Simpler!)
 
-- [ ] Set appropriate context length
-- [ ] Adjust temperature (0.1-0.8 for different creativity levels)
-- [ ] Configure system prompt if needed
-- [ ] Test with sample prompts
+### Task 5.1: Start Ollama Server
 
-### Task 5.4: Autocomplete-Specific Configuration
+```bash
+# Start Ollama server (keep this running)
+ollama serve
+```
 
-- [ ] **Temperature**: Set to 0.2-0.3 for consistent but varied completions
-- [ ] **Max Tokens**: Limit to 8-12 tokens for short autocomplete responses
-- [ ] **Top-p**: Set to 0.8 for balanced creativity
-- [ ] **Frequency Penalty**: 0.3 to reduce repetitive suggestions
-- [ ] **Context Length**: 256 tokens for fast inference
+### Task 5.2: Test Your Model via API
 
-### Task 5.5: Realtime Performance Testing
+```bash
+# Test the API endpoint that your Next.js app will use
+curl -X POST http://localhost:11434/api/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "swinger-autocomplete",
+    "prompt": "We are a couple who",
+    "stream": false,
+    "options": {
+      "temperature": 0.25,
+      "top_p": 0.8,
+      "num_predict": 10
+    }
+  }'
+```
 
-- [ ] Test inference speed (should be <200ms for realtime feel)
-- [ ] Verify completion quality matches training data
-- [ ] Test with various prompt lengths and contexts
-- [ ] Measure memory usage during inference
-- [ ] Document optimal settings for your hardware
+### Task 5.3: Autocomplete-Specific Configuration
+
+Your model is already configured in the Modelfile, but you can adjust these API parameters:
+
+- [ ] **Temperature**: 0.25 (consistent but varied completions)
+- [ ] **Top-p**: 0.8 (balanced creativity)
+- [ ] **Num Predict**: 10 tokens (short autocomplete responses)
+- [ ] **Stream**: false (get complete response at once)
+
+### Task 5.4: Performance Testing
+
+```bash
+# Test response time (should be <500ms for good UX)
+time curl -X POST http://localhost:11434/api/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "swinger-autocomplete",
+    "prompt": "Looking for couples who",
+    "stream": false,
+    "options": {"temperature": 0.25, "num_predict": 8}
+  }'
+```
+
+### Task 5.5: Verify Model Quality
+
+- [ ] Test with various swinger-related prompts
+- [ ] Check that completions sound authentic
+- [ ] Verify responses are appropriate length (3-8 words)
+- [ ] Compare quality with base Gemma model
 
 ## Phase 6: Alternative Cloud Training Options
 
@@ -584,12 +587,12 @@ Complete this profile text: {user_prompt}
 vector_ac = VectorAutocomplete()
 ```
 
-### Task 7.2: LM Studio API Setup
+### Task 7.2: Ollama API Setup
 
-- [ ] Enable LM Studio local server mode
-- [ ] Configure API endpoint (typically `http://localhost:1234`)
-- [ ] Test API connectivity with curl/Postman
-- [ ] Document API response format and timing
+- [ ] Ensure Ollama server is running: `ollama serve`
+- [ ] API endpoint is `http://localhost:11434` (Ollama's default)
+- [ ] Test API connectivity with the curl command from Phase 5
+- [ ] Ollama API is much simpler than LM Studio - no complex configuration needed
 
 ### Task 7.3: Create Python API Bridge for Vector-Enhanced Autocomplete
 
@@ -621,30 +624,31 @@ async def get_autocomplete_suggestion(request: AutocompleteRequest):
         enhanced_prompt = vector_ac.enhance_prompt_with_context(request.prompt)
         context_used = enhanced_prompt != request.prompt
 
-        # Step 2: Call LM Studio with enhanced context
-        lm_studio_response = requests.post(
-            "http://localhost:1234/v1/completions",
+        # Step 2: Call Ollama with enhanced context
+        ollama_response = requests.post(
+            "http://localhost:11434/api/generate",
             json={
-                "model": "swinger-autocomplete-model",
+                "model": "swinger-autocomplete",
                 "prompt": enhanced_prompt,
-                "max_tokens": request.max_tokens,
-                "temperature": request.temperature,
-                "top_p": 0.8,
-                "frequency_penalty": 0.3,
-                "stop": ["\n", ".", "!", "?"]
+                "stream": False,
+                "options": {
+                    "temperature": request.temperature,
+                    "top_p": 0.8,
+                    "num_predict": request.max_tokens
+                }
             }
         )
 
-        if lm_studio_response.status_code == 200:
-            data = lm_studio_response.json()
-            suggestion = data['choices'][0]['text'].strip()
+        if ollama_response.status_code == 200:
+            data = ollama_response.json()
+            suggestion = data['response'].strip()
 
             return AutocompleteResponse(
                 suggestion=suggestion,
                 context_used=context_used
             )
         else:
-            raise HTTPException(status_code=500, detail="LM Studio API error")
+            raise HTTPException(status_code=500, detail="Ollama API error")
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -691,33 +695,34 @@ export async function generateAutocompleteSuggestion(prompt: string) {
     console.error("Vector autocomplete API error:", error);
 
     // Fallback to direct LM Studio call
-    return await fallbackToLMStudio(prompt);
+    return await fallbackToOllama(prompt);
   }
 }
 
 // Fallback function for reliability
-async function fallbackToLMStudio(prompt: string) {
+async function fallbackToOllama(prompt: string) {
   try {
-    const response = await fetch("http://localhost:1234/v1/completions", {
+    const response = await fetch("http://localhost:11434/api/generate", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "swinger-autocomplete-model",
+        model: "swinger-autocomplete",
         prompt: prompt,
-        max_tokens: 10,
-        temperature: 0.25,
-        top_p: 0.8,
-        frequency_penalty: 0.3,
-        stop: ["\n", ".", "!", "?"],
+        stream: false,
+        options: {
+          temperature: 0.25,
+          top_p: 0.8,
+          num_predict: 10,
+        },
       }),
     });
 
     const data = await response.json();
-    return data.choices[0].text.trim();
+    return data.response.trim();
   } catch (error) {
-    console.error("LM Studio fallback error:", error);
+    console.error("Ollama fallback error:", error);
     return "";
   }
 }
@@ -738,8 +743,9 @@ pip install chromadb sentence-transformers
 #### **Start All Services in Correct Order**
 
 ```bash
-# Terminal 1: Start LM Studio with your custom model
-# (Use LM Studio GUI to load your swinger-autocomplete-model)
+# Terminal 1: Start Ollama server with your custom model
+ollama serve
+# Then test: ollama run swinger-autocomplete "test"
 
 # Terminal 2: Start Vector-Enhanced API Bridge
 python vector_api.py
@@ -832,8 +838,8 @@ After completing this guide, you should have:
 - [ ] **Secure, local-only** system - no data leaves your machine
 - [ ] 2,000+ high-quality training examples generated from vector analysis
 - [ ] The model converted to GGUF format and optimized for realtime inference
-- [ ] LM Studio configured with autocomplete-specific parameters
-- [ ] **Vector-enhanced API bridge** combining context + LLM suggestions
+- [ ] Ollama server running with your custom swinger-autocomplete model
+- [ ] **Vector-enhanced API bridge** combining context + Ollama suggestions
 - [ ] Your existing Next.js app modified to use the vector-enhanced system
 - [ ] A/B testing system to compare performance
 - [ ] Sub-200ms response times for realtime autocomplete feel
@@ -843,12 +849,12 @@ After completing this guide, you should have:
 Your complete system will have:
 
 ```
-[Next.js App] → [FastAPI Bridge] → [Vector DB + LM Studio] → [Response]
-     ↓              ↓                    ↓                      ↓
+[Next.js App] → [FastAPI Bridge] → [Vector DB + Ollama] → [Response]
+     ↓              ↓                    ↓                    ↓
 User types → Get context → Enhanced prompt → Better suggestion
 ```
 
-**Security**: All components run locally - vector DB, LM Studio, and API bridge stay on your machine.
+**Security**: All components run locally - vector DB, Ollama, and API bridge stay on your machine.
 
 ## Expected Results
 
@@ -865,7 +871,7 @@ Your vector-enhanced custom model should provide:
 ## Key Success Metrics
 
 - **Completion Acceptance Rate**: >50% (vs ~20% with generic models)
-- **Response Time**: <200ms average (vector search + LLM inference)
+- **Response Time**: <500ms average (vector search + Ollama inference)
 - **Context Relevance**: 80%+ suggestions should feel contextually appropriate
 - **User Engagement**: Increased profile completion rates
 - **Language Authenticity**: Natural, community-appropriate suggestions from real data
@@ -877,7 +883,7 @@ Your vector-enhanced custom model should provide:
 **Poor Completions**: Add more bio.json data to vector DB, adjust temperature, improve prompts
 **Repetitive Suggestions**: Increase frequency penalty, diversify training data
 **Vector DB Errors**: Check `./vector_db` directory exists, verify ChromaDB installation
-**API Errors**: Check LM Studio server status, verify FastAPI bridge is running
+**API Errors**: Check Ollama server status (`ollama serve`), verify FastAPI bridge is running
 **Context Not Working**: Verify vector database has your bio.json data loaded
 
 ## Quick Start Commands
@@ -892,8 +898,8 @@ python generate_training_data.py
 # 3. Train your model (after completing Phase 3-5)
 
 # 4. Start services
-python vector_api.py  # Terminal 1
-# Start LM Studio GUI and load model  # Terminal 2
+ollama serve  # Terminal 1
+python vector_api.py  # Terminal 2
 npm run dev  # Terminal 3
 ```
 
