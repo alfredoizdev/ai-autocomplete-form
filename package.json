@@ -4,9 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
+    "dev:perf": "next dev --turbopack --experimental-debug",
     "build": "next build",
+    "build:analyze": "ANALYZE=true next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "lint:perf": "next lint --fix"
   },
   "dependencies": {
     "next": "15.3.3",

@@ -1,5 +1,25 @@
 "use server";
 
+import { aiCache } from "@/utils/aiCache";
+import {
+  STARTING_CLEANUP,
+  ENDING_CLEANUP,
+  LINE_BREAK_CLEANUP,
+  PUNCTUATION_CLEANUP,
+  MULTI_SPACE_CLEANUP,
+  NON_ALPHABETIC_CLEANUP,
+  ALPHABETIC_ONLY,
+  WORD_BOUNDARY_PATTERN,
+} from "@/utils/constants/regexPatterns";
+
+/**
+ * Clean and process AI completion response
+ * Optimized with pre-compiled regex patterns
+ * @param text - Raw AI response
+ * @param originalText - User's original text
+ * @param conversationHistory - Previous suggestions
+ * @returns Cleaned suggestion text
+ */
 function cleanCompletion(
   text: string,
   originalText: string,
@@ -7,32 +27,34 @@ function cleanCompletion(
 ): string {
   // Remove any quotes, punctuation, and unwanted characters more aggressively
   const cleaned = text
-    .replace(/^["'`\.\s*→←↑↓▲▼►◄]*/, "") // Remove starting quotes, dots, spaces, arrows, stars
-    .replace(/["'`\.\s*→←↑↓▲▼►◄]*$/, "") // Remove ending quotes, dots, spaces, arrows, stars
-    .replace(/\n.*$/g, "") // Remove everything after first line break
-    .replace(/[.!?;:,'""`*→←↑↓▲▼►◄]/g, "") // Remove all punctuation and special characters
-    .replace(/\s+/g, " ") // Normalize multiple spaces to single space
+    .replace(STARTING_CLEANUP, "") // Remove starting quotes, dots, spaces, arrows, stars
+    .replace(ENDING_CLEANUP, "") // Remove ending quotes, dots, spaces, arrows, stars
+    .replace(LINE_BREAK_CLEANUP, "") // Remove everything after first line break
+    .replace(PUNCTUATION_CLEANUP, "") // Remove all punctuation and special characters
+    .replace(MULTI_SPACE_CLEANUP, " ") // Normalize multiple spaces to single space
     .trim();
 
   // Split into words and filter out any non-alphabetic words
   const words = cleaned
-    .split(/\s+/)
+    .split(WORD_BOUNDARY_PATTERN)
     .filter((word) => word.length > 0)
-    .filter((word) => /^[a-zA-Z]+$/.test(word)) // Only allow pure alphabetic words
+    .filter((word) => ALPHABETIC_ONLY.test(word)) // Only allow pure alphabetic words
     .slice(0, 6); // Maximum 6 words
 
   // Check for word repetition with original text
   const originalWords = originalText
     .toLowerCase()
-    .split(/\s+/)
+    .split(WORD_BOUNDARY_PATTERN)
     .filter((w) => w.length > 0)
-    .map((w) => w.replace(/[^a-zA-Z]/g, "")); // Clean original words too
+    .map((w) => w.replace(NON_ALPHABETIC_CLEANUP, "")); // Clean original words too
 
   // Check for word repetition with conversation history
   const historyWords = conversationHistory
-    .flatMap((suggestion) => suggestion.toLowerCase().split(/\s+/))
+    .flatMap((suggestion) =>
+      suggestion.toLowerCase().split(WORD_BOUNDARY_PATTERN)
+    )
     .filter((w) => w.length > 0)
-    .map((w) => w.replace(/[^a-zA-Z]/g, "")); // Clean history words too
+    .map((w) => w.replace(NON_ALPHABETIC_CLEANUP, "")); // Clean history words too
 
   // Filter out any words that already exist in the original text or conversation history
   const filteredWords = words.filter((word) => {
@@ -41,14 +63,6 @@ function cleanCompletion(
       !originalWords.includes(lowerWord) && !historyWords.includes(lowerWord)
     );
   });
-
-  // Debug logging
-  // console.log("AI Response:", text);
-  // console.log("Cleaned:", cleaned);
-  // console.log("Words:", words);
-  // console.log("Original words:", originalWords);
-  // console.log("History words:", historyWords);
-  // console.log("Filtered words:", filteredWords);
 
   // Return if we have at least 1 unique word
   if (filteredWords.length >= 1) {
@@ -63,12 +77,25 @@ function cleanCompletion(
   return "";
 }
 
+/**
+ * Ask Ollama for text completion with caching and optimization
+ * @param userInputs - User's current text
+ * @param conversationHistory - Previous suggestions to avoid repetition
+ * @returns AI suggestion or null if failed
+ */
 export async function askOllamaCompletationAction(
   userInputs: string,
   conversationHistory: string[] = []
 ): Promise<string | null> {
   try {
     // Ensure userInputs is a string and trim it
+    const trimmedInput = userInputs.trim();
+
+    // Check cache first
+    const cachedResponse = aiCache.get(trimmedInput, conversationHistory);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
 
     // Create the prompt with few-shot examples for swinger dating profiles
     const historyContext =
@@ -84,7 +111,7 @@ IMPORTANT: Only respond with plain words. Do not use any special characters, arr
 
 Complete this dating profile sentence with 2-4 words. Don't repeat words already used:
 
-"${userInputs.trim()}"${historyContext}
+"${trimmedInput}"${historyContext}
 
 Examples:
 "I am looking" → for other couples
@@ -121,13 +148,19 @@ Complete naturally with plain words only:`;
     }
 
     const data = await res.json();
-
     const raw = data.response?.trim() ?? "";
-    const cleaned = cleanCompletion(
-      raw,
-      userInputs.trim(),
-      conversationHistory
-    );
+
+    if (!raw) {
+      return null;
+    }
+
+    const cleaned = cleanCompletion(raw, trimmedInput, conversationHistory);
+
+    // Cache successful responses
+    if (cleaned) {
+      aiCache.set(trimmedInput, conversationHistory, cleaned);
+    }
+
     return cleaned || null;
   } catch (err) {
     console.error("Ollama error:", err);

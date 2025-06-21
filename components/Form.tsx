@@ -1,9 +1,10 @@
 "use client";
 
 import Image from "next/image";
+import { memo } from "react";
 import useFormAutocomplete from "@/hooks/useFormAutocomplete";
 
-const Form = () => {
+const Form = memo(() => {
   const {
     register,
     handleSubmit,
@@ -17,8 +18,6 @@ const Form = () => {
     textareaHeight,
     promptValue,
   } = useFormAutocomplete();
-
-  console.log("sugestion", suggestion);
 
   return (
     <form
@@ -198,6 +197,8 @@ const Form = () => {
       </div>
     </form>
   );
-};
+});
+
+Form.displayName = "Form";
 
 export default Form;
