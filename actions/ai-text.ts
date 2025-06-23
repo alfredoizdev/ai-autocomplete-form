@@ -38,7 +38,7 @@ Do not start a new sentence. Continue the user sentence naturally in the same gr
 Respond with ONLY the completion (no quotes, no intro, no repetition). Respond with 1 to 5 words MAX.`,
     },
     {
-      role: 'system',
+      role: 'user',
       content: `Relevant swinger bios for context:\n${context}`,
     },
     ...chatHistory,
