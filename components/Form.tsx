@@ -106,7 +106,7 @@ const Form = () => {
         <div className="relative">
           {/* Background div that shows user text + suggestion */}
           <div
-            className="absolute inset-0 w-full p-2 border border-gray-200 rounded resize-none whitespace-pre-wrap pointer-events-none transition-all duration-300 ease-out"
+            className="absolute inset-0 w-full p-2 border border-gray-200 rounded resize-none whitespace-pre-wrap pointer-events-none transition-all duration-300 ease-out hide-scrollbar"
             style={{
               height: textareaHeight,
               minHeight: "96px",
