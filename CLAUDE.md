@@ -14,7 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Next.js 15 application with React 19 that provides AI-powered text autocomplete functionality for personal bio completion. The app integrates with Ollama (local AI model) and includes support for Weaviate vector database.
+This is a Next.js 15 application with React 19 that provides AI-powered text autocomplete functionality for personal bio completion. The app integrates with Ollama (local AI model using Gemma 3 12B) and includes support for Weaviate vector database.
 
 ## Key Commands
 
@@ -29,7 +29,7 @@ This is a Next.js 15 application with React 19 that provides AI-powered text aut
 
 - **Ollama**: Must be running locally on port 11434
   - Start: `ollama serve`
-  - Pull model: `ollama pull llama3.2`
+  - Pull model: `ollama pull gemma3:12b`
   - Verify: `ollama list`
 - **Docker services** (optional): `docker-compose up -d` (Weaviate + transformers)
 
@@ -45,7 +45,7 @@ This is a Next.js 15 application with React 19 that provides AI-powered text aut
 
 ### Key Files and Patterns
 
-**AI Integration** (`actions/ai.ts`):
+**AI Integration** (`actions/ai-text.ts`):
 
 - Server actions communicate with Ollama API
 - `askOllamaCompletationAction` - Main AI completion function

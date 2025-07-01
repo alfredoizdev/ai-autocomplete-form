@@ -119,6 +119,8 @@ const Form = () => {
               wordWrap: "break-word",
               overflowWrap: "break-word",
               textRendering: "geometricPrecision",
+              WebkitAppearance: "none",
+              appearance: "none",
             }}
           >
             <span style={{ color: "transparent" }}>{promptValue}</span>

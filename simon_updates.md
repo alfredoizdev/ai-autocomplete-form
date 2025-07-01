@@ -6,7 +6,7 @@ This file tracks all updates, improvements, and changes made to the AI Autocompl
 
 - **Project**: AI-powered text autocomplete application
 - **Framework**: Next.js 15 with React 19
-- **AI Model**: Ollama LLaMA 3.2
+- **AI Model**: Ollama Gemma 3 12B
 - **Purpose**: Personal bio completion with real-time AI suggestions
 
 ## Update Log
@@ -27,7 +27,7 @@ This file tracks all updates, improvements, and changes made to the AI Autocompl
 1. **Main Page** (`app/page.tsx`) - Homepage with Form component
 2. **Form Component** (`components/Form.tsx`) - Main UI with name input and bio textarea
 3. **Custom Hook** (`hooks/useFormAutocomplete.tsx`) - Form state and autocomplete logic
-4. **AI Actions** (`actions/ai.ts`) - Server actions for Ollama API communication
+4. **AI Actions** (`actions/ai-text.ts`) - Server actions for Ollama API communication
 5. **OpenAI Library** (`lib/openai.ts`) - Unused OpenAI client setup
 
 ### Current Features
