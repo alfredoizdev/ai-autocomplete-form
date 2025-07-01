@@ -115,6 +115,10 @@ const Form = () => {
               fontFamily: "var(--font-inter), Inter, sans-serif",
               color: "transparent",
               zIndex: 1,
+              boxSizing: "border-box",
+              wordWrap: "break-word",
+              overflowWrap: "break-word",
+              textRendering: "geometricPrecision",
             }}
           >
             <span style={{ color: "transparent" }}>{promptValue}</span>
@@ -155,6 +159,10 @@ const Form = () => {
               zIndex: 2,
               WebkitAppearance: "none",
               appearance: "none",
+              boxSizing: "border-box",
+              wordWrap: "break-word",
+              overflowWrap: "break-word",
+              textRendering: "geometricPrecision",
             }}
           />
         </div>
