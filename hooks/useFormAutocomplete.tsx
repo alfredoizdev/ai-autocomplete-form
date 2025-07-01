@@ -69,24 +69,60 @@ const autoCorrectText = (text: string): string => {
   return words.join("");
 };
 
+// Get the current sentence being typed based on cursor position
+const getCurrentSentenceAtCursor = (text: string, cursorPos: number = text.length): string => {
+  if (!text || text.trim().length === 0) return "";
+  
+  // Find the start of current sentence by looking backwards for sentence boundaries
+  let sentenceStart = 0;
+  for (let i = cursorPos - 1; i >= 0; i--) {
+    if (/[.!?]/.test(text[i])) {
+      // Found sentence boundary, start after it (and any whitespace)
+      sentenceStart = i + 1;
+      while (sentenceStart < text.length && /\s/.test(text[sentenceStart])) {
+        sentenceStart++;
+      }
+      break;
+    }
+  }
+  
+  // Extract current sentence from start to cursor position
+  const currentSentence = text.substring(sentenceStart, cursorPos).trim();
+  return currentSentence;
+};
+
+// Count words from sentence start to cursor position
+const getWordsBeforeCursor = (text: string, cursorPos: number = text.length): string[] => {
+  const currentSentence = getCurrentSentenceAtCursor(text, cursorPos);
+  
+  if (!currentSentence) return [];
+  
+  return currentSentence
+    .trim()
+    .split(/\s+/)
+    .filter((word) => word.length > 0);
+};
+
+// Check if we're ready for autocomplete suggestions
+const isReadyForSuggestions = (text: string, cursorPos: number = text.length): boolean => {
+  if (!text || text.trim().length === 0) return false;
+  
+  const words = getWordsBeforeCursor(text, cursorPos);
+  
+  // Must have at least 3 words in current sentence
+  return words.length >= 3;
+};
+
 const useFormAutocomplete = () => {
   const [suggestion, setSuggestion] = useState("");
   const [isPending, startTransition] = useTransition();
-  const [previousTextLength, setPreviousTextLength] = useState(0);
-  const [justDeleted, setJustDeleted] = useState(false);
-  const [isBlockedAfterAcceptance, setIsBlockedAfterAcceptance] = useState(false);
-  const [baselineTextForCounting, setBaselineTextForCounting] = useState("");
   const [textareaHeight, setTextareaHeight] = useState("auto");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const measureRef = useRef<HTMLTextAreaElement>(null);
 
-  // Complete state reset function for when textarea is emptied
-  const resetAllAutocompleteState = () => {
+  // Simple state reset function for when textarea is emptied
+  const resetAutocompleteState = () => {
     setSuggestion("");
-    setJustDeleted(false);
-    setIsBlockedAfterAcceptance(false);
-    setBaselineTextForCounting("");
-    setPreviousTextLength(0);
   };
 
   // Check if text is truly empty (handles whitespace-only content)
@@ -110,12 +146,6 @@ const useFormAutocomplete = () => {
   const promptValue = watch("prompt");
   const [debouncedPrompt] = useDebounce(promptValue, 2000);
 
-  // Simple word counting function for new words after baseline
-  const countNewWordsAfterBaseline = (currentText: string, baseline: string): number => {
-    if (!baseline || currentText.length < baseline.length) return 0;
-    const newText = currentText.substring(baseline.length);
-    return newText.trim().split(/\s+/).filter(word => word.length > 0).length;
-  };
 
   // Calculate textarea height based on content
   const calculateHeight = (text: string) => {
@@ -127,36 +157,13 @@ const useFormAutocomplete = () => {
     return `${Math.max(scrollHeight, 96)}px`; // Minimum 4 rows (24px * 4)
   };
 
-  // Clear suggestions immediately when text is deleted or becomes too short
+  // Clear suggestions when text is empty
   useEffect(() => {
-    // If text is completely empty, reset all autocomplete state
+    // If text is completely empty, reset autocomplete state
     if (isTextEmpty(promptValue)) {
-      resetAllAutocompleteState();
-      return;
+      resetAutocompleteState();
     }
-
-    // Count words and clear suggestion if less than 3 words
-    const words = promptValue
-      .trim()
-      .split(/\s+/)
-      .filter((word) => word.length > 0);
-    if (words.length < 3) {
-      setSuggestion("");
-    }
-
-    // Clear suggestion immediately if text was deleted
-    if (promptValue.length < previousTextLength) {
-      setSuggestion("");
-    }
-    
-    // Clear suggestion if user just accepted and hasn't typed 3 new words
-    if (isBlockedAfterAcceptance && baselineTextForCounting) {
-      const newWords = countNewWordsAfterBaseline(promptValue, baselineTextForCounting);
-      if (newWords < 3) {
-        setSuggestion("");
-      }
-    }
-  }, [promptValue, previousTextLength, isBlockedAfterAcceptance, baselineTextForCounting]);
+  }, [promptValue]);
 
   // Update height when suggestion changes
   useEffect(() => {
@@ -165,49 +172,6 @@ const useFormAutocomplete = () => {
     setTextareaHeight(newHeight);
   }, [promptValue, suggestion]);
 
-  // Check if text is ready for suggestions (not in middle of typing a word)
-  const isReadyForSuggestions = (text: string): boolean => {
-    // Early exit for empty text
-    if (isTextEmpty(text)) return false;
-
-    // Count actual words (split by whitespace and filter out empty strings)
-    const words = text
-      .trim()
-      .split(/\s+/)
-      .filter((word) => word.length > 0);
-
-    // Require at least 3 words before offering suggestions
-    if (words.length < 3) return false;
-
-    // Check if we're at the end of a sentence (period/question/exclamation + space)
-    const endsWithSentenceSpace = /[.!?]\s+$/.test(text);
-    if (endsWithSentenceSpace) {
-      // Don't suggest immediately after sentence endings - wait for user to start next sentence
-      return false;
-    }
-
-    // Check if we just finished a sentence and user has started typing a new word
-    const sentencePattern = /[.!?]\s+([a-zA-Z]+)$/;
-    const sentenceMatch = text.match(sentencePattern);
-    if (sentenceMatch) {
-      // User has started typing after a sentence ending, check if word is complete enough
-      const newWord = sentenceMatch[1];
-      return newWord.length >= 3 && /[aeiouAEIOU]/.test(newWord);
-    }
-
-    // For non-sentence-ending cases, check normal word completion
-    const lastChar = text[text.length - 1];
-    if (/[\s,;:]/.test(lastChar)) {
-      // Ready after comma, semicolon, colon, or regular space (but not after sentence endings)
-      return true;
-    }
-
-    // If text doesn't end with space/punctuation, check if last "word" is reasonable length
-    const lastWord = words[words.length - 1];
-
-    // Allow suggestions if the last word is at least 3 characters and seems complete
-    return lastWord.length >= 3 && /[aeiouAEIOU]/.test(lastWord);
-  };
 
   // Auto-capitalize user input text based on sentence context
   const autoCapitalizeText = (text: string): string => {
@@ -297,83 +261,44 @@ const useFormAutocomplete = () => {
     return result;
   };
 
-  // Main autocomplete logic after debounce
+  // Simplified autocomplete logic - triggers for ANY sentence with 3+ words
   useEffect(() => {
-    // If text is completely empty, reset all state and exit early
-    if (isTextEmpty(debouncedPrompt)) {
-      resetAllAutocompleteState();
-      return;
-    }
+    // Get current cursor position (defaults to end of text)
+    const cursorPos = textareaRef.current?.selectionStart || debouncedPrompt.length;
+    
+    // Debug logging
+    console.log("🔍 Autocomplete check:", {
+      text: debouncedPrompt,
+      cursorPos,
+      currentSentence: getCurrentSentenceAtCursor(debouncedPrompt, cursorPos),
+      words: getWordsBeforeCursor(debouncedPrompt, cursorPos),
+      wordCount: getWordsBeforeCursor(debouncedPrompt, cursorPos).length,
+      isReady: isReadyForSuggestions(debouncedPrompt, cursorPos)
+    });
 
-    // Detect if user has deleted text
-    if (debouncedPrompt.length < previousTextLength) {
-      // User deleted text, reset all tracking and mark as just deleted
-      setJustDeleted(true);
-      setIsBlockedAfterAcceptance(false);
-      setBaselineTextForCounting("");
-      setSuggestion(""); // Clear any existing suggestions
-      setPreviousTextLength(debouncedPrompt.length);
-      return;
-    }
-
-    // If user has typed new content after deletion, check if they have enough words to reset
-    if (justDeleted && debouncedPrompt.length > previousTextLength) {
-      // Count words to see if user has typed enough meaningful content
-      const words = debouncedPrompt
-        .trim()
-        .split(/\s+/)
-        .filter((word) => word.length > 0);
-      if (words.length >= 3) {
-        setJustDeleted(false);
-      }
-    }
-
-    // Clear justDeleted flag if user starts typing from empty state
-    if (justDeleted && previousTextLength === 0 && debouncedPrompt.length > 0) {
-      setJustDeleted(false);
-    }
-
-    setPreviousTextLength(debouncedPrompt.length);
-
-    // Don't suggest immediately after deletion - wait for new typing
-    if (justDeleted) {
+    // Clear suggestion if not ready
+    if (!isReadyForSuggestions(debouncedPrompt, cursorPos)) {
       setSuggestion("");
       return;
     }
 
-    // Check if blocked after tab acceptance
-    if (isBlockedAfterAcceptance) {
-      const newWords = countNewWordsAfterBaseline(debouncedPrompt, baselineTextForCounting);
-      if (newWords < 3) {
-        setSuggestion("");
-        return;
-      }
-      // User has typed 3+ new words, unblock autocomplete
-      setIsBlockedAfterAcceptance(false);
-      setBaselineTextForCounting("");
-    }
-
-    // Only suggest if text is ready for suggestions
-    if (!isReadyForSuggestions(debouncedPrompt)) {
-      setSuggestion("");
-      return;
-    }
-
-    // Only start transition (show thinking message) when we're actually going to fetch
+    // Only start transition when we're definitely going to make an API call
+    console.log("✅ Starting autocomplete for:", debouncedPrompt);
     startTransition(async () => {
       const result = await askOllamaCompletationAction(debouncedPrompt);
       if (result) {
-        // Check if we're in the middle of a sentence and adjust capitalization
         const processedSuggestion = adjustSuggestionCapitalization(
           debouncedPrompt,
           result
         );
         setSuggestion(processedSuggestion);
+        console.log("💡 Suggestion received:", processedSuggestion);
       } else {
         setSuggestion("");
+        console.log("❌ No suggestion received");
       }
     });
-  }, [debouncedPrompt, previousTextLength, justDeleted, isBlockedAfterAcceptance, baselineTextForCounting]);
+  }, [debouncedPrompt]);
 
   const onSubmit: SubmitHandler<{ name: string; prompt: string }> = async (
     data
@@ -427,10 +352,9 @@ const useFormAutocomplete = () => {
       const capitalizedText = autoCapitalizeText(correctedText);
       setValue("prompt", capitalizedText);
       
-      // Block autocomplete and set baseline for counting new words
-      setIsBlockedAfterAcceptance(true);
-      setBaselineTextForCounting(capitalizedText);
+      // Clear suggestion after acceptance
       setSuggestion("");
+      console.log("✅ Suggestion accepted:", suggestion);
     }
   };
 
