@@ -136,7 +136,7 @@ const useFormAutocomplete = () => {
         setSuggestion("");
       }
     }
-  }, [promptValue, previousTextLength, isBlockedAfterAcceptance, baselineTextForCounting, countNewWordsAfterBaseline]);
+  }, [promptValue, previousTextLength, isBlockedAfterAcceptance, baselineTextForCounting]);
 
   // Update height when suggestion changes
   useEffect(() => {
@@ -332,6 +332,7 @@ const useFormAutocomplete = () => {
       return;
     }
 
+    // Only start transition (show thinking message) when we're actually going to fetch
     startTransition(async () => {
       const result = await askOllamaCompletationAction(debouncedPrompt);
       if (result) {
