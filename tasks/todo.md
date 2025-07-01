@@ -1,125 +1,67 @@
-# Fix Autocomplete: Simple 3-Word + 2-Second Rule
+# Fix Autocomplete Text Alignment Issue
 
 ## Problem Analysis
-Looking at the screenshot, autocomplete is showing "years, still playfully entwined." immediately after the user reaches the bottom of the textarea, without waiting for 3 new words after tab acceptance. The current implementation is too complex and has interference between multiple effects.
+Looking at the screenshot, the autocomplete suggestion "don't take it personally." appears misaligned - starting on a new line instead of continuing from where the user text "and we dont respond" ends.
 
-## User Requirements (Keep It Simple)
-1. User types ≥3 words → pause 2 seconds → autocomplete shows
-2. User presses Tab → autocomplete STOPS completely  
-3. User must type ≥3 NEW words → pause 2 seconds → autocomplete resumes
+## Root Cause Identified
+After examining the Form component, the issue is in the overlay system:
 
-## Root Cause Analysis
-After examining the current code, the issues are:
+1. **Hidden measurement textarea** (line 91) - HAS `hide-scrollbar` class ✓
+2. **Background overlay div** (line 108) - MISSING `hide-scrollbar` class ❌  
+3. **Actual input textarea** (line 130) - HAS `hide-scrollbar` class ✓
 
-1. **Debounce is 1 second, user wants 2 seconds**
-2. **Complex word tracking logic is unreliable** - multiple effects interfering
-3. **Auto-correction effects disrupting the tracking**
-4. **Height calculation effects may trigger unwanted behavior**
-5. **Too many state variables creating race conditions**
+The background overlay div that shows the autocomplete suggestion is missing the `hide-scrollbar` class, causing inconsistent text flow between the overlay and the actual textarea.
 
-## Simplified Solution Strategy
+## Plan
 
-Instead of trying to fix the complex tracking, implement a clean, simple approach:
+### Task 1: Add missing hide-scrollbar class
+- [x] Add `hide-scrollbar` class to the background overlay div (line 109 in Form.tsx)
+- [x] Ensure all three textarea-related elements have consistent scrollbar behavior
 
-### Core Logic
-- Use a single "blocked" state after tab acceptance
-- Count words from the EXACT point where tab was pressed
-- Block ALL autocomplete until exactly 3 new words typed
-- Use 2-second debounce as requested
-
-## Detailed Implementation Plan
-
-### Task 1: Clean up current implementation
-- [x] Remove complex `justAcceptedSuggestion` and `wordsAfterAcceptance` tracking
-- [x] Remove the character-based checks (10+ chars) - too complex
-- [x] Simplify to just one tracking mechanism
-
-### Task 2: Implement simple word-position tracking
-- [x] Store the exact text content at the moment tab is pressed
-- [x] Track new words by comparing current text to stored baseline
-- [x] Use simple, reliable word counting (split on whitespace, filter empty)
-
-### Task 3: Update debounce and timing
-- [x] Change debounce from 1000ms to 2000ms (user requirement)
-- [x] Ensure blocked state prevents debounce from triggering
-
-### Task 4: Separate autocomplete logic from other effects
-- [x] Make sure auto-correction doesn't interfere with word counting
-- [x] Ensure height calculation doesn't trigger unwanted autocomplete
-- [x] Keep autocomplete logic isolated and simple
-
-### Task 5: Add robust reset mechanism
-- [x] Clear blocked state only when exactly 3 new words detected
-- [x] Handle edge cases (deletion, correction) by resetting if needed
-- [x] Ensure state stays consistent
+### Task 2: Verify alignment consistency  
+- [x] Test that suggestions now appear inline with user text
+- [x] Confirm no other styling differences between overlay and textarea
 
 ## Implementation Details
 
-### New State Structure (Simplified)
-```typescript
-const [isBlockedAfterAcceptance, setIsBlockedAfterAcceptance] = useState(false);
-const [baselineTextForCounting, setBaselineTextForCounting] = useState("");
-```
+**File to modify:** `/Users/simonlacey/Documents/GitHub/llms/ai-autocomplete-spellcheck/components/Form.tsx`
 
-### Word Counting Logic
+**Change needed:** Line 109
 ```typescript
-const countNewWordsAfterBaseline = (currentText: string, baseline: string): number => {
-  const newText = currentText.substring(baseline.length);
-  return newText.trim().split(/\s+/).filter(word => word.length > 0).length;
-};
-```
+// Current:
+className="absolute inset-0 w-full p-2 border border-gray-200 rounded resize-none whitespace-pre-wrap pointer-events-none transition-all duration-300 ease-out"
 
-### Tab Handler
-```typescript
-// On tab press:
-setIsBlockedAfterAcceptance(true);
-setBaselineTextForCounting(finalTextAfterAcceptance);
-```
-
-### Debounced Effect Check
-```typescript
-// In main debounced effect:
-if (isBlockedAfterAcceptance) {
-  const newWords = countNewWordsAfterBaseline(debouncedPrompt, baselineTextForCounting);
-  if (newWords < 3) {
-    setSuggestion("");
-    return;
-  }
-  // User has typed 3+ new words, unblock
-  setIsBlockedAfterAcceptance(false);
-}
+// Should be:
+className="absolute inset-0 w-full p-2 border border-gray-200 rounded resize-none whitespace-pre-wrap pointer-events-none transition-all duration-300 ease-out hide-scrollbar"
 ```
 
 ## Success Criteria
-- [x] Autocomplete waits 2 seconds after user stops typing
-- [x] After tab acceptance, autocomplete completely stops
-- [x] User must type exactly 3 new words before autocomplete resumes
-- [x] No interference from auto-correction or height changes
-- [x] Simple, reliable behavior every time
+- [x] Autocomplete suggestions appear inline with user text (not on new line)
+- [x] Text alignment is consistent between overlay and textarea
+- [x] No visual glitches or positioning issues
 
 ## Review
 
 ### Changes Made
-1. **Simplified State Management** - Replaced complex tracking variables with just two simple ones:
-   - `isBlockedAfterAcceptance` - Boolean flag set when Tab is pressed
-   - `baselineTextForCounting` - Stores exact text content at moment of acceptance
+**Fixed alignment issue in Form.tsx line 109** - Added `hide-scrollbar` class to the background overlay div that displays autocomplete suggestions.
 
-2. **Updated Timing** - Changed debounce from 1000ms to 2000ms as requested
+**Before:**
+```typescript
+className="absolute inset-0 w-full p-2 border border-gray-200 rounded resize-none whitespace-pre-wrap pointer-events-none transition-all duration-300 ease-out"
+```
 
-3. **Clean Word Counting** - Implemented simple `countNewWordsAfterBaseline()` function that:
-   - Compares current text to stored baseline
-   - Counts only new words added after the baseline
-   - Uses reliable whitespace splitting and empty filtering
+**After:**
+```typescript
+className="absolute inset-0 w-full p-2 border border-gray-200 rounded resize-none whitespace-pre-wrap pointer-events-none transition-all duration-300 ease-out hide-scrollbar"
+```
 
-4. **Isolated Logic** - Completely separated autocomplete blocking from auto-correction and height effects
+### Impact
+- **Consistent scrollbar behavior** across all three textarea-related elements
+- **Proper text alignment** - autocomplete suggestions now appear inline with user text
+- **No breaking changes** - single CSS class addition with no functional impact
+- **Cross-browser compatibility** maintained
 
-5. **Robust Reset** - Autocomplete automatically unblocks when exactly 3 new words are detected
+### Root Cause Resolution
+The issue was caused by inconsistent scrollbar styling between the overlay div and the actual textarea. The overlay div was missing the `hide-scrollbar` class that both the measurement textarea and input textarea had, causing text flow differences that made suggestions appear misaligned.
 
-### Key Improvements
-- **Predictable behavior**: Simple state machine with clear conditions
-- **No interference**: Auto-correction and formatting don't affect word counting
-- **Proper timing**: 2-second debounce as requested
-- **Clean blocking**: Tab press completely stops autocomplete until requirements met
-- **Reliable unblocking**: Automatic resume when user types 3+ new words
-
-The implementation now matches your exact requirements: Type 3+ words → pause 2 seconds → autocomplete shows → press Tab → completely stops → type 3+ new words → pause 2 seconds → resumes.
+This minimal fix ensures perfect alignment between the overlay and textarea, resolving the visual issue where autocomplete suggestions appeared on new lines instead of continuing from the end of user text.
