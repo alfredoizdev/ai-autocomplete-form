@@ -80,6 +80,20 @@ const useFormAutocomplete = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const measureRef = useRef<HTMLTextAreaElement>(null);
 
+  // Complete state reset function for when textarea is emptied
+  const resetAllAutocompleteState = () => {
+    setSuggestion("");
+    setJustDeleted(false);
+    setIsBlockedAfterAcceptance(false);
+    setBaselineTextForCounting("");
+    setPreviousTextLength(0);
+  };
+
+  // Check if text is truly empty (handles whitespace-only content)
+  const isTextEmpty = (text: string): boolean => {
+    return !text || text.trim().length === 0;
+  };
+
   const {
     register,
     handleSubmit,
@@ -115,12 +129,18 @@ const useFormAutocomplete = () => {
 
   // Clear suggestions immediately when text is deleted or becomes too short
   useEffect(() => {
+    // If text is completely empty, reset all autocomplete state
+    if (isTextEmpty(promptValue)) {
+      resetAllAutocompleteState();
+      return;
+    }
+
     // Count words and clear suggestion if less than 3 words
     const words = promptValue
       .trim()
       .split(/\s+/)
       .filter((word) => word.length > 0);
-    if (!promptValue || words.length < 3) {
+    if (words.length < 3) {
       setSuggestion("");
     }
 
@@ -147,7 +167,8 @@ const useFormAutocomplete = () => {
 
   // Check if text is ready for suggestions (not in middle of typing a word)
   const isReadyForSuggestions = (text: string): boolean => {
-    if (!text) return false;
+    // Early exit for empty text
+    if (isTextEmpty(text)) return false;
 
     // Count actual words (split by whitespace and filter out empty strings)
     const words = text
@@ -278,6 +299,12 @@ const useFormAutocomplete = () => {
 
   // Main autocomplete logic after debounce
   useEffect(() => {
+    // If text is completely empty, reset all state and exit early
+    if (isTextEmpty(debouncedPrompt)) {
+      resetAllAutocompleteState();
+      return;
+    }
+
     // Detect if user has deleted text
     if (debouncedPrompt.length < previousTextLength) {
       // User deleted text, reset all tracking and mark as just deleted
@@ -301,12 +328,12 @@ const useFormAutocomplete = () => {
       }
     }
 
-    setPreviousTextLength(debouncedPrompt.length);
-
-    if (!debouncedPrompt) {
-      setSuggestion("");
-      return;
+    // Clear justDeleted flag if user starts typing from empty state
+    if (justDeleted && previousTextLength === 0 && debouncedPrompt.length > 0) {
+      setJustDeleted(false);
     }
+
+    setPreviousTextLength(debouncedPrompt.length);
 
     // Don't suggest immediately after deletion - wait for new typing
     if (justDeleted) {
