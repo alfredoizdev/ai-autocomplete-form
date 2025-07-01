@@ -33,3 +33,24 @@ body {
 .hide-scrollbar::-webkit-scrollbar {
   display: none; /* WebKit */
 }
+
+/* Normalize monospace font rendering */
+textarea {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Ensure consistent placeholder styling */
+textarea::placeholder {
+  color: #9ca3af;
+  opacity: 1;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+/* Firefox placeholder fix */
+textarea::-moz-placeholder {
+  color: #9ca3af;
+  opacity: 1;
+}
