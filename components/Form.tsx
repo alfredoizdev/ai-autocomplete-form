@@ -15,7 +15,9 @@ const Form = () => {
     isPending,
     handleKeyDown,
     textareaHeight,
+    overlayHeight,
     promptValue,
+    needsSpaceBeforeSuggestion,
   } = useFormAutocomplete();
 
   console.log("sugestion", suggestion);
@@ -96,42 +98,32 @@ const Form = () => {
             left: "-9999px",
             top: "-9999px",
             fontSize: "16px",
-            lineHeight: "1.5",
+            lineHeight: "24px",
             fontFamily: "var(--font-inter), Inter, sans-serif",
+            boxSizing: "border-box",
+            wordWrap: "break-word",
+            overflowWrap: "break-word",
+            textRendering: "geometricPrecision",
+            padding: "8px",
+            borderWidth: "1px",
+            borderStyle: "solid",
+            minHeight: "96px",
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word",
+            verticalAlign: "bottom",
+            overflow: "hidden",
+            margin: 0,
+            WebkitFontSmoothing: "antialiased",
+            MozOsxFontSmoothing: "grayscale",
           }}
           tabIndex={-1}
         />
 
-        {/* Container for textarea with overlay */}
-        <div className="relative">
-          {/* Background div that shows user text + suggestion */}
-          <div
-            className="absolute inset-0 w-full p-2 border border-gray-200 rounded resize-none whitespace-pre-wrap pointer-events-none transition-all duration-300 ease-out hide-scrollbar"
-            style={{
-              height: textareaHeight,
-              minHeight: "96px",
-              fontSize: "16px",
-              lineHeight: "1.5",
-              fontFamily: "var(--font-inter), Inter, sans-serif",
-              color: "transparent",
-              zIndex: 1,
-              boxSizing: "border-box",
-              wordWrap: "break-word",
-              overflowWrap: "break-word",
-              textRendering: "geometricPrecision",
-              WebkitAppearance: "none",
-              appearance: "none",
-            }}
-          >
-            <span style={{ color: "transparent" }}>{promptValue}</span>
-            {suggestion && (
-              <span style={{ color: "#9CA3AF" }}>
-                {promptValue && !promptValue.endsWith(" ") ? " " : ""}
-                {suggestion}
-              </span>
-            )}
-          </div>
-
+        {/* Container for textarea with absolute positioned overlay */}
+        <div style={{ 
+          position: "relative",
+          width: "100%",
+        }}>
           {/* Actual input textarea */}
           <textarea
             id="prompt"
@@ -150,23 +142,77 @@ const Form = () => {
             spellCheck={true}
             autoCorrect="on"
             autoCapitalize="sentences"
-            className="relative bg-transparent text-black placeholder:text-gray-400 block w-full p-2 border border-gray-200 rounded focus:border-black active:border-black focus:outline-none resize-none transition-all duration-300 ease-out hide-scrollbar"
             placeholder="Write a brief description about yourself..."
             style={{
+              backgroundColor: "transparent",
+              color: "#000000",
               height: textareaHeight,
               minHeight: "96px",
               fontSize: "16px",
-              lineHeight: "1.5",
+              lineHeight: "24px", // Fixed line height in pixels
               fontFamily: "var(--font-inter), Inter, sans-serif",
-              zIndex: 2,
+              letterSpacing: "normal",
               WebkitAppearance: "none",
               appearance: "none",
               boxSizing: "border-box",
               wordWrap: "break-word",
-              overflowWrap: "break-word",
+              overflowWrap: "anywhere", // Better for long words
               textRendering: "geometricPrecision",
+              padding: "8px",
+              border: "1px solid #e5e7eb",
+              borderRadius: "4px",
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+              width: "100%",
+              display: "block",
+              resize: "none",
+              outline: "none",
+              overflow: "hidden",
+              margin: 0,
+              verticalAlign: "top", // Changed from bottom
+              WebkitFontSmoothing: "subpixel-antialiased", // Better for monospace
+              MozOsxFontSmoothing: "auto",
             }}
+            className="hide-scrollbar focus:border-black active:border-black"
           />
+          
+          {/* Suggestion overlay - positioned absolutely with ResizeObserver height */}
+          {suggestion && (
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: overlayHeight || textareaHeight,
+                pointerEvents: "none",
+                padding: "8px",
+                border: "1px solid transparent",
+                fontSize: "16px",
+                lineHeight: "24px", // Same fixed line height
+                fontFamily: "var(--font-inter), Inter, sans-serif",
+                letterSpacing: "normal",
+                whiteSpace: "pre-wrap",
+                wordBreak: "break-word",
+                wordWrap: "break-word",
+                overflowWrap: "anywhere",
+                textRendering: "geometricPrecision",
+                WebkitFontSmoothing: "subpixel-antialiased",
+                MozOsxFontSmoothing: "auto",
+                boxSizing: "border-box",
+                overflow: "hidden",
+                margin: 0,
+                verticalAlign: "top",
+                borderRadius: "4px",
+              }}
+            >
+              <span style={{ visibility: "hidden" }}>{promptValue}</span>
+              <span style={{ color: "#9CA3AF" }}>
+                {needsSpaceBeforeSuggestion(promptValue) ? " " : ""}
+                {suggestion}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Instructional message */}

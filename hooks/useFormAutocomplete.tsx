@@ -1,5 +1,5 @@
 import { askOllamaCompletationAction } from "@/actions/ai-text";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useTransition } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { useDebounce } from "use-debounce";
 
@@ -113,10 +113,28 @@ const isReadyForSuggestions = (text: string, cursorPos: number = text.length): b
   return words.length >= 3;
 };
 
+// Determine if we need a space before the suggestion based on text context
+const needsSpaceBeforeSuggestion = (text: string): boolean => {
+  if (!text) return false;
+  
+  // If text ends with whitespace, no additional space needed
+  if (/\s$/.test(text)) return false;
+  
+  // If text ends with punctuation, we need a space
+  if (/[.,!?;:]$/.test(text)) return true;
+  
+  // If text ends with a word character, we need a space
+  if (/\w$/.test(text)) return true;
+  
+  return false;
+};
+
 const useFormAutocomplete = () => {
   const [suggestion, setSuggestion] = useState("");
   const [isPending, startTransition] = useTransition();
   const [textareaHeight, setTextareaHeight] = useState("auto");
+  const [overlayHeight, setOverlayHeight] = useState("auto");
+  const [lastKnownHeight, setLastKnownHeight] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const measureRef = useRef<HTMLTextAreaElement>(null);
 
@@ -151,10 +169,17 @@ const useFormAutocomplete = () => {
   const calculateHeight = (text: string) => {
     if (!measureRef.current) return "auto";
 
+    // Set the text and reset height to get accurate measurement
     measureRef.current.value = text;
     measureRef.current.style.height = "auto";
+    
+    // Force a reflow to ensure accurate scrollHeight
+    measureRef.current.offsetHeight;
+    
     const scrollHeight = measureRef.current.scrollHeight;
-    return `${Math.max(scrollHeight, 96)}px`; // Minimum 4 rows (24px * 4)
+    const calculatedHeight = Math.max(scrollHeight, 96); // Minimum 96px (4 rows)
+    
+    return `${calculatedHeight}px`;
   };
 
   // Clear suggestions when text is empty
@@ -165,8 +190,38 @@ const useFormAutocomplete = () => {
     }
   }, [promptValue]);
 
-  // Update height when suggestion changes
-  useEffect(() => {
+  // ResizeObserver to monitor textarea size changes
+  useLayoutEffect(() => {
+    if (!textareaRef.current) return;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { height } = entry.contentRect;
+        
+        // Only update if height actually changed (prevent unnecessary updates)
+        if (Math.abs(height - lastKnownHeight) > 0.5) { // 0.5px threshold for rounding
+          const computedHeight = `${Math.max(height + 16, 96)}px`; // Add padding
+          setLastKnownHeight(height);
+          
+          // Use double requestAnimationFrame for perfect synchronization
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              setOverlayHeight(computedHeight);
+            });
+          });
+        }
+      }
+    });
+
+    resizeObserver.observe(textareaRef.current);
+    
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [lastKnownHeight]);
+
+  // Update height when suggestion changes - use useLayoutEffect for immediate updates
+  useLayoutEffect(() => {
     const fullText = promptValue + (suggestion ? " " + suggestion : "");
     const newHeight = calculateHeight(fullText);
     setTextareaHeight(newHeight);
@@ -345,7 +400,7 @@ const useFormAutocomplete = () => {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Tab" && suggestion) {
       e.preventDefault();
-      const space = promptValue && !promptValue.endsWith(" ") ? " " : "";
+      const space = needsSpaceBeforeSuggestion(promptValue) ? " " : "";
       const newText = promptValue + space + suggestion;
       // Apply spell correction and then capitalization
       const correctedText = autoCorrectText(newText);
@@ -372,6 +427,8 @@ const useFormAutocomplete = () => {
     setSuggestion,
     promptValue,
     textareaHeight,
+    overlayHeight,
+    needsSpaceBeforeSuggestion,
   };
 };
 
