@@ -72,9 +72,10 @@ const autoCorrectText = (text: string): string => {
 const useFormAutocomplete = () => {
   const [suggestion, setSuggestion] = useState("");
   const [isPending, startTransition] = useTransition();
-  const [lastAcceptedLength, setLastAcceptedLength] = useState(0);
   const [previousTextLength, setPreviousTextLength] = useState(0);
   const [justDeleted, setJustDeleted] = useState(false);
+  const [isBlockedAfterAcceptance, setIsBlockedAfterAcceptance] = useState(false);
+  const [baselineTextForCounting, setBaselineTextForCounting] = useState("");
   const [textareaHeight, setTextareaHeight] = useState("auto");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const measureRef = useRef<HTMLTextAreaElement>(null);
@@ -93,7 +94,14 @@ const useFormAutocomplete = () => {
   });
 
   const promptValue = watch("prompt");
-  const [debouncedPrompt] = useDebounce(promptValue, 1000);
+  const [debouncedPrompt] = useDebounce(promptValue, 2000);
+
+  // Simple word counting function for new words after baseline
+  const countNewWordsAfterBaseline = (currentText: string, baseline: string): number => {
+    if (!baseline || currentText.length < baseline.length) return 0;
+    const newText = currentText.substring(baseline.length);
+    return newText.trim().split(/\s+/).filter(word => word.length > 0).length;
+  };
 
   // Calculate textarea height based on content
   const calculateHeight = (text: string) => {
@@ -120,7 +128,15 @@ const useFormAutocomplete = () => {
     if (promptValue.length < previousTextLength) {
       setSuggestion("");
     }
-  }, [promptValue, previousTextLength]);
+    
+    // Clear suggestion if user just accepted and hasn't typed 3 new words
+    if (isBlockedAfterAcceptance && baselineTextForCounting) {
+      const newWords = countNewWordsAfterBaseline(promptValue, baselineTextForCounting);
+      if (newWords < 3) {
+        setSuggestion("");
+      }
+    }
+  }, [promptValue, previousTextLength, isBlockedAfterAcceptance, baselineTextForCounting, countNewWordsAfterBaseline]);
 
   // Update height when suggestion changes
   useEffect(() => {
@@ -260,13 +276,14 @@ const useFormAutocomplete = () => {
     return result;
   };
 
-  // Obtener sugerencia después del debounce
+  // Main autocomplete logic after debounce
   useEffect(() => {
     // Detect if user has deleted text
     if (debouncedPrompt.length < previousTextLength) {
-      // User deleted text, reset tracking and mark as just deleted
-      setLastAcceptedLength(Math.max(0, debouncedPrompt.length - 2));
+      // User deleted text, reset all tracking and mark as just deleted
       setJustDeleted(true);
+      setIsBlockedAfterAcceptance(false);
+      setBaselineTextForCounting("");
       setSuggestion(""); // Clear any existing suggestions
       setPreviousTextLength(debouncedPrompt.length);
       return;
@@ -297,10 +314,16 @@ const useFormAutocomplete = () => {
       return;
     }
 
-    // Only generate new suggestions if user has typed enough new content since last acceptance
-    // Require at least 2 new characters to prevent immediate re-suggestions
-    if (debouncedPrompt.length < lastAcceptedLength + 2) {
-      return;
+    // Check if blocked after tab acceptance
+    if (isBlockedAfterAcceptance) {
+      const newWords = countNewWordsAfterBaseline(debouncedPrompt, baselineTextForCounting);
+      if (newWords < 3) {
+        setSuggestion("");
+        return;
+      }
+      // User has typed 3+ new words, unblock autocomplete
+      setIsBlockedAfterAcceptance(false);
+      setBaselineTextForCounting("");
     }
 
     // Only suggest if text is ready for suggestions
@@ -322,7 +345,7 @@ const useFormAutocomplete = () => {
         setSuggestion("");
       }
     });
-  }, [debouncedPrompt, lastAcceptedLength, previousTextLength, justDeleted]);
+  }, [debouncedPrompt, previousTextLength, justDeleted, isBlockedAfterAcceptance, baselineTextForCounting]);
 
   const onSubmit: SubmitHandler<{ name: string; prompt: string }> = async (
     data
@@ -375,7 +398,10 @@ const useFormAutocomplete = () => {
       const correctedText = autoCorrectText(newText);
       const capitalizedText = autoCapitalizeText(correctedText);
       setValue("prompt", capitalizedText);
-      setLastAcceptedLength(capitalizedText.length);
+      
+      // Block autocomplete and set baseline for counting new words
+      setIsBlockedAfterAcceptance(true);
+      setBaselineTextForCounting(capitalizedText);
       setSuggestion("");
     }
   };
