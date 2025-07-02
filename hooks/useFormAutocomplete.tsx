@@ -135,12 +135,16 @@ const useFormAutocomplete = () => {
   const [textareaHeight, setTextareaHeight] = useState("auto");
   const [overlayHeight, setOverlayHeight] = useState("auto");
   const [lastKnownHeight, setLastKnownHeight] = useState(0);
+  const [justAcceptedSuggestion, setJustAcceptedSuggestion] = useState(false);
+  const [lastAcceptedTextLength, setLastAcceptedTextLength] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const measureRef = useRef<HTMLTextAreaElement>(null);
 
   // Simple state reset function for when textarea is emptied
   const resetAutocompleteState = () => {
     setSuggestion("");
+    setJustAcceptedSuggestion(false);
+    setLastAcceptedTextLength(0);
   };
 
   // Check if text is truly empty (handles whitespace-only content)
@@ -318,6 +322,18 @@ const useFormAutocomplete = () => {
 
   // Simplified autocomplete logic - triggers for ANY sentence with 3+ words
   useEffect(() => {
+    // Skip if we just accepted a suggestion
+    if (justAcceptedSuggestion) {
+      console.log("⏸️ Skipping autocomplete - just accepted suggestion");
+      return;
+    }
+
+    // Skip if text hasn't grown beyond the last accepted suggestion (but allow empty text to reset)
+    if (debouncedPrompt.length > 0 && debouncedPrompt.length <= lastAcceptedTextLength) {
+      console.log("⏸️ Skipping autocomplete - text hasn't grown beyond accepted suggestion");
+      return;
+    }
+
     // Get current cursor position (defaults to end of text)
     const cursorPos = textareaRef.current?.selectionStart || debouncedPrompt.length;
     
@@ -353,7 +369,7 @@ const useFormAutocomplete = () => {
         console.log("❌ No suggestion received");
       }
     });
-  }, [debouncedPrompt]);
+  }, [debouncedPrompt, justAcceptedSuggestion, lastAcceptedTextLength]);
 
   const onSubmit: SubmitHandler<{ name: string; prompt: string }> = async (
     data
@@ -402,14 +418,20 @@ const useFormAutocomplete = () => {
       e.preventDefault();
       const space = needsSpaceBeforeSuggestion(promptValue) ? " " : "";
       const newText = promptValue + space + suggestion;
-      // Apply spell correction and then capitalization
-      const correctedText = autoCorrectText(newText);
-      const capitalizedText = autoCapitalizeText(correctedText);
-      setValue("prompt", capitalizedText);
+      // Apply all text processing in one step to prevent cascading updates
+      const processedText = autoCapitalizeText(autoCorrectText(newText));
       
-      // Clear suggestion after acceptance
+      // Set processed text and block future autocomplete
+      setValue("prompt", processedText);
       setSuggestion("");
+      setJustAcceptedSuggestion(true);
+      setLastAcceptedTextLength(processedText.length);
       console.log("✅ Suggestion accepted:", suggestion);
+      
+      // Clear the block after delay that exceeds debounce time
+      setTimeout(() => {
+        setJustAcceptedSuggestion(false);
+      }, 3000);
     }
   };
 
