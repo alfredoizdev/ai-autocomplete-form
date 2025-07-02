@@ -1,10 +1,10 @@
 # AI App Autocomplete
 
-An intelligent text autocomplete application built with Next.js that uses Ollama's LLaMA 3.2 model to provide AI-powered text suggestions for personal bio completion.
+An intelligent text autocomplete application built with Next.js that uses Ollama's Gemma 3 12B model to provide AI-powered text suggestions for personal bio completion.
 
 ## Features
 
-- 🤖 AI-powered text autocomplete using Ollama model LLama 3.2
+- 🤖 AI-powered text autocomplete using Ollama model Gemma 3 12B
 - ⚡ Real-time suggestions as you type
 - 🎯 Specialized for personal bio completion
 - 🚀 Built with Next.js 15 and React 19
@@ -26,10 +26,10 @@ Before you begin, ensure you have the following installed:
    - Visit [Ollama's official website](https://ollama.ai) and download the installer for your operating system
    - Follow the installation instructions
 
-2. **Pull the LLaMA 3.2 model**:
+2. **Pull the Gemma 3 12B model**:
 
    ```bash
-   ollama pull llama3.2
+   ollama pull gemma3:12b
    ```
 
 3. **Start Ollama service**:
@@ -42,7 +42,7 @@ Before you begin, ensure you have the following installed:
    ```bash
    ollama list
    ```
-   You should see `llama3.2` in the list of available models.
+   You should see `gemma3:12b` in the list of available models.
 
 ## Installation
 
@@ -89,8 +89,8 @@ The application uses:
 
 - **React Hook Form** for form management
 - **Custom debounced hook** (`useFormAutocomplete`) to prevent excessive API calls
-- **Server Actions** ([`askOllamaCompletationAction`](actions/ai.ts)) to communicate with Ollama
-- **LLaMA 3.2 model** for generating contextual text completions
+- **Server Actions** ([`askOllamaCompletationAction`](actions/ai-text.ts)) to communicate with Ollama
+- **Gemma 3 12B model** for generating contextual text completions
 
 The AI is specifically prompted to continue personal bios with short, relevant sentences without quotes or explanations.
 
@@ -131,7 +131,7 @@ OLLAMA_PATH_API=http://your-ollama-host:port/api
 
 ### Model Configuration
 
-The application is configured to use the `llama3.2` model. You can change this in the [`askOllamaCompletationAction`](actions/ai.ts) function if needed.
+The application is configured to use the `gemma3:12b` model. You can change this in the [`askOllamaCompletationAction`](actions/ai-text.ts) function if needed.
 
 ## Troubleshooting
 
@@ -145,7 +145,7 @@ The application is configured to use the `llama3.2` model. You can change this i
 
 2. **Model not found**:
 
-   - Pull the model: `ollama pull llama3.2`
+   - Pull the model: `ollama pull gemma3:12b`
    - Restart Ollama service
 
 3. **Slow responses**:
@@ -183,5 +183,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Acknowledgments
 
 - [Ollama](https://ollama.ai) for providing local AI model hosting
-- [LLaMA](https://llama.meta.com/) for the powerful language model
+- [Google Gemma](https://ai.google.dev/gemma) for the powerful language model
 - [Next.js](https://nextjs.org) team for the excellent framework
