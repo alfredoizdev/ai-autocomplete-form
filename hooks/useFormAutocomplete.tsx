@@ -1,78 +1,21 @@
 import { askOllamaCompletationAction } from "@/actions/ai-text";
-import { useEffect, useLayoutEffect, useRef, useState, useTransition } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { useDebounce } from "use-debounce";
 
-// Spell correction dictionary for common misspellings (moved outside component for stability)
-const spellCorrections: Record<string, string> = {
-  // Common dating/relationship words
-  beatiful: "beautiful",
-  beautifull: "beautiful",
-  beutiful: "beautiful",
-  awsome: "awesome",
-  realy: "really",
-  definately: "definitely",
-  defintely: "definitely",
-  adventorous: "adventurous",
-  expereinced: "experienced",
-  expirenced: "experienced",
-  experiance: "experience",
-  expiriance: "experience",
-  freindly: "friendly",
-  freinds: "friends",
-  coupl: "couple",
-  sexyy: "sexy",
-  sexxy: "sexy",
-  exciteing: "exciting",
-  excting: "exciting",
-  laidback: "laid back",
-  outgoin: "outgoing",
-  profesional: "professional",
-  proffesional: "professional",
-  profesionnal: "professional",
-  iam: "I am",
-  were: "we are",
-  wer: "we are",
-  lookking: "looking",
-  loking: "looking",
-  meetig: "meeting",
-  meting: "meeting",
-  playfull: "playful",
-  discret: "discreet",
-  discrette: "discreet",
-};
-
-// Auto-correct misspelled words (moved outside component for stability)
-const autoCorrectText = (text: string): string => {
-  if (!text) return text;
-
-  // Split into words while preserving spaces and punctuation
-  const words = text.split(/(\s+|[.,!?;:])/);
-
-  for (let i = 0; i < words.length; i++) {
-    const word = words[i];
-    if (word && /^[a-zA-Z]+$/.test(word)) {
-      // Only check actual words
-      const lowerWord = word.toLowerCase();
-      if (spellCorrections[lowerWord]) {
-        // Preserve original capitalization pattern
-        const correction = spellCorrections[lowerWord];
-        if (word[0] === word[0].toUpperCase()) {
-          words[i] = correction.charAt(0).toUpperCase() + correction.slice(1);
-        } else {
-          words[i] = correction;
-        }
-      }
-    }
-  }
-
-  return words.join("");
-};
-
 // Get the current sentence being typed based on cursor position
-const getCurrentSentenceAtCursor = (text: string, cursorPos: number = text.length): string => {
+const getCurrentSentenceAtCursor = (
+  text: string,
+  cursorPos: number = text.length
+): string => {
   if (!text || text.trim().length === 0) return "";
-  
+
   // Find the start of current sentence by looking backwards for sentence boundaries
   let sentenceStart = 0;
   for (let i = cursorPos - 1; i >= 0; i--) {
@@ -85,18 +28,21 @@ const getCurrentSentenceAtCursor = (text: string, cursorPos: number = text.lengt
       break;
     }
   }
-  
+
   // Extract current sentence from start to cursor position
   const currentSentence = text.substring(sentenceStart, cursorPos).trim();
   return currentSentence;
 };
 
 // Count words from sentence start to cursor position
-const getWordsBeforeCursor = (text: string, cursorPos: number = text.length): string[] => {
+const getWordsBeforeCursor = (
+  text: string,
+  cursorPos: number = text.length
+): string[] => {
   const currentSentence = getCurrentSentenceAtCursor(text, cursorPos);
-  
+
   if (!currentSentence) return [];
-  
+
   return currentSentence
     .trim()
     .split(/\s+/)
@@ -104,11 +50,14 @@ const getWordsBeforeCursor = (text: string, cursorPos: number = text.length): st
 };
 
 // Check if we're ready for autocomplete suggestions
-const isReadyForSuggestions = (text: string, cursorPos: number = text.length): boolean => {
+const isReadyForSuggestions = (
+  text: string,
+  cursorPos: number = text.length
+): boolean => {
   if (!text || text.trim().length === 0) return false;
-  
+
   const words = getWordsBeforeCursor(text, cursorPos);
-  
+
   // Must have at least 3 words in current sentence
   return words.length >= 3;
 };
@@ -116,16 +65,16 @@ const isReadyForSuggestions = (text: string, cursorPos: number = text.length): b
 // Determine if we need a space before the suggestion based on text context
 const needsSpaceBeforeSuggestion = (text: string): boolean => {
   if (!text) return false;
-  
+
   // If text ends with whitespace, no additional space needed
   if (/\s$/.test(text)) return false;
-  
+
   // If text ends with punctuation, we need a space
   if (/[.,!?;:]$/.test(text)) return true;
-  
+
   // If text ends with a word character, we need a space
   if (/\w$/.test(text)) return true;
-  
+
   return false;
 };
 
@@ -168,7 +117,6 @@ const useFormAutocomplete = () => {
   const promptValue = watch("prompt");
   const [debouncedPrompt] = useDebounce(promptValue, 2000);
 
-
   // Calculate textarea height based on content
   const calculateHeight = (text: string) => {
     if (!measureRef.current) return "auto";
@@ -176,13 +124,13 @@ const useFormAutocomplete = () => {
     // Set the text and reset height to get accurate measurement
     measureRef.current.value = text;
     measureRef.current.style.height = "auto";
-    
+
     // Force a reflow to ensure accurate scrollHeight
-    measureRef.current.offsetHeight;
-    
+    void measureRef.current.offsetHeight;
+
     const scrollHeight = measureRef.current.scrollHeight;
     const calculatedHeight = Math.max(scrollHeight, 96); // Minimum 96px (4 rows)
-    
+
     return `${calculatedHeight}px`;
   };
 
@@ -201,12 +149,13 @@ const useFormAutocomplete = () => {
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const { height } = entry.contentRect;
-        
+
         // Only update if height actually changed (prevent unnecessary updates)
-        if (Math.abs(height - lastKnownHeight) > 0.5) { // 0.5px threshold for rounding
+        if (Math.abs(height - lastKnownHeight) > 0.5) {
+          // 0.5px threshold for rounding
           const computedHeight = `${Math.max(height + 16, 96)}px`; // Add padding
           setLastKnownHeight(height);
-          
+
           // Use double requestAnimationFrame for perfect synchronization
           requestAnimationFrame(() => {
             requestAnimationFrame(() => {
@@ -218,7 +167,7 @@ const useFormAutocomplete = () => {
     });
 
     resizeObserver.observe(textareaRef.current);
-    
+
     return () => {
       resizeObserver.disconnect();
     };
@@ -230,67 +179,6 @@ const useFormAutocomplete = () => {
     const newHeight = calculateHeight(fullText);
     setTextareaHeight(newHeight);
   }, [promptValue, suggestion]);
-
-
-  // Auto-capitalize user input text based on sentence context
-  const autoCapitalizeText = (text: string): string => {
-    if (!text) return text;
-
-    let result = text;
-
-    // Capitalize first character of the entire text
-    if (result.length > 0) {
-      result = result.charAt(0).toUpperCase() + result.slice(1);
-    }
-
-    // Capitalize after sentence-ending punctuation followed by one or more spaces
-    result = result.replace(
-      /([.!?]\s+)([a-z])/g,
-      (match, punctuation, letter) => {
-        return punctuation + letter.toUpperCase();
-      }
-    );
-
-    // Capitalize "I" when it's a standalone word (but be more specific)
-    result = result.replace(/\b(i)\b/g, "I");
-
-    // Capitalize proper nouns and common words that should be capitalized
-    result = result.replace(/\b(we|us|our)\b/gi, (match) => {
-      // Only capitalize if it's at start of sentence or after punctuation
-      const beforeMatch = result.substring(0, result.indexOf(match));
-      if (beforeMatch === "" || /[.!?]\s*$/.test(beforeMatch)) {
-        return match.charAt(0).toUpperCase() + match.slice(1).toLowerCase();
-      }
-      return match.toLowerCase();
-    });
-
-    return result;
-  };
-
-  // Apply only basic capitalization while user is typing (no word corrections like "I" -> "I am")
-  const applyBasicCapitalization = (text: string): string => {
-    if (!text) return text;
-
-    let result = text;
-
-    // Capitalize first character of the entire text
-    if (result.length > 0) {
-      result = result.charAt(0).toUpperCase() + result.slice(1);
-    }
-
-    // Capitalize after sentence-ending punctuation followed by one or more spaces
-    result = result.replace(
-      /([.!?]\s+)([a-z])/g,
-      (match, punctuation, letter) => {
-        return punctuation + letter.toUpperCase();
-      }
-    );
-
-    // Only capitalize standalone "I" if it's followed by a space (completed word)
-    result = result.replace(/\b(i)\s/g, "I ");
-
-    return result;
-  };
 
   // Adjust suggestion capitalization based on sentence context
   const adjustSuggestionCapitalization = (
@@ -329,14 +217,20 @@ const useFormAutocomplete = () => {
     }
 
     // Skip if text hasn't grown beyond the last accepted suggestion (but allow empty text to reset)
-    if (debouncedPrompt.length > 0 && debouncedPrompt.length <= lastAcceptedTextLength) {
-      console.log("⏸️ Skipping autocomplete - text hasn't grown beyond accepted suggestion");
+    if (
+      debouncedPrompt.length > 0 &&
+      debouncedPrompt.length <= lastAcceptedTextLength
+    ) {
+      console.log(
+        "⏸️ Skipping autocomplete - text hasn't grown beyond accepted suggestion"
+      );
       return;
     }
 
     // Get current cursor position (defaults to end of text)
-    const cursorPos = textareaRef.current?.selectionStart || debouncedPrompt.length;
-    
+    const cursorPos =
+      textareaRef.current?.selectionStart || debouncedPrompt.length;
+
     // Debug logging
     console.log("🔍 Autocomplete check:", {
       text: debouncedPrompt,
@@ -344,7 +238,7 @@ const useFormAutocomplete = () => {
       currentSentence: getCurrentSentenceAtCursor(debouncedPrompt, cursorPos),
       words: getWordsBeforeCursor(debouncedPrompt, cursorPos),
       wordCount: getWordsBeforeCursor(debouncedPrompt, cursorPos).length,
-      isReady: isReadyForSuggestions(debouncedPrompt, cursorPos)
+      isReady: isReadyForSuggestions(debouncedPrompt, cursorPos),
     });
 
     // Clear suggestion if not ready
@@ -377,57 +271,19 @@ const useFormAutocomplete = () => {
     console.log(data);
   };
 
-  // Auto-correct and auto-capitalize the input text when it changes
-  useEffect(() => {
-    if (promptValue) {
-      // Only apply corrections when user just finished typing a word (ends with space or punctuation)
-      const shouldCorrectText = /[\s.,!?;:]$/.test(promptValue);
-
-      let processedValue = promptValue;
-
-      // Apply spell correction only when word is complete
-      if (shouldCorrectText) {
-        processedValue = autoCorrectText(promptValue);
-        // Apply full capitalization only when word is complete
-        processedValue = autoCapitalizeText(processedValue);
-      } else {
-        // Apply only basic sentence capitalization while typing (first letter and after sentence endings)
-        processedValue = applyBasicCapitalization(promptValue);
-      }
-
-      // Only update if corrections or capitalization changed to avoid infinite loops
-      if (processedValue !== promptValue) {
-        const cursorPosition = textareaRef.current?.selectionStart || 0;
-        setValue("prompt", processedValue);
-
-        // Restore cursor position after setValue
-        setTimeout(() => {
-          if (textareaRef.current) {
-            textareaRef.current.setSelectionRange(
-              cursorPosition,
-              cursorPosition
-            );
-          }
-        }, 0);
-      }
-    }
-  }, [promptValue, setValue]);
-
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Tab" && suggestion) {
       e.preventDefault();
       const space = needsSpaceBeforeSuggestion(promptValue) ? " " : "";
       const newText = promptValue + space + suggestion;
-      // Apply all text processing in one step to prevent cascading updates
-      const processedText = autoCapitalizeText(autoCorrectText(newText));
-      
-      // Set processed text and block future autocomplete
-      setValue("prompt", processedText);
+
+      // Set new text and block future autocomplete
+      setValue("prompt", newText);
       setSuggestion("");
       setJustAcceptedSuggestion(true);
-      setLastAcceptedTextLength(processedText.length);
+      setLastAcceptedTextLength(newText.length);
       console.log("✅ Suggestion accepted:", suggestion);
-      
+
       // Clear the block after delay that exceeds debounce time
       setTimeout(() => {
         setJustAcceptedSuggestion(false);
