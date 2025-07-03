@@ -78,6 +78,66 @@ const needsSpaceBeforeSuggestion = (text: string): boolean => {
   return false;
 };
 
+// Apply only basic capitalization while user is typing
+const applyBasicCapitalization = (text: string): string => {
+  if (!text) return text;
+
+  let result = text;
+
+  // Capitalize first character of the entire text
+  if (result.length > 0) {
+    result = result.charAt(0).toUpperCase() + result.slice(1);
+  }
+
+  // Capitalize after sentence-ending punctuation followed by one or more spaces
+  result = result.replace(
+    /([.!?]\s+)([a-z])/g,
+    (match, punctuation, letter) => {
+      return punctuation + letter.toUpperCase();
+    }
+  );
+
+  // Only capitalize standalone "I" if it's followed by a space (completed word)
+  result = result.replace(/\b(i)\s/g, "I ");
+
+  return result;
+};
+
+// Auto-capitalize user input text based on sentence context
+const autoCapitalizeText = (text: string): string => {
+  if (!text) return text;
+
+  let result = text;
+
+  // Capitalize first character of the entire text
+  if (result.length > 0) {
+    result = result.charAt(0).toUpperCase() + result.slice(1);
+  }
+
+  // Capitalize after sentence-ending punctuation followed by one or more spaces
+  result = result.replace(
+    /([.!?]\s+)([a-z])/g,
+    (match, punctuation, letter) => {
+      return punctuation + letter.toUpperCase();
+    }
+  );
+
+  // Capitalize "I" when it's a standalone word
+  result = result.replace(/\b(i)\b/g, "I");
+
+  // Capitalize proper nouns and common words that should be capitalized
+  result = result.replace(/\b(we|us|our)\b/gi, (match) => {
+    // Only capitalize if it's at start of sentence or after punctuation
+    const beforeMatch = result.substring(0, result.indexOf(match));
+    if (beforeMatch === "" || /[.!?]\s*$/.test(beforeMatch)) {
+      return match.charAt(0).toUpperCase() + match.slice(1).toLowerCase();
+    }
+    return match.toLowerCase();
+  });
+
+  return result;
+};
+
 const useFormAutocomplete = () => {
   const [suggestion, setSuggestion] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -271,17 +331,53 @@ const useFormAutocomplete = () => {
     console.log(data);
   };
 
+  // Auto-capitalize the input text when it changes
+  useEffect(() => {
+    if (promptValue) {
+      // Only apply corrections when user just finished typing a word (ends with space or punctuation)
+      const shouldApplyFullCapitalization = /[\s.,!?;:]$/.test(promptValue);
+
+      let processedValue = promptValue;
+
+      // Apply full capitalization when word is complete
+      if (shouldApplyFullCapitalization) {
+        processedValue = autoCapitalizeText(promptValue);
+      } else {
+        // Apply only basic sentence capitalization while typing (first letter and after sentence endings)
+        processedValue = applyBasicCapitalization(promptValue);
+      }
+
+      // Only update if capitalization changed to avoid infinite loops
+      if (processedValue !== promptValue) {
+        const cursorPosition = textareaRef.current?.selectionStart || 0;
+        setValue("prompt", processedValue);
+
+        // Restore cursor position after setValue
+        setTimeout(() => {
+          if (textareaRef.current) {
+            textareaRef.current.setSelectionRange(
+              cursorPosition,
+              cursorPosition
+            );
+          }
+        }, 0);
+      }
+    }
+  }, [promptValue, setValue]);
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Tab" && suggestion) {
       e.preventDefault();
       const space = needsSpaceBeforeSuggestion(promptValue) ? " " : "";
       const newText = promptValue + space + suggestion;
+      // Apply capitalization after accepting suggestion
+      const processedText = autoCapitalizeText(newText);
 
-      // Set new text and block future autocomplete
-      setValue("prompt", newText);
+      // Set processed text and block future autocomplete
+      setValue("prompt", processedText);
       setSuggestion("");
       setJustAcceptedSuggestion(true);
-      setLastAcceptedTextLength(newText.length);
+      setLastAcceptedTextLength(processedText.length);
       console.log("✅ Suggestion accepted:", suggestion);
 
       // Clear the block after delay that exceeds debounce time
