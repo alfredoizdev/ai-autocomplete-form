@@ -2,6 +2,9 @@
 
 import Image from "next/image";
 import useFormAutocomplete from "@/hooks/useFormAutocomplete";
+import useSpellCheck from "@/hooks/useSpellCheck";
+import SpellCheckPopup from "./SpellCheckPopup";
+import { useState, useEffect } from "react";
 
 const Form = () => {
   const {
@@ -14,13 +17,138 @@ const Form = () => {
     suggestion,
     isPending,
     handleKeyDown,
+    setValue,
     textareaHeight,
     overlayHeight,
     promptValue,
     needsSpaceBeforeSuggestion,
   } = useFormAutocomplete();
 
+  const { getMisspelledWords, isLoading: spellCheckLoading, getSuggestions } = useSpellCheck();
+
+  // State for spell check popup
+  const [showPopup, setShowPopup] = useState(false);
+  const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
+  const [selectedWord, setSelectedWord] = useState("");
+  const [wordSuggestions, setWordSuggestions] = useState<string[]>([]);
+
+  // Get misspelled words for current text
+  const misspelledWords = getMisspelledWords(promptValue);
+
+  // Handle word replacement
+  const replaceWord = (originalWord: string, newWord: string) => {
+    if (!promptValue || !textareaRef.current) return;
+    
+    // Create a regex that matches the exact word with word boundaries
+    const regex = new RegExp(`\\b${originalWord}\\b`, 'g');
+    const newText = promptValue.replace(regex, newWord);
+    
+    // Update the form value
+    setValue("prompt", newText);
+    
+    // Close popup
+    setShowPopup(false);
+    
+    // Focus back on textarea
+    setTimeout(() => {
+      textareaRef.current?.focus();
+    }, 0);
+  };
+
+  // Handle clicking on misspelled words
+  const handleWordClick = (event: React.MouseEvent, word: string) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    // Get click position
+    const rect = event.currentTarget.getBoundingClientRect();
+    let x = rect.left + rect.width / 2;
+    let y = rect.top;
+    
+    // Prevent popup from going off-screen
+    const popupWidth = 250;
+    const popupHeight = 200;
+    
+    // Adjust horizontal position
+    if (x + popupWidth / 2 > window.innerWidth) {
+      x = window.innerWidth - popupWidth / 2 - 20;
+    }
+    if (x - popupWidth / 2 < 0) {
+      x = popupWidth / 2 + 20;
+    }
+    
+    // Adjust vertical position (show above the word)
+    if (y - popupHeight < 0) {
+      y = rect.bottom + 10; // Show below if not enough space above
+    } else {
+      y = y - 10; // Show above with some spacing
+    }
+    
+    // Get suggestions for the word
+    const suggestions = getSuggestions(word);
+    
+    // Set popup state
+    setSelectedWord(word);
+    setWordSuggestions(suggestions);
+    setPopupPosition({ x, y });
+    setShowPopup(true);
+  };
+
+  // Handle clicks on the spell check overlay
+  const handleOverlayClick = (event: React.MouseEvent) => {
+    const target = event.target as HTMLElement;
+    const word = target.getAttribute('data-word');
+    
+    if (word && target.classList.contains('misspelled-word')) {
+      handleWordClick(event, word);
+    }
+  };
+
+  // Create highlighted text with misspelled words underlined and clickable
+  const getHighlightedText = (text: string) => {
+    if (!text || spellCheckLoading) return text;
+    
+    const words = text.match(/\b\w+\b/g) || [];
+    const misspelled = misspelledWords.map(item => item.word.toLowerCase());
+    
+    let highlightedText = text;
+    
+    // Replace misspelled words with clickable underlined versions
+    words.forEach(word => {
+      if (misspelled.includes(word.toLowerCase())) {
+        const regex = new RegExp(`\\b${word}\\b`, 'g');
+        highlightedText = highlightedText.replace(regex, 
+          `<span 
+            class="misspelled-word"
+            style="text-decoration: underline; text-decoration-color: red; text-decoration-style: wavy; text-underline-offset: 3px; cursor: pointer; user-select: none;" 
+            data-word="${word}"
+          >${word}</span>`
+        );
+      }
+    });
+    
+    return highlightedText;
+  };
+
+  // Close popup when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showPopup && !event.defaultPrevented) {
+        setShowPopup(false);
+      }
+    };
+
+    if (showPopup) {
+      document.addEventListener("click", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, [showPopup]);
+
   console.log("sugestion", suggestion);
+  console.log("misspelled words", misspelledWords);
 
   return (
     <form
@@ -170,6 +298,42 @@ const Form = () => {
             className="hide-scrollbar focus:border-black active:border-black"
           />
           
+          {/* Spell check overlay - positioned absolutely */}
+          {promptValue && !spellCheckLoading && (
+            <div
+              onClick={handleOverlayClick}
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: overlayHeight || textareaHeight,
+                pointerEvents: "auto",
+                padding: "8px",
+                border: "1px solid transparent",
+                fontSize: "16px",
+                lineHeight: "24px",
+                fontFamily: "var(--font-inter), Inter, sans-serif",
+                letterSpacing: "normal",
+                whiteSpace: "pre-wrap",
+                wordBreak: "break-word",
+                wordWrap: "break-word",
+                overflowWrap: "anywhere",
+                textRendering: "geometricPrecision",
+                WebkitFontSmoothing: "subpixel-antialiased",
+                MozOsxFontSmoothing: "auto",
+                boxSizing: "border-box",
+                overflow: "hidden",
+                margin: 0,
+                verticalAlign: "top",
+                borderRadius: "4px",
+                color: "transparent",
+                zIndex: 1,
+              }}
+              dangerouslySetInnerHTML={{ __html: getHighlightedText(promptValue) }}
+            />
+          )}
+
           {/* Suggestion overlay - positioned absolutely with ResizeObserver height */}
           {suggestion && (
             <div
@@ -198,6 +362,7 @@ const Form = () => {
                 margin: 0,
                 verticalAlign: "top",
                 borderRadius: "4px",
+                zIndex: 2,
               }}
             >
               <span style={{ visibility: "hidden" }}>{promptValue}</span>
@@ -228,6 +393,19 @@ const Form = () => {
           <p className="text-red-500 text-sm mt-1">{errors.prompt.message}</p>
         )}
       </div>
+
+      {/* Spell Check Popup */}
+      {showPopup && (
+        <SpellCheckPopup
+          word={selectedWord}
+          suggestions={wordSuggestions}
+          position={popupPosition}
+          onSelect={(suggestion) => replaceWord(selectedWord, suggestion)}
+          onIgnore={() => setShowPopup(false)}
+          onClose={() => setShowPopup(false)}
+        />
+      )}
+
       <button
         type="submit"
         disabled={isPending}
