@@ -59,13 +59,16 @@ Respond with ONLY the completion (no quotes, no intro, no repetition). Respond w
       temperature: 0.75,
       top_p: 0.9,
       max_tokens: 40,
-      stop: [".", "\n", "!", "?"], // para evitar que inicie nuevo párrafo
+      stop: [".", "\n", "!", "?", "...", "…"], // para evitar que inicie nuevo párrafo
     }),
   });
 
   const data = await response.json();
 
-  const output = data?.message?.content?.trim();
+  const output = data?.message?.content?.trim()
+    ?.replace(/\.{3,}/g, '') // Remove any ellipsis (3 or more dots)
+    ?.replace(/…/g, '') // Remove single ellipsis character
+    ?.trim(); // Trim again after cleaning
 
   if (output) {
     chatHistory.push({ role: "user", content: input });
