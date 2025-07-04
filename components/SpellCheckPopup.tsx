@@ -39,7 +39,7 @@ const SpellCheckPopup: React.FC<SpellCheckPopupProps> = ({
         
         {suggestions.length > 0 ? (
           <div className="space-y-1 mb-3">
-            {suggestions.slice(0, 5).map((suggestion, index) => (
+            {suggestions.slice(0, 3).map((suggestion, index) => (
               <button
                 key={index}
                 onClick={() => onSelect(suggestion)}
