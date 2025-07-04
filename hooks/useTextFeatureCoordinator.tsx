@@ -20,7 +20,7 @@ const useTextFeatureCoordinator = () => {
   const timeoutRefs = useRef<Map<TextFeature, NodeJS.Timeout>>(new Map());
 
   // Lock a feature temporarily
-  const lockFeature = useCallback((feature: TextFeature, duration: number = 300) => {
+  const lockFeature = useCallback((feature: TextFeature, duration: number = 200) => {
     setState(prev => ({
       ...prev,
       featureLocks: new Set([...prev.featureLocks, feature]),

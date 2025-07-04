@@ -64,7 +64,7 @@ const SpellCheckOverlay = memo(({
   };
   
   // Don't render if conditions aren't met
-  if (!promptValue || isLoading || isProcessing || isAutocompleteActive || !canActivateFeature(TextFeature.SPELLCHECK)) {
+  if (!promptValue || isLoading || isProcessing || !canActivateFeature(TextFeature.SPELLCHECK)) {
     return null;
   }
   
@@ -97,7 +97,7 @@ const SpellCheckOverlay = memo(({
         verticalAlign: "top",
         borderRadius: "4px",
         color: "transparent",
-        zIndex: 1,
+        zIndex: 3,
       }}
       dangerouslySetInnerHTML={{ __html: highlightedText }}
     />
