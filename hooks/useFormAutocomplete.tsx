@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
   useTransition,
+  useCallback,
 } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { useDebounce } from "use-debounce";
@@ -187,6 +188,7 @@ const useFormAutocomplete = () => {
   const [lastAutocompleteRequest, setLastAutocompleteRequest] = useState<AbortController | null>(null);
   const [forceAutocompleteCheck, setForceAutocompleteCheck] = useState(0);
   const [lastSpellCheckCursorPos, setLastSpellCheckCursorPos] = useState<number | null>(null);
+  const [savedSuggestion, setSavedSuggestion] = useState<string>("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const measureRef = useRef<HTMLTextAreaElement>(null);
 
@@ -204,15 +206,17 @@ const useFormAutocomplete = () => {
   };
 
   // Callback to notify that a spell check word replacement occurred
-  const notifySpellCheckReplacement = () => {
+  const notifySpellCheckReplacement = useCallback(() => {
     // Cancel any in-flight autocomplete request
     if (lastAutocompleteRequest) {
       lastAutocompleteRequest.abort();
       setLastAutocompleteRequest(null);
     }
     
-    // Store current cursor position before spell check
-    // (Removed unused state tracking)
+    // Save the current suggestion before clearing
+    if (suggestion) {
+      setSavedSuggestion(suggestion);
+    }
     
     setJustReplacedSpellCheckWord(true);
     setSuggestion(""); // Clear any existing suggestion immediately
@@ -222,25 +226,45 @@ const useFormAutocomplete = () => {
     setTimeout(() => {
       setJustReplacedSpellCheckWord(false);
       
-      // Force re-evaluation of autocomplete after spell check is done
-      if (textareaRef.current) {
-        const currentText = textareaRef.current.value;
-        const cursorPos = textareaRef.current.selectionStart || currentText.length;
-        
-        // Smart word count adjustment after spell check
-        const currentWordCount = getWordCountAtCursor(currentText, cursorPos);
-        if (currentWordCount >= 5) {
-          // Adjust last accepted position to current cursor position
-          // This allows autocomplete to resume naturally after spell check
-          setLastAcceptedPosition(cursorPos);
-          // Force autocomplete re-evaluation
-          setForceAutocompleteCheck(prev => prev + 1);
+      // Restore the saved suggestion if it still exists
+      if (savedSuggestion) {
+        // Check if the text still makes sense for the saved suggestion
+        if (textareaRef.current) {
+          const currentText = textareaRef.current.value;
+          const cursorPos = textareaRef.current.selectionStart || currentText.length;
+          
+          // Verify we still have at least 5 words
+          const currentWordCount = getWordCountAtCursor(currentText, cursorPos);
+          if (currentWordCount >= 5) {
+            // Restore the suggestion
+            setSuggestion(savedSuggestion);
+            setSavedSuggestion(""); // Clear the saved suggestion
+            
+            // Don't update lastAcceptedPosition to preserve word count
+            // This allows the autocomplete to remain visible
+          }
         }
-        // Clear the stored cursor position
-        setLastSpellCheckCursorPos(null);
+      } else {
+        // Original behavior if no suggestion was saved
+        if (textareaRef.current) {
+          const currentText = textareaRef.current.value;
+          const cursorPos = textareaRef.current.selectionStart || currentText.length;
+          
+          // Smart word count adjustment after spell check
+          const currentWordCount = getWordCountAtCursor(currentText, cursorPos);
+          if (currentWordCount >= 5) {
+            // Adjust last accepted position to current cursor position
+            // This allows autocomplete to resume naturally after spell check
+            setLastAcceptedPosition(cursorPos);
+            // Force autocomplete re-evaluation
+            setForceAutocompleteCheck(prev => prev + 1);
+          }
+        }
       }
+      // Clear the stored cursor position
+      setLastSpellCheckCursorPos(null);
     }, 150); // Reduced to 150ms for better responsiveness
-  };
+  }, [suggestion, savedSuggestion, lastAutocompleteRequest]);
 
   const {
     register,
