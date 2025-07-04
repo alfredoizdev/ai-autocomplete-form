@@ -45,7 +45,7 @@ const Form = () => {
     if (!promptValue || !textareaRef.current) return;
     
     // Lock autocomplete feature during spell check replacement
-    coordinator.lockFeature(TextFeature.AUTOCOMPLETE, 1000);
+    coordinator.lockFeature(TextFeature.AUTOCOMPLETE, 500);
     coordinator.setActiveFeature(TextFeature.SPELLCHECK);
     
     // Store current cursor position

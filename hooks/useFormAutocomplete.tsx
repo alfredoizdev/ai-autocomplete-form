@@ -227,18 +227,19 @@ const useFormAutocomplete = () => {
         const currentText = textareaRef.current.value;
         const cursorPos = textareaRef.current.selectionStart || currentText.length;
         
-        // Update the last accepted position to current position to reset word counting
-        if (isReadyForSuggestions(currentText, cursorPos, 0, 0)) {
-          // Reset word count tracking to allow immediate autocomplete
-          setLastAcceptedWordCount(0);
-          setLastAcceptedPosition(0);
+        // Smart word count adjustment after spell check
+        const currentWordCount = getWordCountAtCursor(currentText, cursorPos);
+        if (currentWordCount >= 3) {
+          // Adjust last accepted position to current cursor position
+          // This allows autocomplete to resume naturally after spell check
+          setLastAcceptedPosition(cursorPos);
           // Force autocomplete re-evaluation
           setForceAutocompleteCheck(prev => prev + 1);
         }
         // Clear the stored cursor position
         setLastSpellCheckCursorPos(null);
       }
-    }, 300); // Reduced to 300ms for better responsiveness
+    }, 150); // Reduced to 150ms for better responsiveness
   };
 
   const {
@@ -351,8 +352,8 @@ const useFormAutocomplete = () => {
   // Word-based autocomplete logic - triggers only when 3+ words AND 3+ new words since last acceptance
   useEffect(() => {
     // Skip if we just replaced a spell check word or if autocomplete is already active
-    if (justReplacedSpellCheckWord) {
-      console.log("⏸️ Skipping autocomplete - just replaced spell check word");
+    if (justReplacedSpellCheckWord || isAutocompleteActive) {
+      console.log("⏸️ Skipping autocomplete - just replaced spell check word or already active");
       setSuggestion("");
       return;
     }
