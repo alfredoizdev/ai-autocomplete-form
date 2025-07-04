@@ -22,6 +22,7 @@ const Form = () => {
     overlayHeight,
     promptValue,
     needsSpaceBeforeSuggestion,
+    notifySpellCheckReplacement,
   } = useFormAutocomplete();
 
   const { misspelledWords, isLoading: spellCheckLoading, getSuggestions, isProcessing } = useDebouncedSpellCheck(promptValue);
@@ -50,6 +51,9 @@ const Form = () => {
     // Close popup first
     setShowPopup(false);
     
+    // Notify autocomplete that a spell check replacement occurred
+    notifySpellCheckReplacement();
+    
     // Update the form value
     setValue("prompt", newText);
     
@@ -63,7 +67,7 @@ const Form = () => {
         textareaRef.current.setSelectionRange(adjustedCursorPos, adjustedCursorPos);
       }
     });
-  }, [promptValue, setValue, textareaRef]);
+  }, [promptValue, setValue, textareaRef, notifySpellCheckReplacement]);
 
   // Handle clicking on misspelled words - memoized for performance
   const handleWordClick = useCallback((event: React.MouseEvent, word: string) => {

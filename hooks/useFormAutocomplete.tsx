@@ -182,6 +182,7 @@ const useFormAutocomplete = () => {
   const [lastKnownHeight, setLastKnownHeight] = useState(0);
   const [lastAcceptedWordCount, setLastAcceptedWordCount] = useState(0);
   const [lastAcceptedPosition, setLastAcceptedPosition] = useState(0);
+  const [justReplacedSpellCheckWord, setJustReplacedSpellCheckWord] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const measureRef = useRef<HTMLTextAreaElement>(null);
 
@@ -190,11 +191,21 @@ const useFormAutocomplete = () => {
     setSuggestion("");
     setLastAcceptedWordCount(0);
     setLastAcceptedPosition(0);
+    setJustReplacedSpellCheckWord(false);
   };
 
   // Check if text is truly empty (handles whitespace-only content)
   const isTextEmpty = (text: string): boolean => {
     return !text || text.trim().length === 0;
+  };
+
+  // Callback to notify that a spell check word replacement occurred
+  const notifySpellCheckReplacement = () => {
+    setJustReplacedSpellCheckWord(true);
+    // Clear the flag after a short delay to allow autocomplete to resume
+    setTimeout(() => {
+      setJustReplacedSpellCheckWord(false);
+    }, 1000); // 1 second delay to prevent flash
   };
 
   const {
@@ -306,6 +317,13 @@ const useFormAutocomplete = () => {
 
   // Word-based autocomplete logic - triggers only when 3+ words AND 3+ new words since last acceptance
   useEffect(() => {
+    // Skip if we just replaced a spell check word
+    if (justReplacedSpellCheckWord) {
+      console.log("⏸️ Skipping autocomplete - just replaced spell check word");
+      setSuggestion("");
+      return;
+    }
+
     // Get current cursor position (defaults to end of text)
     const cursorPos =
       textareaRef.current?.selectionStart || debouncedPrompt.length;
@@ -346,7 +364,7 @@ const useFormAutocomplete = () => {
         console.log("❌ No suggestion received");
       }
     });
-  }, [debouncedPrompt, lastAcceptedWordCount, lastAcceptedPosition]);
+  }, [debouncedPrompt, lastAcceptedWordCount, lastAcceptedPosition, justReplacedSpellCheckWord]);
 
   const onSubmit: SubmitHandler<{ name: string; prompt: string }> = async (
     data
@@ -428,6 +446,7 @@ const useFormAutocomplete = () => {
     textareaHeight,
     overlayHeight,
     needsSpaceBeforeSuggestion,
+    notifySpellCheckReplacement,
   };
 };
 
