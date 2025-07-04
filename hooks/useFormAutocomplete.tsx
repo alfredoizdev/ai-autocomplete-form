@@ -256,7 +256,7 @@ const useFormAutocomplete = () => {
   });
 
   const promptValue = watch("prompt");
-  const [debouncedPrompt] = useDebounce(promptValue, 250); // Optimal debounce timing for autocomplete
+  const [debouncedPrompt] = useDebounce(promptValue, 2000); // 2-second pause required before autocomplete
 
   // Calculate textarea height based on content
   const calculateHeight = (text: string) => {
