@@ -183,6 +183,10 @@ const useFormAutocomplete = () => {
   const [lastAcceptedWordCount, setLastAcceptedWordCount] = useState(0);
   const [lastAcceptedPosition, setLastAcceptedPosition] = useState(0);
   const [justReplacedSpellCheckWord, setJustReplacedSpellCheckWord] = useState(false);
+  const [isAutocompleteActive, setIsAutocompleteActive] = useState(false);
+  const [lastAutocompleteRequest, setLastAutocompleteRequest] = useState<AbortController | null>(null);
+  const [forceAutocompleteCheck, setForceAutocompleteCheck] = useState(0);
+  const [lastSpellCheckCursorPos, setLastSpellCheckCursorPos] = useState<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const measureRef = useRef<HTMLTextAreaElement>(null);
 
@@ -201,11 +205,40 @@ const useFormAutocomplete = () => {
 
   // Callback to notify that a spell check word replacement occurred
   const notifySpellCheckReplacement = () => {
+    // Cancel any in-flight autocomplete request
+    if (lastAutocompleteRequest) {
+      lastAutocompleteRequest.abort();
+      setLastAutocompleteRequest(null);
+    }
+    
+    // Store current cursor position before spell check
+    // (Removed unused state tracking)
+    
     setJustReplacedSpellCheckWord(true);
+    setSuggestion(""); // Clear any existing suggestion immediately
+    setIsAutocompleteActive(false);
+    
     // Clear the flag after a short delay to allow autocomplete to resume
     setTimeout(() => {
       setJustReplacedSpellCheckWord(false);
-    }, 1000); // 1 second delay to prevent flash
+      
+      // Force re-evaluation of autocomplete after spell check is done
+      if (textareaRef.current) {
+        const currentText = textareaRef.current.value;
+        const cursorPos = textareaRef.current.selectionStart || currentText.length;
+        
+        // Update the last accepted position to current position to reset word counting
+        if (isReadyForSuggestions(currentText, cursorPos, 0, 0)) {
+          // Reset word count tracking to allow immediate autocomplete
+          setLastAcceptedWordCount(0);
+          setLastAcceptedPosition(0);
+          // Force autocomplete re-evaluation
+          setForceAutocompleteCheck(prev => prev + 1);
+        }
+        // Clear the stored cursor position
+        setLastSpellCheckCursorPos(null);
+      }
+    }, 300); // Reduced to 300ms for better responsiveness
   };
 
   const {
@@ -222,7 +255,7 @@ const useFormAutocomplete = () => {
   });
 
   const promptValue = watch("prompt");
-  const [debouncedPrompt] = useDebounce(promptValue, 2000);
+  const [debouncedPrompt] = useDebounce(promptValue, 350); // Reduced from 2000ms to 350ms per best practices
 
   // Calculate textarea height based on content
   const calculateHeight = (text: string) => {
@@ -317,54 +350,81 @@ const useFormAutocomplete = () => {
 
   // Word-based autocomplete logic - triggers only when 3+ words AND 3+ new words since last acceptance
   useEffect(() => {
-    // Skip if we just replaced a spell check word
+    // Skip if we just replaced a spell check word or if autocomplete is already active
     if (justReplacedSpellCheckWord) {
       console.log("⏸️ Skipping autocomplete - just replaced spell check word");
       setSuggestion("");
       return;
     }
 
-    // Get current cursor position (defaults to end of text)
-    const cursorPos =
-      textareaRef.current?.selectionStart || debouncedPrompt.length;
+    // Get current cursor position from the actual textarea element
+    const cursorPos = textareaRef.current?.selectionStart ?? textareaRef.current?.selectionEnd ?? debouncedPrompt.length;
 
-    // Debug logging
-    console.log("🔍 Autocomplete check:", {
-      text: debouncedPrompt,
+    // Check if ready for suggestions
+    const ready = isReadyForSuggestions(debouncedPrompt, cursorPos, lastAcceptedWordCount, lastAcceptedPosition);
+    
+    console.log("🔍 Autocomplete Debug:", {
+      ready,
+      debouncedPrompt: debouncedPrompt.substring(0, 50) + "...",
       cursorPos,
-      currentSentence: getCurrentSentenceAtCursor(debouncedPrompt, cursorPos),
-      words: getWordsBeforeCursor(debouncedPrompt, cursorPos),
-      wordCount: getWordsBeforeCursor(debouncedPrompt, cursorPos).length,
-      totalWordsAtCursor: getWordCountAtCursor(debouncedPrompt, cursorPos),
+      wordsInSentence: getWordsBeforeCursor(debouncedPrompt, cursorPos).length,
       lastAcceptedWordCount,
-      lastAcceptedPosition,
-      wordsSinceLastAcceptance: getWordCountSincePosition(debouncedPrompt, lastAcceptedPosition, cursorPos),
-      isReady: isReadyForSuggestions(debouncedPrompt, cursorPos, lastAcceptedWordCount, lastAcceptedPosition),
+      newWordsSinceAccept: getWordCountSincePosition(debouncedPrompt, lastAcceptedPosition, cursorPos),
+      justReplacedSpellCheck: justReplacedSpellCheckWord,
+      isAutocompleteActive
     });
-
+    
     // Clear suggestion if not ready
-    if (!isReadyForSuggestions(debouncedPrompt, cursorPos, lastAcceptedWordCount, lastAcceptedPosition)) {
+    if (!ready) {
       setSuggestion("");
+      setIsAutocompleteActive(false);
       return;
     }
+
+    // Cancel any previous request
+    if (lastAutocompleteRequest) {
+      lastAutocompleteRequest.abort();
+    }
+
+    // Create new abort controller for this request
+    const abortController = new AbortController();
+    setLastAutocompleteRequest(abortController);
+    setIsAutocompleteActive(true);
 
     // Only start transition when we're definitely going to make an API call
     console.log("✅ Starting autocomplete for:", debouncedPrompt);
     startTransition(async () => {
-      const result = await askOllamaCompletationAction(debouncedPrompt);
-      if (result) {
-        const processedSuggestion = adjustSuggestionCapitalization(
-          debouncedPrompt,
-          result
-        );
-        setSuggestion(processedSuggestion);
-        console.log("💡 Suggestion received:", processedSuggestion);
-      } else {
+      try {
+        const result = await askOllamaCompletationAction(debouncedPrompt);
+        
+        // Check if request was aborted
+        if (abortController.signal.aborted) {
+          console.log("🚫 Autocomplete request was cancelled");
+          return;
+        }
+        
+        if (result) {
+          const processedSuggestion = adjustSuggestionCapitalization(
+            debouncedPrompt,
+            result
+          );
+          setSuggestion(processedSuggestion);
+          console.log("💡 Suggestion received:", processedSuggestion);
+        } else {
+          setSuggestion("");
+          console.log("❌ No suggestion received");
+        }
+      } catch (error: any) {
+        if (error.name !== 'AbortError') {
+          console.error("Autocomplete error:", error);
+        }
         setSuggestion("");
-        console.log("❌ No suggestion received");
+      } finally {
+        setIsAutocompleteActive(false);
+        setLastAutocompleteRequest(null);
       }
     });
-  }, [debouncedPrompt, lastAcceptedWordCount, lastAcceptedPosition, justReplacedSpellCheckWord]);
+  }, [debouncedPrompt, lastAcceptedWordCount, lastAcceptedPosition, justReplacedSpellCheckWord, forceAutocompleteCheck]);
 
   const onSubmit: SubmitHandler<{ name: string; prompt: string }> = async (
     data
@@ -447,6 +507,7 @@ const useFormAutocomplete = () => {
     overlayHeight,
     needsSpaceBeforeSuggestion,
     notifySpellCheckReplacement,
+    isAutocompleteActive,
   };
 };
 

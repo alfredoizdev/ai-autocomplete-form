@@ -4,7 +4,9 @@ import Image from "next/image";
 import useFormAutocomplete from "@/hooks/useFormAutocomplete";
 import useDebouncedSpellCheck from "@/hooks/useDebouncedSpellCheck";
 import SpellCheckPopup from "./SpellCheckPopup";
-import { useState, useEffect, useCallback, useMemo } from "react";
+import SpellCheckOverlay from "./SpellCheckOverlay";
+import { useState, useEffect, useCallback } from "react";
+import useTextFeatureCoordinator, { TextFeature } from "@/hooks/useTextFeatureCoordinator";
 
 const Form = () => {
   const {
@@ -23,9 +25,13 @@ const Form = () => {
     promptValue,
     needsSpaceBeforeSuggestion,
     notifySpellCheckReplacement,
+    isAutocompleteActive,
   } = useFormAutocomplete();
 
   const { misspelledWords, isLoading: spellCheckLoading, getSuggestions, isProcessing } = useDebouncedSpellCheck(promptValue);
+  
+  // Use the text feature coordinator to prevent conflicts
+  const coordinator = useTextFeatureCoordinator();
 
   // State for spell check popup
   const [showPopup, setShowPopup] = useState(false);
@@ -37,6 +43,10 @@ const Form = () => {
   // Handle word replacement - memoized for performance
   const replaceWord = useCallback((originalWord: string, newWord: string) => {
     if (!promptValue || !textareaRef.current) return;
+    
+    // Lock autocomplete feature during spell check replacement
+    coordinator.lockFeature(TextFeature.AUTOCOMPLETE, 1000);
+    coordinator.setActiveFeature(TextFeature.SPELLCHECK);
     
     // Store current cursor position
     const currentCursorPos = textareaRef.current.selectionStart;
@@ -65,9 +75,26 @@ const Form = () => {
         // Adjust cursor position if the replacement happened before current position
         const adjustedCursorPos = currentCursorPos + lengthDiff;
         textareaRef.current.setSelectionRange(adjustedCursorPos, adjustedCursorPos);
+        
+        // Dispatch input event to trigger React Hook Form updates and autocomplete
+        const inputEvent = new Event('input', {
+          bubbles: true,
+          cancelable: true,
+        });
+        textareaRef.current.dispatchEvent(inputEvent);
+        
+        // Also dispatch change event for completeness
+        const changeEvent = new Event('change', {
+          bubbles: true,
+          cancelable: true,
+        });
+        textareaRef.current.dispatchEvent(changeEvent);
       }
+      
+      // Clear active feature after UI update
+      coordinator.setActiveFeature(null);
     });
-  }, [promptValue, setValue, textareaRef, notifySpellCheckReplacement]);
+  }, [promptValue, setValue, textareaRef, notifySpellCheckReplacement, coordinator]);
 
   // Handle clicking on misspelled words - memoized for performance
   const handleWordClick = useCallback((event: React.MouseEvent, word: string) => {
@@ -108,46 +135,7 @@ const Form = () => {
     setShowPopup(true);
   }, [getSuggestions]);
 
-  // Handle clicks on the spell check overlay - memoized
-  const handleOverlayClick = useCallback((event: React.MouseEvent) => {
-    const target = event.target as HTMLElement;
-    const word = target.getAttribute('data-word');
-    
-    if (word && target.classList.contains('misspelled-word')) {
-      handleWordClick(event, word);
-    } else {
-      // If clicking on non-misspelled area, ensure textarea gets focus
-      if (textareaRef.current) {
-        textareaRef.current.focus();
-      }
-    }
-  }, [handleWordClick, textareaRef]);
 
-  // Create highlighted text with misspelled words underlined and clickable - memoized
-  const getHighlightedText = useMemo(() => {
-    if (!promptValue || spellCheckLoading || isProcessing) return promptValue;
-    
-    const words = promptValue.match(/\b\w+\b/g) || [];
-    const misspelled = misspelledWords.map(item => item.word.toLowerCase());
-    
-    let highlightedText = promptValue;
-    
-    // Replace misspelled words with clickable underlined versions (using native red dots)
-    words.forEach(word => {
-      if (misspelled.includes(word.toLowerCase())) {
-        const regex = new RegExp(`\\b${word}\\b`, 'g');
-        highlightedText = highlightedText.replace(regex, 
-          `<span 
-            class="misspelled-word"
-            style="text-decoration: underline; text-decoration-color: #dc2626; text-decoration-style: dotted; text-decoration-thickness: 2px; text-underline-offset: 2px; cursor: pointer; user-select: none; pointer-events: auto;" 
-            data-word="${word}"
-          >${word}</span>`
-        );
-      }
-    });
-    
-    return highlightedText;
-  }, [promptValue, misspelledWords, spellCheckLoading, isProcessing]);
 
   // Close popup when clicking outside
   useEffect(() => {
@@ -166,8 +154,7 @@ const Form = () => {
     };
   }, [showPopup]);
 
-  console.log("sugestion", suggestion);
-  console.log("misspelled words", misspelledWords);
+  // Debug logging removed for production
 
   return (
     <form
@@ -325,44 +312,26 @@ const Form = () => {
             className="hide-scrollbar focus:border-black active:border-black"
           />
           
-          {/* Spell check overlay - positioned absolutely */}
-          {promptValue && !spellCheckLoading && !isProcessing && (
-            <div
-              onClick={handleOverlayClick}
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                height: overlayHeight || textareaHeight,
-                pointerEvents: "none", // Changed to none - only misspelled words have pointer events
-                padding: "8px",
-                border: "1px solid transparent",
-                fontSize: "16px",
-                lineHeight: "24px",
-                fontFamily: "var(--font-inter), Inter, sans-serif",
-                letterSpacing: "normal",
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word",
-                wordWrap: "break-word",
-                overflowWrap: "anywhere",
-                textRendering: "geometricPrecision",
-                WebkitFontSmoothing: "subpixel-antialiased",
-                MozOsxFontSmoothing: "auto",
-                boxSizing: "border-box",
-                overflow: "hidden",
-                margin: 0,
-                verticalAlign: "top",
-                borderRadius: "4px",
-                color: "transparent",
-                zIndex: 1,
-              }}
-              dangerouslySetInnerHTML={{ __html: getHighlightedText }}
-            />
-          )}
+          {/* Spell check overlay - now a separate optimized component */}
+          <SpellCheckOverlay
+            promptValue={promptValue}
+            misspelledWords={misspelledWords}
+            isLoading={spellCheckLoading}
+            isProcessing={isProcessing}
+            isAutocompleteActive={isAutocompleteActive}
+            canActivateFeature={coordinator.canActivateFeature}
+            textareaHeight={textareaHeight}
+            overlayHeight={overlayHeight}
+            onWordClick={handleWordClick}
+          />
 
           {/* Suggestion overlay - positioned absolutely with ResizeObserver height */}
-          {suggestion && (
+          {suggestion && coordinator.canActivateFeature(TextFeature.AUTOCOMPLETE) && (
+            console.log("🎯 Showing suggestion overlay:", { 
+              suggestion: suggestion.substring(0, 30) + "...", 
+              canActivate: coordinator.canActivateFeature(TextFeature.AUTOCOMPLETE),
+              activeFeature: coordinator.activeFeature 
+            }),
             <div
               style={{
                 position: "absolute",
