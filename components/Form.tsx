@@ -122,7 +122,7 @@ const Form = () => {
     if (y - popupHeight < 0) {
       y = rect.bottom + 10; // Show below if not enough space above
     } else {
-      y = y - 10; // Show above with some spacing
+      y = y; // Show directly above with no gap
     }
     
     // Get suggestions for the word
