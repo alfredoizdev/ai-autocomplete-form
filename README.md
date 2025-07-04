@@ -1,15 +1,18 @@
-# AI App Autocomplete
+# AI Autocomplete & Spell Check
 
-An intelligent text autocomplete application built with Next.js that uses Ollama's Gemma 3 12B model to provide AI-powered text suggestions for personal bio completion.
+An intelligent text autocomplete and spell checking application built with Next.js that uses Ollama's Gemma 3 12B model for AI-powered text suggestions and typo-js for accurate spell checking with a custom click-to-correct interface.
 
 ## Features
 
 - 🤖 AI-powered text autocomplete using Ollama model Gemma 3 12B
-- ⚡ Real-time suggestions as you type
-- 🎯 Specialized for personal bio completion
+- ✍️ Advanced spell checking with typo-js and Hunspell dictionaries
+- 🎯 Click-to-correct spell check interface with popup suggestions
+- ⚡ Real-time suggestions as you type with optimized performance
+- 🔤 Automatic capitalization for proper sentence structure
 - 🚀 Built with Next.js 15 and React 19
-- 📱 Responsive design with Tailwind CSS
-- 🔧 TypeScript support
+- 📱 Responsive design with Tailwind CSS v4
+- 🔧 TypeScript support with comprehensive type safety
+- ⚡ Performance optimized with debouncing and memoization
 
 ## Prerequisites
 
@@ -17,7 +20,7 @@ Before you begin, ensure you have the following installed:
 
 - **Node.js** (version 18 or higher)
 - **npm** or **yarn**
-- **Ollama** (for running the LLaMA 3.2 model locally)
+- **Ollama** (for running the Gemma 3 12B model locally)
 
 ## Ollama Setup
 
@@ -64,8 +67,13 @@ Before you begin, ensure you have the following installed:
 3. **Set up environment variables**:
    Create a `.env.local` file in the root directory:
    ```env
-   OLLAMA_PATH_API=http://localhost:11434/api
+   OLLAMA_PATH_API=http://127.0.0.1:11434/api
    ```
+
+4. **Set up spell check dictionaries**:
+   The application includes English dictionaries in the `public/dictionaries/en_US/` folder:
+   - `en_US.aff` - Affix rules file
+   - `en_US.dic` - Dictionary words file
 
 ## Usage
 
@@ -79,37 +87,59 @@ Before you begin, ensure you have the following installed:
 
 2. **Open your browser** and navigate to `http://localhost:3000`
 
-3. **Start typing** in the text input field to begin your personal bio
+3. **Start typing** in the bio description field to experience:
+   - **AI Autocomplete**: When you have 3+ words in a sentence, AI suggestions appear in gray text
+   - **Spell Check**: Misspelled words appear with red dotted underlines
+   - **Auto-capitalization**: Proper sentence capitalization is applied automatically
 
-4. **Watch the magic happen** as the AI suggests continuations for your text in real-time
+4. **Interact with features**:
+   - Press **Tab** to accept AI suggestions
+   - **Click** misspelled words to see correction suggestions in a popup
+   - Type normally - the app won't interfere with your writing flow
 
 ## How It Works
 
-The application uses:
-
+### AI Autocomplete System
 - **React Hook Form** for form management
 - **Custom debounced hook** (`useFormAutocomplete`) to prevent excessive API calls
 - **Server Actions** ([`askOllamaCompletationAction`](actions/ai-text.ts)) to communicate with Ollama
 - **Gemma 3 12B model** for generating contextual text completions
+- AI triggers after 3+ words in a sentence with 2-second debounce
 
-The AI is specifically prompted to continue personal bios with short, relevant sentences without quotes or explanations.
+### Spell Check System
+- **typo-js library** with Hunspell English dictionaries for accurate spell checking
+- **Custom debounced spell check hook** (`useDebouncedSpellCheck`) with 800ms delay
+- **Performance optimizations** including memoization and suggestion caching
+- **Click-to-correct interface** with popup suggestions positioned intelligently
+- **Overlay system** for visual spell check indicators without disrupting typing
+
+### Auto-capitalization
+- **Smart sentence detection** with proper punctuation handling
+- **Real-time capitalization** for first letters and after sentence endings
+- **Context-aware processing** that works seamlessly with autocomplete and spell check
 
 ## Project Structure
 
 ```
-ai-app-oucomplete/
+ai-autocomplete-spellcheck/
 ├── actions/
-│   └── ai.ts              # Server actions for AI integration
+│   └── ai-text.ts         # Server actions for AI integration
 ├── app/
 │   ├── layout.tsx         # Root layout
 │   ├── page.tsx           # Main page component
 │   └── globals.css        # Global styles
 ├── components/
-│   └── Form.tsx           # Main form component
+│   ├── Form.tsx           # Main form component with spell check overlay
+│   └── SpellCheckPopup.tsx # Popup component for spell suggestions
 ├── hooks/
-│   └── useFormAutocomplete.tsx # Custom autocomplete hook
+│   ├── useFormAutocomplete.tsx    # Custom autocomplete hook
+│   ├── useSpellCheck.tsx          # Core spell checking functionality
+│   └── useDebouncedSpellCheck.tsx # Performance-optimized spell check
 ├── lib/                   # Utility libraries
-└── public/               # Static assets
+├── public/
+│   └── dictionaries/
+│       └── en_US/         # English spell check dictionaries
+└── type/                  # TypeScript type definitions
 ```
 
 ## Available Scripts
@@ -123,11 +153,18 @@ ai-app-oucomplete/
 
 ### Ollama Configuration
 
-The application expects Ollama to be running on `http://localhost:11434` by default. You can modify this in your `.env.local` file:
+The application expects Ollama to be running on `http://127.0.0.1:11434` by default. You can modify this in your `.env.local` file:
 
 ```env
 OLLAMA_PATH_API=http://your-ollama-host:port/api
 ```
+
+### Spell Check Configuration
+
+Spell checking is automatically enabled with English dictionaries. The system includes:
+- **Debounce delay**: 800ms to optimize performance
+- **Dictionary caching**: Suggestions are cached to avoid repeated lookups
+- **Performance optimization**: Memoization prevents unnecessary re-renders
 
 ### Model Configuration
 
@@ -152,15 +189,25 @@ The application is configured to use the `gemma3:12b` model. You can change this
    - This is normal for local AI models
    - Consider using a more powerful machine or adjusting the debounce delay
 
+4. **Spell check not working**:
+   - Ensure dictionary files are present in `public/dictionaries/en_US/`
+   - Check browser console for any dictionary loading errors
+   - Try refreshing the page to reinitialize the spell checker
+
+5. **Performance issues while typing**:
+   - The app uses debouncing to prevent lag
+   - If typing feels slow, check if other applications are using high CPU
+   - Spell check delay is optimized at 800ms for best performance
+
 ## Dependencies
 
 ### Main Dependencies
 
 - **Next.js 15.3.3** - React framework
 - **React 19** - UI library
-- **OpenAI 5.5.0** - AI integration utilities
 - **React Hook Form 7.58.0** - Form management
-- **use-debounce 10.0.5** - Debouncing utility
+- **typo-js** - Spell checking library with Hunspell support
+- **use-debounce 10.0.5** - Debouncing utility for performance optimization
 
 ### Development Dependencies
 
@@ -180,8 +227,28 @@ The application is configured to use the `gemma3:12b` model. You can change this
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
+## Key Features In Detail
+
+### Smart Spell Checking
+- **Accurate Detection**: Uses typo-js with Hunspell dictionaries for professional-grade spell checking
+- **Click-to-Correct**: No right-click needed - simply click misspelled words for suggestions
+- **Performance Optimized**: 800ms debounce prevents lag while typing
+- **Non-Intrusive**: Dotted red underlines that don't interfere with the writing experience
+
+### AI-Powered Autocomplete  
+- **Context Aware**: Understands sentence structure and provides relevant continuations
+- **Smart Triggering**: Only activates after 3+ words to avoid premature suggestions
+- **Seamless Integration**: Works harmoniously with spell check and auto-capitalization
+
+### Auto-Capitalization
+- **Intelligent Rules**: Proper sentence beginnings, "I" pronouns, and post-punctuation capitalization
+- **Real-Time Processing**: Applies corrections as you type without disrupting flow
+- **Context Sensitive**: Understands when to apply different capitalization rules
+
 ## Acknowledgments
 
 - [Ollama](https://ollama.ai) for providing local AI model hosting
 - [Google Gemma](https://ai.google.dev/gemma) for the powerful language model
+- [typo-js](https://github.com/cfinke/Typo.js) for excellent spell checking capabilities
+- [Hunspell](http://hunspell.github.io/) for comprehensive dictionary support
 - [Next.js](https://nextjs.org) team for the excellent framework

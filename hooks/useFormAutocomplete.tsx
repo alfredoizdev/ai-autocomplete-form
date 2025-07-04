@@ -49,17 +49,53 @@ const getWordsBeforeCursor = (
     .filter((word) => word.length > 0);
 };
 
+// Count total words from text start to cursor position
+const getWordCountAtCursor = (
+  text: string,
+  cursorPos: number = text.length
+): number => {
+  if (!text || text.trim().length === 0) return 0;
+  
+  const textToCursor = text.substring(0, cursorPos).trim();
+  if (!textToCursor) return 0;
+  
+  return textToCursor.split(/\s+/).filter(word => word.length > 0).length;
+};
+
+// Count words typed since a specific position in the text
+const getWordCountSincePosition = (
+  text: string,
+  sincePosition: number,
+  cursorPos: number = text.length
+): number => {
+  if (!text || sincePosition >= cursorPos) return 0;
+  
+  const textSincePosition = text.substring(sincePosition, cursorPos).trim();
+  if (!textSincePosition) return 0;
+  
+  return textSincePosition.split(/\s+/).filter(word => word.length > 0).length;
+};
+
 // Check if we're ready for autocomplete suggestions
 const isReadyForSuggestions = (
   text: string,
-  cursorPos: number = text.length
+  cursorPos: number = text.length,
+  lastAcceptedWordCount: number = 0,
+  lastAcceptedPosition: number = 0
 ): boolean => {
   if (!text || text.trim().length === 0) return false;
 
   const words = getWordsBeforeCursor(text, cursorPos);
-
+  
   // Must have at least 3 words in current sentence
-  return words.length >= 3;
+  if (words.length < 3) return false;
+  
+  // If we've never accepted a suggestion, we're ready
+  if (lastAcceptedWordCount === 0) return true;
+  
+  // Must have typed at least 3 new words since last acceptance
+  const newWordsTyped = getWordCountSincePosition(text, lastAcceptedPosition, cursorPos);
+  return newWordsTyped >= 3;
 };
 
 // Determine if we need a space before the suggestion based on text context
@@ -144,16 +180,16 @@ const useFormAutocomplete = () => {
   const [textareaHeight, setTextareaHeight] = useState("auto");
   const [overlayHeight, setOverlayHeight] = useState("auto");
   const [lastKnownHeight, setLastKnownHeight] = useState(0);
-  const [justAcceptedSuggestion, setJustAcceptedSuggestion] = useState(false);
-  const [lastAcceptedTextLength, setLastAcceptedTextLength] = useState(0);
+  const [lastAcceptedWordCount, setLastAcceptedWordCount] = useState(0);
+  const [lastAcceptedPosition, setLastAcceptedPosition] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const measureRef = useRef<HTMLTextAreaElement>(null);
 
   // Simple state reset function for when textarea is emptied
   const resetAutocompleteState = () => {
     setSuggestion("");
-    setJustAcceptedSuggestion(false);
-    setLastAcceptedTextLength(0);
+    setLastAcceptedWordCount(0);
+    setLastAcceptedPosition(0);
   };
 
   // Check if text is truly empty (handles whitespace-only content)
@@ -268,25 +304,8 @@ const useFormAutocomplete = () => {
     return result;
   };
 
-  // Simplified autocomplete logic - triggers for ANY sentence with 3+ words
+  // Word-based autocomplete logic - triggers only when 3+ words AND 3+ new words since last acceptance
   useEffect(() => {
-    // Skip if we just accepted a suggestion
-    if (justAcceptedSuggestion) {
-      console.log("⏸️ Skipping autocomplete - just accepted suggestion");
-      return;
-    }
-
-    // Skip if text hasn't grown beyond the last accepted suggestion (but allow empty text to reset)
-    if (
-      debouncedPrompt.length > 0 &&
-      debouncedPrompt.length <= lastAcceptedTextLength
-    ) {
-      console.log(
-        "⏸️ Skipping autocomplete - text hasn't grown beyond accepted suggestion"
-      );
-      return;
-    }
-
     // Get current cursor position (defaults to end of text)
     const cursorPos =
       textareaRef.current?.selectionStart || debouncedPrompt.length;
@@ -298,11 +317,15 @@ const useFormAutocomplete = () => {
       currentSentence: getCurrentSentenceAtCursor(debouncedPrompt, cursorPos),
       words: getWordsBeforeCursor(debouncedPrompt, cursorPos),
       wordCount: getWordsBeforeCursor(debouncedPrompt, cursorPos).length,
-      isReady: isReadyForSuggestions(debouncedPrompt, cursorPos),
+      totalWordsAtCursor: getWordCountAtCursor(debouncedPrompt, cursorPos),
+      lastAcceptedWordCount,
+      lastAcceptedPosition,
+      wordsSinceLastAcceptance: getWordCountSincePosition(debouncedPrompt, lastAcceptedPosition, cursorPos),
+      isReady: isReadyForSuggestions(debouncedPrompt, cursorPos, lastAcceptedWordCount, lastAcceptedPosition),
     });
 
     // Clear suggestion if not ready
-    if (!isReadyForSuggestions(debouncedPrompt, cursorPos)) {
+    if (!isReadyForSuggestions(debouncedPrompt, cursorPos, lastAcceptedWordCount, lastAcceptedPosition)) {
       setSuggestion("");
       return;
     }
@@ -323,7 +346,7 @@ const useFormAutocomplete = () => {
         console.log("❌ No suggestion received");
       }
     });
-  }, [debouncedPrompt, justAcceptedSuggestion, lastAcceptedTextLength]);
+  }, [debouncedPrompt, lastAcceptedWordCount, lastAcceptedPosition]);
 
   const onSubmit: SubmitHandler<{ name: string; prompt: string }> = async (
     data
@@ -373,17 +396,19 @@ const useFormAutocomplete = () => {
       // Apply capitalization after accepting suggestion
       const processedText = autoCapitalizeText(newText);
 
-      // Set processed text and block future autocomplete
+      // Set processed text and track word count and position for future autocomplete blocking
       setValue("prompt", processedText);
       setSuggestion("");
-      setJustAcceptedSuggestion(true);
-      setLastAcceptedTextLength(processedText.length);
-      console.log("✅ Suggestion accepted:", suggestion);
-
-      // Clear the block after delay that exceeds debounce time
-      setTimeout(() => {
-        setJustAcceptedSuggestion(false);
-      }, 3000);
+      
+      // Track word count and position at time of acceptance
+      const cursorPos = textareaRef.current?.selectionStart || promptValue.length;
+      setLastAcceptedWordCount(getWordCountAtCursor(processedText, processedText.length));
+      setLastAcceptedPosition(processedText.length);
+      
+      console.log("✅ Suggestion accepted:", suggestion, {
+        wordCount: getWordCountAtCursor(processedText, processedText.length),
+        position: processedText.length
+      });
     }
   };
 
