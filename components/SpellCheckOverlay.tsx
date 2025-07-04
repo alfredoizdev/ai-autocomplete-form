@@ -6,7 +6,6 @@ interface SpellCheckOverlayProps {
   misspelledWords: Array<{ word: string; suggestions: string[] }>;
   isLoading: boolean;
   isProcessing: boolean;
-  isAutocompleteActive: boolean;
   canActivateFeature: (feature: TextFeature) => boolean;
   textareaHeight: string;
   overlayHeight: string;
@@ -18,7 +17,6 @@ const SpellCheckOverlay = memo(({
   misspelledWords,
   isLoading,
   isProcessing,
-  isAutocompleteActive,
   canActivateFeature,
   textareaHeight,
   overlayHeight,

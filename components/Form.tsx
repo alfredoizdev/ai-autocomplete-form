@@ -25,10 +25,9 @@ const Form = () => {
     promptValue,
     needsSpaceBeforeSuggestion,
     notifySpellCheckReplacement,
-    isAutocompleteActive,
   } = useFormAutocomplete();
 
-  const { misspelledWords, isLoading: spellCheckLoading, getSuggestions, isProcessing } = useDebouncedSpellCheck(promptValue);
+  const { misspelledWords, isLoading: spellCheckLoading, getSuggestions, isProcessing, customDictionary, refreshSpellCheck } = useDebouncedSpellCheck(promptValue);
   
   // Use the text feature coordinator to prevent conflicts
   const coordinator = useTextFeatureCoordinator();
@@ -95,6 +94,96 @@ const Form = () => {
       coordinator.setActiveFeature(null);
     });
   }, [promptValue, setValue, textareaRef, notifySpellCheckReplacement, coordinator]);
+
+  // Handle adding word to custom dictionary - memoized for performance
+  const handleAddToDictionary = useCallback((word: string) => {
+    // Add word to custom dictionary
+    const success = customDictionary.addWord(word);
+    
+    if (success) {
+      // Close popup after successful addition
+      setShowPopup(false);
+      
+      // Optional: Show brief success feedback (could be implemented with toast)
+      console.log(`Added "${word}" to custom dictionary`);
+    } else {
+      // Handle error case
+      console.error(`Failed to add "${word}" to custom dictionary`);
+    }
+  }, [customDictionary]);
+
+  // Handle teaching word correction - memoized for performance
+  const handleTeachCorrection = useCallback((misspelledWord: string, correctWord: string) => {
+    // Add word mapping to custom dictionary
+    const success = customDictionary.addMapping(misspelledWord, correctWord);
+    
+    if (success) {
+      // Close popup first
+      setShowPopup(false);
+      
+      // Automatically replace the misspelled word in the textarea with the correct word
+      if (promptValue && textareaRef.current) {
+        // Lock autocomplete feature during replacement
+        coordinator.lockFeature(TextFeature.AUTOCOMPLETE, 500);
+        coordinator.setActiveFeature(TextFeature.SPELLCHECK);
+        
+        // Store current cursor position
+        const currentCursorPos = textareaRef.current.selectionStart;
+        
+        // Create a regex that matches the exact word with word boundaries
+        const regex = new RegExp(`\\b${misspelledWord}\\b`, 'g');
+        const newText = promptValue.replace(regex, correctWord);
+        
+        // Calculate the difference in length to adjust cursor position
+        const lengthDiff = correctWord.length - misspelledWord.length;
+        
+        // Notify autocomplete that a replacement occurred
+        notifySpellCheckReplacement();
+        
+        // Update the form value
+        setValue("prompt", newText);
+        
+        // Restore focus and cursor position
+        requestAnimationFrame(() => {
+          if (textareaRef.current) {
+            textareaRef.current.focus();
+            
+            // Adjust cursor position if the replacement happened before current position
+            const adjustedCursorPos = currentCursorPos + lengthDiff;
+            textareaRef.current.setSelectionRange(adjustedCursorPos, adjustedCursorPos);
+            
+            // Dispatch input event to trigger React Hook Form updates
+            const inputEvent = new Event('input', {
+              bubbles: true,
+              cancelable: true,
+            });
+            textareaRef.current.dispatchEvent(inputEvent);
+            
+            // Also dispatch change event for completeness
+            const changeEvent = new Event('change', {
+              bubbles: true,
+              cancelable: true,
+            });
+            textareaRef.current.dispatchEvent(changeEvent);
+          }
+          
+          // Clear active feature after UI update
+          coordinator.setActiveFeature(null);
+          
+          // Force spell check refresh to ensure new mapping is available
+          setTimeout(() => {
+            refreshSpellCheck();
+          }, 200);
+        });
+      }
+      
+      // Show success feedback
+      console.log(`Taught correction: "${misspelledWord}" → "${correctWord}" and replaced in text`);
+    } else {
+      // Handle error case
+      console.error(`Failed to teach correction: "${misspelledWord}" → "${correctWord}"`);
+    }
+  }, [customDictionary, promptValue, textareaRef, coordinator, notifySpellCheckReplacement, setValue, refreshSpellCheck]);
 
   // Handle clicking on misspelled words - memoized for performance
   const handleWordClick = useCallback((event: React.MouseEvent, word: string) => {
@@ -318,7 +407,6 @@ const Form = () => {
             misspelledWords={misspelledWords}
             isLoading={spellCheckLoading}
             isProcessing={isProcessing}
-            isAutocompleteActive={isAutocompleteActive}
             canActivateFeature={coordinator.canActivateFeature}
             textareaHeight={textareaHeight}
             overlayHeight={overlayHeight}
@@ -397,8 +485,9 @@ const Form = () => {
           suggestions={wordSuggestions}
           position={popupPosition}
           onSelect={(suggestion) => replaceWord(selectedWord, suggestion)}
-          onIgnore={() => setShowPopup(false)}
-          onClose={() => setShowPopup(false)}
+          onIgnore={() => handleAddToDictionary(selectedWord)}
+          onAddToDictionary={handleAddToDictionary}
+          onTeachCorrection={handleTeachCorrection}
         />
       )}
 

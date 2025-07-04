@@ -16,9 +16,10 @@ const useDebouncedSpellCheck = (text: string, delay?: number) => {
   };
   
   const effectiveDelay = delay ?? calculateDelay();
-  const { getMisspelledWords, isLoading: spellCheckLoading, getSuggestions } = useSpellCheck();
+  const { getMisspelledWords, isLoading: spellCheckLoading, getSuggestions, customDictionary } = useSpellCheck();
   const [isRapidTyping, setIsRapidTyping] = useState(false);
   const [lastTypeTime, setLastTypeTime] = useState(Date.now());
+  const [forceRefresh, setForceRefresh] = useState(0);
   
   // Detect rapid typing to temporarily disable spell check
   useEffect(() => {
@@ -43,7 +44,7 @@ const useDebouncedSpellCheck = (text: string, delay?: number) => {
   const misspelledWords = useMemo(() => {
     if (!debouncedText || spellCheckLoading || isRapidTyping) return [];
     return getMisspelledWords(debouncedText);
-  }, [debouncedText, spellCheckLoading, getMisspelledWords, isRapidTyping]);
+  }, [debouncedText, spellCheckLoading, getMisspelledWords, isRapidTyping, forceRefresh]);
   
   // Cache for individual word suggestions to avoid repeated API calls
   const wordSuggestionsCache = useMemo(() => new Map<string, string[]>(), []);
@@ -57,12 +58,22 @@ const useDebouncedSpellCheck = (text: string, delay?: number) => {
     wordSuggestionsCache.set(word, suggestions);
     return suggestions;
   };
+
+  // Function to force refresh of spell check results
+  const refreshSpellCheck = () => {
+    // Clear suggestions cache
+    wordSuggestionsCache.clear();
+    // Force re-evaluation of misspelled words
+    setForceRefresh(prev => prev + 1);
+  };
   
   return {
     misspelledWords,
     isLoading: spellCheckLoading,
     getSuggestions: getCachedSuggestions,
     isProcessing: text !== debouncedText || isRapidTyping, // True when user is still typing
+    customDictionary,
+    refreshSpellCheck,
   };
 };
 
