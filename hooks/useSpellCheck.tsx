@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { useDebounce } from "use-debounce";
 
 // Define types for Typo.js dictionary
 interface TypoDictionary {
