@@ -2,9 +2,9 @@
 
 import Image from "next/image";
 import useFormAutocomplete from "@/hooks/useFormAutocomplete";
-import useSpellCheck from "@/hooks/useSpellCheck";
+import useDebouncedSpellCheck from "@/hooks/useDebouncedSpellCheck";
 import SpellCheckPopup from "./SpellCheckPopup";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 
 const Form = () => {
   const {
@@ -24,7 +24,7 @@ const Form = () => {
     needsSpaceBeforeSuggestion,
   } = useFormAutocomplete();
 
-  const { getMisspelledWords, isLoading: spellCheckLoading, getSuggestions } = useSpellCheck();
+  const { misspelledWords, isLoading: spellCheckLoading, getSuggestions, isProcessing } = useDebouncedSpellCheck(promptValue);
 
   // State for spell check popup
   const [showPopup, setShowPopup] = useState(false);
@@ -32,31 +32,41 @@ const Form = () => {
   const [selectedWord, setSelectedWord] = useState("");
   const [wordSuggestions, setWordSuggestions] = useState<string[]>([]);
 
-  // Get misspelled words for current text
-  const misspelledWords = getMisspelledWords(promptValue);
 
-  // Handle word replacement
-  const replaceWord = (originalWord: string, newWord: string) => {
+  // Handle word replacement - memoized for performance
+  const replaceWord = useCallback((originalWord: string, newWord: string) => {
     if (!promptValue || !textareaRef.current) return;
+    
+    // Store current cursor position
+    const currentCursorPos = textareaRef.current.selectionStart;
     
     // Create a regex that matches the exact word with word boundaries
     const regex = new RegExp(`\\b${originalWord}\\b`, 'g');
     const newText = promptValue.replace(regex, newWord);
     
+    // Calculate the difference in length to adjust cursor position
+    const lengthDiff = newWord.length - originalWord.length;
+    
+    // Close popup first
+    setShowPopup(false);
+    
     // Update the form value
     setValue("prompt", newText);
     
-    // Close popup
-    setShowPopup(false);
-    
-    // Focus back on textarea
-    setTimeout(() => {
-      textareaRef.current?.focus();
-    }, 0);
-  };
+    // Restore focus and cursor position immediately
+    requestAnimationFrame(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        
+        // Adjust cursor position if the replacement happened before current position
+        const adjustedCursorPos = currentCursorPos + lengthDiff;
+        textareaRef.current.setSelectionRange(adjustedCursorPos, adjustedCursorPos);
+      }
+    });
+  }, [promptValue, setValue, textareaRef]);
 
-  // Handle clicking on misspelled words
-  const handleWordClick = (event: React.MouseEvent, word: string) => {
+  // Handle clicking on misspelled words - memoized for performance
+  const handleWordClick = useCallback((event: React.MouseEvent, word: string) => {
     event.preventDefault();
     event.stopPropagation();
     
@@ -92,35 +102,40 @@ const Form = () => {
     setWordSuggestions(suggestions);
     setPopupPosition({ x, y });
     setShowPopup(true);
-  };
+  }, [getSuggestions]);
 
-  // Handle clicks on the spell check overlay
-  const handleOverlayClick = (event: React.MouseEvent) => {
+  // Handle clicks on the spell check overlay - memoized
+  const handleOverlayClick = useCallback((event: React.MouseEvent) => {
     const target = event.target as HTMLElement;
     const word = target.getAttribute('data-word');
     
     if (word && target.classList.contains('misspelled-word')) {
       handleWordClick(event, word);
+    } else {
+      // If clicking on non-misspelled area, ensure textarea gets focus
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+      }
     }
-  };
+  }, [handleWordClick, textareaRef]);
 
-  // Create highlighted text with misspelled words underlined and clickable
-  const getHighlightedText = (text: string) => {
-    if (!text || spellCheckLoading) return text;
+  // Create highlighted text with misspelled words underlined and clickable - memoized
+  const getHighlightedText = useMemo(() => {
+    if (!promptValue || spellCheckLoading || isProcessing) return promptValue;
     
-    const words = text.match(/\b\w+\b/g) || [];
+    const words = promptValue.match(/\b\w+\b/g) || [];
     const misspelled = misspelledWords.map(item => item.word.toLowerCase());
     
-    let highlightedText = text;
+    let highlightedText = promptValue;
     
-    // Replace misspelled words with clickable underlined versions
+    // Replace misspelled words with clickable underlined versions (using native red dots)
     words.forEach(word => {
       if (misspelled.includes(word.toLowerCase())) {
         const regex = new RegExp(`\\b${word}\\b`, 'g');
         highlightedText = highlightedText.replace(regex, 
           `<span 
             class="misspelled-word"
-            style="text-decoration: underline; text-decoration-color: red; text-decoration-style: wavy; text-underline-offset: 3px; cursor: pointer; user-select: none;" 
+            style="text-decoration: underline; text-decoration-color: #dc2626; text-decoration-style: dotted; text-decoration-thickness: 2px; text-underline-offset: 2px; cursor: pointer; user-select: none; pointer-events: auto;" 
             data-word="${word}"
           >${word}</span>`
         );
@@ -128,7 +143,7 @@ const Form = () => {
     });
     
     return highlightedText;
-  };
+  }, [promptValue, misspelledWords, spellCheckLoading, isProcessing]);
 
   // Close popup when clicking outside
   useEffect(() => {
@@ -245,10 +260,18 @@ const Form = () => {
         />
 
         {/* Container for textarea with absolute positioned overlay */}
-        <div style={{ 
-          position: "relative",
-          width: "100%",
-        }}>
+        <div 
+          style={{ 
+            position: "relative",
+            width: "100%",
+          }}
+          onClick={() => {
+            // Ensure textarea gets focus when clicking container
+            if (textareaRef.current) {
+              textareaRef.current.focus();
+            }
+          }}
+        >
           {/* Actual input textarea */}
           <textarea
             id="prompt"
@@ -299,7 +322,7 @@ const Form = () => {
           />
           
           {/* Spell check overlay - positioned absolutely */}
-          {promptValue && !spellCheckLoading && (
+          {promptValue && !spellCheckLoading && !isProcessing && (
             <div
               onClick={handleOverlayClick}
               style={{
@@ -308,7 +331,7 @@ const Form = () => {
                 left: 0,
                 right: 0,
                 height: overlayHeight || textareaHeight,
-                pointerEvents: "auto",
+                pointerEvents: "none", // Changed to none - only misspelled words have pointer events
                 padding: "8px",
                 border: "1px solid transparent",
                 fontSize: "16px",
@@ -330,7 +353,7 @@ const Form = () => {
                 color: "transparent",
                 zIndex: 1,
               }}
-              dangerouslySetInnerHTML={{ __html: getHighlightedText(promptValue) }}
+              dangerouslySetInnerHTML={{ __html: getHighlightedText }}
             />
           )}
 
