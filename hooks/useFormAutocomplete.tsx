@@ -90,7 +90,7 @@ const isReadyForSuggestions = (
   const words = getWordsBeforeCursor(text, cursorPos);
   
   // Relax word requirement after punctuation (natural pause)
-  const minWordsRequired = afterPunctuation ? 3 : 5;
+  const minWordsRequired = afterPunctuation ? 5 : 5;
   
   // Must have minimum words in current sentence
   if (words.length < minWordsRequired) return false;
@@ -98,9 +98,9 @@ const isReadyForSuggestions = (
   // If we've never accepted a suggestion, we're ready
   if (lastAcceptedWordCount === 0) return true;
   
-  // Must have typed at least 3 new words since last acceptance
+  // Must have typed at least 5 new words since last acceptance
   const newWordsTyped = getWordCountSincePosition(text, lastAcceptedPosition, cursorPos);
-  return newWordsTyped >= 3;
+  return newWordsTyped >= 5;
 };
 
 // Determine if we need a space before the suggestion based on text context
@@ -275,7 +275,7 @@ const useFormAutocomplete = () => {
         const cursorPos = textareaRef.current.selectionStart || currentText.length;
         const wordCount = getWordCountAtCursor(currentText, cursorPos);
         
-        if (wordCount >= 3) { // Reduced requirement after spell check
+        if (wordCount >= 5) { // Consistent requirement after spell check
           // Trigger immediate autocomplete
           setImmediateAutocomplete(true);
           setForceAutocompleteCheck(prev => prev + 1);
