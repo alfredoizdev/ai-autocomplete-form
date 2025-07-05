@@ -19,8 +19,11 @@ const useTextFeatureCoordinator = () => {
   
   const timeoutRefs = useRef<Map<TextFeature, NodeJS.Timeout>>(new Map());
 
-  // Lock a feature temporarily
+  // Lock a feature temporarily with adaptive duration
   const lockFeature = useCallback((feature: TextFeature, duration: number = 200) => {
+    // Use shorter lock duration for autocomplete to reduce stuttering
+    const effectiveDuration = feature === TextFeature.AUTOCOMPLETE ? Math.min(duration, 200) : duration;
+    
     setState(prev => ({
       ...prev,
       featureLocks: new Set([...prev.featureLocks, feature]),
@@ -43,7 +46,7 @@ const useTextFeatureCoordinator = () => {
         };
       });
       timeoutRefs.current.delete(feature);
-    }, duration);
+    }, effectiveDuration);
 
     timeoutRefs.current.set(feature, timeout);
   }, []);
