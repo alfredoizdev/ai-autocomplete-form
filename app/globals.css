@@ -54,3 +54,15 @@ textarea::-moz-placeholder {
   color: #9ca3af;
   opacity: 1;
 }
+
+/* Misspelled word styling */
+.misspelled-word {
+  text-decoration: underline;
+  text-decoration-color: #dc2626;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  user-select: none;
+  pointer-events: auto;
+}

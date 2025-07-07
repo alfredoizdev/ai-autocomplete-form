@@ -2,6 +2,11 @@
 
 import Image from "next/image";
 import useFormAutocomplete from "@/hooks/useFormAutocomplete";
+import useDebouncedSpellCheck from "@/hooks/useDebouncedSpellCheck";
+import SpellCheckPopup from "./SpellCheckPopup";
+import SpellCheckOverlay from "./SpellCheckOverlay";
+import { useState, useEffect, useCallback } from "react";
+import useTextFeatureCoordinator, { TextFeature } from "@/hooks/useTextFeatureCoordinator";
 
 const Form = () => {
   const {
@@ -14,13 +19,231 @@ const Form = () => {
     suggestion,
     isPending,
     handleKeyDown,
+    setValue,
     textareaHeight,
     overlayHeight,
     promptValue,
     needsSpaceBeforeSuggestion,
+    notifySpellCheckReplacement,
   } = useFormAutocomplete();
 
-  console.log("sugestion", suggestion);
+  const { misspelledWords, isLoading: spellCheckLoading, getSuggestions, isProcessing, customDictionary, refreshSpellCheck } = useDebouncedSpellCheck(promptValue);
+  
+  // Use the text feature coordinator to prevent conflicts
+  const coordinator = useTextFeatureCoordinator();
+
+  // State for spell check popup
+  const [showPopup, setShowPopup] = useState(false);
+  const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
+  const [selectedWord, setSelectedWord] = useState("");
+  const [wordSuggestions, setWordSuggestions] = useState<string[]>([]);
+
+
+  // Handle word replacement - memoized for performance
+  const replaceWord = useCallback((originalWord: string, newWord: string) => {
+    if (!promptValue || !textareaRef.current) return;
+    
+    // Lock autocomplete feature during spell check replacement
+    coordinator.lockFeature(TextFeature.AUTOCOMPLETE, 150);
+    coordinator.setActiveFeature(TextFeature.SPELLCHECK);
+    
+    // Store current cursor position
+    const currentCursorPos = textareaRef.current.selectionStart;
+    
+    // Create a regex that matches the exact word with word boundaries
+    const regex = new RegExp(`\\b${originalWord}\\b`, 'g');
+    const newText = promptValue.replace(regex, newWord);
+    
+    // Calculate the difference in length to adjust cursor position
+    const lengthDiff = newWord.length - originalWord.length;
+    
+    // Close popup first
+    setShowPopup(false);
+    
+    // Notify autocomplete that a spell check replacement occurred
+    notifySpellCheckReplacement();
+    
+    // Update the form value
+    setValue("prompt", newText);
+    
+    // Restore focus and cursor position immediately
+    requestAnimationFrame(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        
+        // Adjust cursor position if the replacement happened before current position
+        const adjustedCursorPos = currentCursorPos + lengthDiff;
+        textareaRef.current.setSelectionRange(adjustedCursorPos, adjustedCursorPos);
+        
+        // Dispatch input event to trigger React Hook Form updates and autocomplete
+        const inputEvent = new Event('input', {
+          bubbles: true,
+          cancelable: true,
+        });
+        textareaRef.current.dispatchEvent(inputEvent);
+        
+        // Also dispatch change event for completeness
+        const changeEvent = new Event('change', {
+          bubbles: true,
+          cancelable: true,
+        });
+        textareaRef.current.dispatchEvent(changeEvent);
+      }
+      
+      // Clear active feature after UI update
+      coordinator.setActiveFeature(null);
+    });
+  }, [promptValue, setValue, textareaRef, notifySpellCheckReplacement, coordinator]);
+
+  // Handle adding word to custom dictionary - memoized for performance
+  const handleAddToDictionary = useCallback((word: string) => {
+    // Add word to custom dictionary
+    const success = customDictionary.addWord(word);
+    
+    if (success) {
+      // Close popup after successful addition
+      setShowPopup(false);
+      
+      // Optional: Show brief success feedback (could be implemented with toast)
+      console.log(`Added "${word}" to custom dictionary`);
+    } else {
+      // Handle error case
+      console.error(`Failed to add "${word}" to custom dictionary`);
+    }
+  }, [customDictionary]);
+
+  // Handle teaching word correction - memoized for performance
+  const handleTeachCorrection = useCallback((misspelledWord: string, correctWord: string) => {
+    // Add word mapping to custom dictionary
+    const success = customDictionary.addMapping(misspelledWord, correctWord);
+    
+    if (success) {
+      // Close popup first
+      setShowPopup(false);
+      
+      // Automatically replace the misspelled word in the textarea with the correct word
+      if (promptValue && textareaRef.current) {
+        // Lock autocomplete feature during replacement
+        coordinator.lockFeature(TextFeature.AUTOCOMPLETE, 150);
+        coordinator.setActiveFeature(TextFeature.SPELLCHECK);
+        
+        // Store current cursor position
+        const currentCursorPos = textareaRef.current.selectionStart;
+        
+        // Create a regex that matches the exact word with word boundaries
+        const regex = new RegExp(`\\b${misspelledWord}\\b`, 'g');
+        const newText = promptValue.replace(regex, correctWord);
+        
+        // Calculate the difference in length to adjust cursor position
+        const lengthDiff = correctWord.length - misspelledWord.length;
+        
+        // Notify autocomplete that a replacement occurred
+        notifySpellCheckReplacement();
+        
+        // Update the form value
+        setValue("prompt", newText);
+        
+        // Restore focus and cursor position
+        requestAnimationFrame(() => {
+          if (textareaRef.current) {
+            textareaRef.current.focus();
+            
+            // Adjust cursor position if the replacement happened before current position
+            const adjustedCursorPos = currentCursorPos + lengthDiff;
+            textareaRef.current.setSelectionRange(adjustedCursorPos, adjustedCursorPos);
+            
+            // Dispatch input event to trigger React Hook Form updates
+            const inputEvent = new Event('input', {
+              bubbles: true,
+              cancelable: true,
+            });
+            textareaRef.current.dispatchEvent(inputEvent);
+            
+            // Also dispatch change event for completeness
+            const changeEvent = new Event('change', {
+              bubbles: true,
+              cancelable: true,
+            });
+            textareaRef.current.dispatchEvent(changeEvent);
+          }
+          
+          // Clear active feature after UI update
+          coordinator.setActiveFeature(null);
+          
+          // Force spell check refresh to ensure new mapping is available
+          setTimeout(() => {
+            refreshSpellCheck();
+          }, 200);
+        });
+      }
+      
+      // Show success feedback
+      console.log(`Taught correction: "${misspelledWord}" → "${correctWord}" and replaced in text`);
+    } else {
+      // Handle error case
+      console.error(`Failed to teach correction: "${misspelledWord}" → "${correctWord}"`);
+    }
+  }, [customDictionary, promptValue, textareaRef, coordinator, notifySpellCheckReplacement, setValue, refreshSpellCheck]);
+
+  // Handle clicking on misspelled words - memoized for performance
+  const handleWordClick = useCallback((event: React.MouseEvent, word: string) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    // Get click position
+    const rect = event.currentTarget.getBoundingClientRect();
+    let x = rect.left + rect.width / 2;
+    let y = rect.top;
+    
+    // Prevent popup from going off-screen
+    const popupWidth = 250;
+    const popupHeight = 200;
+    
+    // Adjust horizontal position
+    if (x + popupWidth / 2 > window.innerWidth) {
+      x = window.innerWidth - popupWidth / 2 - 20;
+    }
+    if (x - popupWidth / 2 < 0) {
+      x = popupWidth / 2 + 20;
+    }
+    
+    // Adjust vertical position (show above the word)
+    if (y - popupHeight < 0) {
+      y = rect.bottom + 10; // Show below if not enough space above
+    } else {
+      y = y; // Show directly above with no gap
+    }
+    
+    // Get suggestions for the word
+    const suggestions = getSuggestions(word);
+    
+    // Set popup state
+    setSelectedWord(word);
+    setWordSuggestions(suggestions);
+    setPopupPosition({ x, y });
+    setShowPopup(true);
+  }, [getSuggestions]);
+
+
+
+  // Close popup when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showPopup && !event.defaultPrevented) {
+        setShowPopup(false);
+      }
+    };
+
+    if (showPopup) {
+      document.addEventListener("click", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, [showPopup]);
+
+  // Debug logging removed for production
 
   return (
     <form
@@ -66,9 +289,6 @@ const Form = () => {
           })}
           type="text"
           id="name"
-          spellCheck={true}
-          autoCorrect="on"
-          autoCapitalize="words"
           className="mt-1 text-gray-900 placeholder:text-gray-400 block w-full h-[46px] p-2 border border-gray-200 rounded-[8px] focus:border-black active:border-black focus:outline-none transition-all duration-300 ease-out"
           style={{
             WebkitAppearance: "none",
@@ -120,10 +340,18 @@ const Form = () => {
         />
 
         {/* Container for textarea with absolute positioned overlay */}
-        <div style={{ 
-          position: "relative",
-          width: "100%",
-        }}>
+        <div 
+          style={{ 
+            position: "relative",
+            width: "100%",
+          }}
+          onClick={() => {
+            // Ensure textarea gets focus when clicking container
+            if (textareaRef.current) {
+              textareaRef.current.focus();
+            }
+          }}
+        >
           {/* Actual input textarea */}
           <textarea
             id="prompt"
@@ -139,9 +367,6 @@ const Form = () => {
               textareaRef.current = e;
             }}
             onKeyDown={handleKeyDown}
-            spellCheck={true}
-            autoCorrect="on"
-            autoCapitalize="sentences"
             placeholder="Write a brief description about yourself..."
             style={{
               backgroundColor: "transparent",
@@ -176,8 +401,25 @@ const Form = () => {
             className="hide-scrollbar focus:border-black active:border-black"
           />
           
+          {/* Spell check overlay - now a separate optimized component */}
+          <SpellCheckOverlay
+            promptValue={promptValue}
+            misspelledWords={misspelledWords}
+            isLoading={spellCheckLoading}
+            isProcessing={isProcessing}
+            canActivateFeature={coordinator.canActivateFeature}
+            textareaHeight={textareaHeight}
+            overlayHeight={overlayHeight}
+            onWordClick={handleWordClick}
+          />
+
           {/* Suggestion overlay - positioned absolutely with ResizeObserver height */}
-          {suggestion && (
+          {suggestion && coordinator.canActivateFeature(TextFeature.AUTOCOMPLETE) && (
+            console.log("🎯 Showing suggestion overlay:", { 
+              suggestion: suggestion.substring(0, 30) + "...", 
+              canActivate: coordinator.canActivateFeature(TextFeature.AUTOCOMPLETE),
+              activeFeature: coordinator.activeFeature 
+            }),
             <div
               style={{
                 position: "absolute",
@@ -204,6 +446,7 @@ const Form = () => {
                 margin: 0,
                 verticalAlign: "top",
                 borderRadius: "4px",
+                zIndex: 2,
               }}
             >
               <span style={{ visibility: "hidden" }}>{promptValue}</span>
@@ -234,6 +477,20 @@ const Form = () => {
           <p className="text-red-500 text-sm mt-1">{errors.prompt.message}</p>
         )}
       </div>
+
+      {/* Spell Check Popup */}
+      {showPopup && (
+        <SpellCheckPopup
+          word={selectedWord}
+          suggestions={wordSuggestions}
+          position={popupPosition}
+          onSelect={(suggestion) => replaceWord(selectedWord, suggestion)}
+          onIgnore={() => handleAddToDictionary(selectedWord)}
+          onAddToDictionary={handleAddToDictionary}
+          onTeachCorrection={handleTeachCorrection}
+        />
+      )}
+
       <button
         type="submit"
         disabled={isPending}
