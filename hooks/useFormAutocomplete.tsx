@@ -299,8 +299,8 @@ const useFormAutocomplete = () => {
 
   const promptValue = watch("prompt");
   
-  // Smart debounce: 200ms after spell check, 500ms normally
-  const debounceDelay = justReplacedSpellCheckWord ? 200 : 500;
+  // Smart debounce: 200ms after spell check, 1500ms normally (1.5 seconds for less aggressive autocomplete)
+  const debounceDelay = justReplacedSpellCheckWord ? 200 : 1500;
   const [debouncedPrompt] = useDebounce(promptValue, debounceDelay);
 
   // Calculate textarea height based on content
