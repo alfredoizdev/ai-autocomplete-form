@@ -384,7 +384,6 @@ const Form = () => {
               overflowWrap: "anywhere", // Better for long words
               textRendering: "geometricPrecision",
               padding: "8px",
-              border: "1px solid #e5e7eb",
               borderRadius: "4px",
               whiteSpace: "pre-wrap",
               wordBreak: "break-word",
@@ -398,7 +397,7 @@ const Form = () => {
               WebkitFontSmoothing: "subpixel-antialiased", // Better for monospace
               MozOsxFontSmoothing: "auto",
             }}
-            className="hide-scrollbar focus:border-black active:border-black"
+            className="hide-scrollbar border border-gray-200 rounded-[8px] focus:border-black active:border-black focus:outline-none transition-all duration-300 ease-out"
           />
           
           {/* Spell check overlay - now a separate optimized component */}
