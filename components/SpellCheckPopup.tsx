@@ -15,8 +15,8 @@ const SpellCheckPopup: React.FC<SpellCheckPopupProps> = ({
   suggestions,
   position,
   onSelect,
-  onIgnore,
-  onAddToDictionary,
+  // onIgnore,
+  // onAddToDictionary,
   onTeachCorrection,
 }) => {
   const [isTeachMode, setIsTeachMode] = useState(false);
@@ -58,7 +58,7 @@ const SpellCheckPopup: React.FC<SpellCheckPopupProps> = ({
         {!isTeachMode ? (
           <>
             {suggestions.length > 0 ? (
-              <div className="space-y-1 mb-3">
+              <div className="space-y-1 mb-0">
                 {suggestions.slice(0, 3).map((suggestion, index) => (
                   <button
                     key={index}
@@ -113,7 +113,7 @@ const SpellCheckPopup: React.FC<SpellCheckPopupProps> = ({
           </div>
         )}
 
-        {!isTeachMode && (
+        {/* {!isTeachMode && (
           <div className="border-t pt-2">
             <div className="grid grid-cols-3 gap-2">
               <button
@@ -136,7 +136,7 @@ const SpellCheckPopup: React.FC<SpellCheckPopupProps> = ({
               </button>
             </div>
           </div>
-        )}
+        )} */}
       </div>
     </div>
   );
