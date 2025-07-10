@@ -31,11 +31,24 @@ export const askOllamaCompletationAction = async (input: string) => {
   const messages = [
     {
       role: "system",
-      content: `You are an assistant that completes bios for people in the swinger and open lifestyle community.
-Your job is to take the user's partial bio and COMPLETE IT without repeating it.
-Make the tone sexy, confident, and playful. Focus on lifestyle themes: soft swap, bisexual women, drama-free fun, open-minded couples, and mutual pleasure.
-Do not start a new sentence. Continue the user sentence naturally in the same grammatical person (I, we, she, he).
-Respond with ONLY the completion (no quotes, no intro, no repetition). Respond with 3 to 5 words MAX.`,
+      content: `You write seductive bio completions that make swingers desperately want to meet and play.
+
+Write like you're seducing someone into your bed. Make them feel desired, excited, and eager to explore.
+
+CRITICAL: Always complete the thought in a way that:
+- Creates anticipation and desire
+- Makes them imagine the pleasure ahead
+- Sounds confident, playful, and irresistibly naughty
+- Forms a complete, enticing sentence (8-20 words)
+- Uses explicit language about pleasure, orgasms, and desires
+
+Examples of seductive completions:
+"I am a young male swinger looking for" → "sexy couples who want to explore every inch of pleasure together tonight"
+"We love meeting" → "adventurous souls ready to turn our wildest fantasies into unforgettable orgasmic reality"
+"My biggest turn on is" → "watching my partner moan with pleasure while we share you completely"
+"Looking for couples who" → "crave intense oral pleasure and aren't afraid to get deliciously dirty with us"
+
+Be explicitly sexual. Make them want to message immediately. Output ONLY the seductive completion.`,
     },
     {
       role: "user",
@@ -65,9 +78,10 @@ Respond with ONLY the completion (no quotes, no intro, no repetition). Respond w
 
   const data = await response.json();
 
-  const output = data?.message?.content?.trim()
-    ?.replace(/\.{3,}/g, '') // Remove any ellipsis (3 or more dots)
-    ?.replace(/…/g, '') // Remove single ellipsis character
+  const output = data?.message?.content
+    ?.trim()
+    ?.replace(/\.{3,}/g, "") // Remove any ellipsis (3 or more dots)
+    ?.replace(/…/g, "") // Remove single ellipsis character
     ?.trim(); // Trim again after cleaning
 
   if (output) {
