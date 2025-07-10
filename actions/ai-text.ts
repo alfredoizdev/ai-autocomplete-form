@@ -1,28 +1,28 @@
 "use server";
 import { Bios } from "@/data/Bios";
 import { Bio } from "@/type/Collection";
-import weaviate from "weaviate-client";
 
 const chatHistory: { role: "user" | "assistant"; content: string }[] = [];
 
-export const setCollectionForVectorDB = async () => {
-  const client = await weaviate.connectToLocal();
-
-  const collection = client.collections.use<Bio>("Bio2");
-
-  const entries = Bios.map((bio, index) => ({
-    title: `Bio2 ${index + 1}`,
-    body: bio,
-  }));
-
-  await collection.data.insertMany(entries);
-  console.log(`✅ Inserted ${entries.length} bios into Weaviate.`);
-};
+// This function is no longer used - vector search is handled by the Python API
+// export const setCollectionForVectorDB = async () => {
+//   const client = await weaviate.connectToLocal();
+//
+//   const collection = client.collections.use<Bio>("Bio2");
+//
+//   const entries = Bios.map((bio, index) => ({
+//     title: `Bio2 ${index + 1}`,
+//     body: bio,
+//   }));
+//
+//   await collection.data.insertMany(entries);
+//   console.log(`✅ Inserted ${entries.length} bios into Weaviate.`);
+// };
 
 export const askOllamaCompletationAction = async (input: string) => {
   try {
-    // First, try the new vector search API for fast autocomplete
-    const vectorResponse = await fetch('http://localhost:8001/api/autocomplete', {
+    // Use the new hybrid endpoint that combines vector search with LLM generation
+    const hybridResponse = await fetch('http://localhost:8001/api/autocomplete/hybrid', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -32,47 +32,52 @@ export const askOllamaCompletationAction = async (input: string) => {
       }),
     });
 
-    if (vectorResponse.ok) {
-      const data = await vectorResponse.json();
+    if (hybridResponse.ok) {
+      const data = await hybridResponse.json();
       
       // Log performance metrics
-      console.log(`Autocomplete: ${data.elapsed_ms}ms via ${data.method}`);
+      console.log(`Hybrid autocomplete: ${data.elapsed_ms}ms`);
+      console.log(`Context used: ${data.context_used}`);
+      console.log(`Suggestions: ${data.combined_suggestions.length} (${data.exact_matches.length} exact, ${data.llm_completions.length} generated)`);
       
-      if (data.completion) {
-        return data.completion;
+      // Return the first combined suggestion
+      if (data.combined_suggestions && data.combined_suggestions.length > 0) {
+        return data.combined_suggestions[0];
       }
     }
   } catch (error) {
-    console.error('Vector search API error:', error);
+    console.error('Hybrid autocomplete API error:', error);
   }
 
-  // Fallback to original Ollama method if vector search fails or returns no results
+  // Fallback to direct Ollama method if vector search fails or returns no results
   try {
-    const client = await weaviate.connectToLocal();
-    const collection = client.collections.get<Bio>("Bio2");
-
-    // 🔍 Buscar contexto relevante
-    const result = await collection.query.nearText([input], { limit: 3 });
-    const context = result.objects.map((obj) => obj.properties.body).join("\n\n");
-
-    // 📜 Mensajes para Ollama
+    // 📜 Mensajes para Ollama (without Weaviate context)
     const messages = [
       {
         role: "system",
-        content: `You are an assistant that completes bios for people in the swinger and open lifestyle community.
-Your job is to take the user's partial bio and COMPLETE IT without repeating it.
-Make the tone sexy, confident, and playful. Focus on lifestyle themes: soft swap, bisexual women, drama-free fun, open-minded couples, and mutual pleasure.
-Do not start a new sentence. Continue the user sentence naturally in the same grammatical person (I, we, she, he).
-Respond with ONLY the completion (no quotes, no intro, no repetition). Respond with 3 to 5 words MAX.`,
-      },
-      {
-        role: "user",
-        content: `Relevant swinger bios for context:\n${context}`,
+        content: `You write seductive bio completions that make swingers desperately want to meet and play.
+
+Write like you're seducing someone into your bed. Make them feel desired, excited, and eager to explore.
+
+CRITICAL: Always complete the thought in a way that:
+- Creates anticipation and desire
+- Makes them imagine the pleasure ahead
+- Sounds confident, playful, and irresistibly naughty
+- Forms a complete, enticing sentence (8-20 words)
+- Uses explicit language about pleasure, orgasms, and desires
+
+Examples of seductive completions:
+"I am a young male swinger looking for" → "sexy couples who want to explore every inch of pleasure together tonight"
+"We love meeting" → "adventurous souls ready to turn our wildest fantasies into unforgettable orgasmic reality"
+"My biggest turn on is" → "watching my partner moan with pleasure while we share you completely"
+"Looking for couples who" → "crave intense oral pleasure and aren't afraid to get deliciously dirty with us"
+
+Be explicitly sexual. Make them want to message immediately. Output ONLY the seductive completion.`,
       },
       ...chatHistory,
       {
         role: "user",
-        content: `Complete the following bio:\n"${input}"`,
+        content: `Complete this bio text: ${input}`,
       },
     ];
 
@@ -84,19 +89,29 @@ Respond with ONLY the completion (no quotes, no intro, no repetition). Respond w
         model: "gemma3:12b",
         messages,
         stream: false,
-        temperature: 0.75,
-        top_p: 0.9,
-        max_tokens: 40,
-        stop: [".", "\n", "!", "?", "...", "…"], // para evitar que inicie nuevo párrafo
+        temperature: 0.85,
+        top_p: 0.95,
+        max_tokens: 100,
+        stop: ["\n", "\n\n"], // para evitar que inicie nuevo párrafo
       }),
     });
 
     const data = await response.json();
 
-    const output = data?.message?.content?.trim()
+    let output = data?.message?.content?.trim()
       ?.replace(/\.{3,}/g, '') // Remove any ellipsis (3 or more dots)
       ?.replace(/…/g, '') // Remove single ellipsis character
       ?.trim(); // Trim again after cleaning
+
+    // Post-process: ensure lowercase if input ends with comma or no sentence-ending punctuation
+    if (output && input) {
+      const lastChar = input.trim().slice(-1);
+      if (lastChar === ',' || lastChar === ':' || lastChar === ';' || 
+          (lastChar && !['.' , '!', '?'].includes(lastChar))) {
+        // Force lowercase on first character
+        output = output.charAt(0).toLowerCase() + output.slice(1);
+      }
+    }
 
     if (output) {
       chatHistory.push({ role: "user", content: input });

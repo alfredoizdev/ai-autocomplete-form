@@ -42,6 +42,22 @@ class BioVectorSearch:
             print(f"Error during search: {e}")
             return []
     
+    def get_context_and_suggestions(self, partial_text: str, n_contexts: int = 3, max_suggestions: int = 3) -> dict:
+        """
+        Get both similar contexts and exact match suggestions
+        Returns dict with 'contexts' and 'suggestions'
+        """
+        # Get similar contexts for LLM
+        contexts = self.search_similar_contexts(partial_text, n_results=n_contexts)
+        
+        # Get exact match suggestions
+        suggestions = self.get_autocomplete_suggestions(partial_text, max_suggestions=max_suggestions)
+        
+        return {
+            'contexts': contexts,
+            'suggestions': suggestions
+        }
+    
     def get_autocomplete_suggestions(self, partial_text: str, max_suggestions: int = 3) -> List[str]:
         """
         Get autocomplete suggestions based on partial text
@@ -83,14 +99,15 @@ class BioVectorSearch:
                 
                 if continuation:
                     # Extract next few words
-                    next_words = continuation.split()[:5]
-                    if next_words:
+                    next_words = continuation.split()[:8]  # Get more words for context
+                    if len(next_words) >= 5:  # Ensure at least 5 words for complete thought
                         suggestion = " ".join(next_words)
                         
                         # Clean up the suggestion
                         suggestion = self._clean_suggestion(suggestion)
                         
-                        if suggestion and suggestion not in suggestions:
+                        # Quality check: ensure it's a meaningful phrase
+                        if suggestion and len(suggestion.split()) >= 5 and suggestion not in suggestions:
                             suggestions.append(suggestion)
                             
                             if len(suggestions) >= max_suggestions:
@@ -116,7 +133,8 @@ class BioVectorSearch:
                             
                             suggestion = self._clean_suggestion(suggestion)
                             
-                            if suggestion and suggestion not in suggestions:
+                            # Quality check for partial matches too
+                            if suggestion and len(suggestion.split()) >= 5 and suggestion not in suggestions:
                                 suggestions.append(suggestion)
                                 if len(suggestions) >= max_suggestions:
                                     break

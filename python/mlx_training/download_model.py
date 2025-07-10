@@ -4,8 +4,13 @@ We'll use Gemma 2:2B for better performance on M1 Mac with 32GB RAM.
 """
 
 import os
+import sys
 from pathlib import Path
-from huggingface_hub import snapshot_download
+from huggingface_hub import snapshot_download, HfApi, login
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 
 def download_gemma_for_mlx():
@@ -25,14 +30,15 @@ def download_gemma_for_mlx():
     print(f"Model will be cached in: {cache_dir}")
     
     try:
-        # Download the model
+        # Download the model with progress tracking
         model_path = snapshot_download(
             repo_id=model_id,
             cache_dir=str(cache_dir),
             local_dir=str(cache_dir / "gemma-2b"),
-            local_dir_use_symlinks=False,
             # Only download necessary files for MLX
-            ignore_patterns=["*.onnx", "*.msgpack", "*.h5", "*.tflite"]
+            ignore_patterns=["*.onnx", "*.msgpack", "*.h5", "*.tflite"],
+            resume_download=True,  # Resume if interrupted
+            max_workers=2  # Limit concurrent downloads
         )
         
         print(f"\n✅ Model downloaded successfully to: {model_path}")
@@ -65,33 +71,52 @@ def download_gemma_for_mlx():
         return None
 
 
+def check_hf_login():
+    """Check if user is logged into Hugging Face."""
+    # Try to get token from environment
+    token = os.environ.get('HF_TOKEN')
+    
+    if token:
+        try:
+            # Login with the token
+            login(token=token, add_to_git_credential=False)
+            api = HfApi()
+            user_info = api.whoami()
+            print(f"✅ Logged in as: {user_info['name']}")
+            return True
+        except Exception as e:
+            print(f"❌ Authentication failed: {e}")
+            return False
+    else:
+        print("❌ HF_TOKEN not found")
+        print("\nPlease set your token:")
+        print("1. Create a .env file in the python directory")
+        print("2. Add: HF_TOKEN=your_token_here")
+        print("3. Or set environment variable: export HF_TOKEN='your_token'")
+        return False
+
+
 if __name__ == "__main__":
-    # Note: Gemma models require accepting the license agreement
     print("=== Gemma Model Download for MLX ===")
-    print("\nIMPORTANT: Gemma models require accepting the license agreement.")
-    print("Please make sure you have:")
-    print("1. Created a Hugging Face account")
-    print("2. Accepted the Gemma license at: https://huggingface.co/google/gemma-2b")
-    print("3. Logged in using: huggingface-cli login")
-    print("\nFor now, we'll skip the download and use a mock training setup.")
-    print("This allows us to test the training pipeline without downloading the full model.")
     
-    # For testing purposes, create a mock config
-    cache_dir = Path(__file__).parent / "models"
-    cache_dir.mkdir(exist_ok=True)
+    # Check if logged in
+    if not check_hf_login():
+        sys.exit(1)
     
-    mock_config = {
-        "model_id": "google/gemma-2b",
-        "model_path": str(cache_dir / "gemma-2b"),
-        "model_size": "2B",
-        "status": "ready_for_download",
-        "note": "Run this script after accepting Gemma license to download"
-    }
+    print("\n✅ You have accepted the Gemma license")
+    print("Ready to download Gemma 2B model")
     
-    import json
-    config_path = cache_dir / "model_config.json"
-    with open(config_path, 'w') as f:
-        json.dump(mock_config, f, indent=2)
+    # Ask for confirmation
+    response = input("\nProceed with download? This will download ~2-3GB. (y/n): ")
     
-    print(f"\n✅ Mock configuration created at: {config_path}")
-    print("When ready to download, run this script after accepting the license.")
+    if response.lower() == 'y':
+        print("\nStarting download...")
+        model_path = download_gemma_for_mlx()
+        
+        if model_path:
+            print("\n✅ Model downloaded successfully!")
+            print(f"Location: {model_path}")
+            print("\nNext step: Run python mlx_training/train_mlx.py")
+    else:
+        print("\nDownload cancelled.")
+        print("Run this script again when ready to download.")
