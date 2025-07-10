@@ -103,7 +103,7 @@ Time: 87.3ms
 
 ## Files Created/Modified
 
-### New Files
+### Phase 1 Files
 - `/python/api/api_server.py` - FastAPI autocomplete server
 - `/python/vector_db/setup_chromadb.py` - Bio indexing script
 - `/python/vector_db/vector_search.py` - Vector search implementation
@@ -111,9 +111,20 @@ Time: 87.3ms
 - `/python/run_server.sh` - Server startup script
 - `/test-autocomplete-api.js` - API testing script
 
+### Phase 2 Files (New)
+- `/python/mlx_training/prepare_mlx_data.py` - Dataset preparation
+- `/python/mlx_training/download_model.py` - Model download helper
+- `/python/mlx_training/train_mlx.py` - MLX training script
+- `/python/mlx_training/convert_to_gguf.py` - Ollama conversion
+- `/python/mlx_training/README.md` - Training documentation
+- `/python/mlx_training/bio_dataset/` - Prepared training data
+- `/python/mlx_training/adapters/bio_lora/` - Training configuration
+
 ### Modified Files
 - `/actions/ai-text.ts` - Added vector search integration
 - `/training_llm_local.md` - Updated with hybrid approach
+- `/python/requirements.txt` - Added MLX dependencies
+- `/app/page.tsx` - Removed slow Weaviate initialization
 
 ## How to Run the Current System
 
@@ -136,25 +147,31 @@ Time: 87.3ms
 
 ## Next Steps
 
-### Phase 2: Local Fine-Tuning (Not Started)
-**Timeline**: 2-3 hours of training time
+### Phase 2: Local Fine-Tuning (Setup Complete) ✅
+**Timeline**: 2-3 hours of training time when executed
 
-1. **Install MLX Framework**
-   - Apple Silicon optimized training
-   - LoRA for memory efficiency
+1. **Install MLX Framework** ✅
+   - MLX 0.26.3 and mlx-lm 0.26.0 installed
+   - All dependencies added to requirements.txt
 
-2. **Prepare Training Data**
-   - Convert bios to training format
-   - Create prompt-completion pairs
+2. **Prepare Training Data** ✅
+   - Created 5,110 training examples from 514 bios
+   - 4,599 train / 511 validation split
+   - Average prompt: 39 words, completion: 5 words
 
-3. **Fine-tune Gemma 2:9B**
-   - Use MLX for M1 optimization
-   - Train with LoRA adapters
-   - Export to GGUF format
+3. **Training Pipeline Ready** ✅
+   - Created train_mlx.py with LoRA configuration
+   - Using Gemma 2B (more suitable for 32GB RAM)
+   - Memory-optimized settings configured
 
-4. **Import to Ollama**
-   - Create custom model
-   - Test performance
+4. **Ollama Integration Prepared** ✅
+   - Created convert_to_gguf.py
+   - Modelfile template ready
+   - Test commands documented
+
+**Status**: Ready to train! Awaiting:
+- Hugging Face license acceptance for Gemma
+- Model download and actual training execution
 
 ### Phase 3: Hybrid Integration (Not Started)
 **Timeline**: 1-2 hours implementation

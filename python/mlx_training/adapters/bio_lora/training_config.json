@@ -1,0 +1,19 @@
+{
+  "model_name": "google/gemma-2b",
+  "adapter_path": "/Users/simonlacey/Documents/GitHub/llms/ai-train-llm/python/mlx_training/adapters/bio_lora",
+  "lora_rank": 8,
+  "lora_alpha": 16,
+  "lora_dropout": 0.0,
+  "lora_target_modules": [
+    "q_proj",
+    "v_proj"
+  ],
+  "batch_size": 1,
+  "gradient_accumulation_steps": 4,
+  "learning_rate": 0.0002,
+  "num_epochs": 1,
+  "warmup_steps": 100,
+  "save_every": 500,
+  "eval_every": 100,
+  "max_seq_length": 256
+}

@@ -1,0 +1,20 @@
+# Bio Autocomplete Model
+# Based on gemma2:2b with custom LoRA adapters
+
+FROM gemma2:2b
+
+# Model parameters optimized for bio completion
+PARAMETER temperature 0.7
+PARAMETER top_p 0.9
+PARAMETER top_k 40
+PARAMETER repeat_penalty 1.1
+PARAMETER stop "\n"
+PARAMETER stop "."
+PARAMETER stop "!"
+PARAMETER stop "?"
+
+# System prompt for bio completion
+SYSTEM You are a bio completion assistant. Complete partial bios in a natural, engaging way. Keep completions concise (3-5 words) and contextually appropriate. Match the tone and style of the input.
+
+# Template for bio completion
+TEMPLATE {{ .Prompt }}

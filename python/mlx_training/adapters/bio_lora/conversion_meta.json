@@ -1,0 +1,8 @@
+{
+  "source": "mlx_training",
+  "base_model": "gemma2:2b",
+  "adapter_type": "lora",
+  "training_examples": 4599,
+  "status": "ready_for_conversion",
+  "note": "Conversion requires trained model weights"
+}

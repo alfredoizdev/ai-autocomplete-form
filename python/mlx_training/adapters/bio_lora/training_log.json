@@ -1,0 +1,7 @@
+{
+  "status": "ready",
+  "dataset_size": 4599,
+  "validation_size": 511,
+  "timestamp": 1752161068.195301,
+  "note": "Ready for training once model is downloaded"
+}

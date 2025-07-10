@@ -1,0 +1,7 @@
+{
+  "model_id": "google/gemma-2b",
+  "model_path": "/Users/simonlacey/Documents/GitHub/llms/ai-train-llm/python/mlx_training/models/gemma-2b",
+  "model_size": "2B",
+  "status": "ready_for_download",
+  "note": "Run this script after accepting Gemma license to download"
+}

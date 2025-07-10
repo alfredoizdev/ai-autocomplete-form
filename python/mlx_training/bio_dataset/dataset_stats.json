@@ -1,0 +1,8 @@
+{
+  "total_bios": 514,
+  "total_examples": 5110,
+  "train_examples": 4599,
+  "val_examples": 511,
+  "avg_prompt_length": 38.67592954990215,
+  "avg_completion_length": 5.0
+}
