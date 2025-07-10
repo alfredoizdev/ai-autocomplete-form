@@ -1,0 +1,31 @@
+/Users/simonlacey/Documents/GitHub/llms/ai-train-llm/python/venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+INFO:     Started server process [12549]
+INFO:     Waiting for application startup.
+Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+Initializing vector search...
+Loaded collection with 514 items
+Vector search initialized successfully
+INFO:     127.0.0.1:52540 - "GET / HTTP/1.1" 200 OK
+Failed to send telemetry event CollectionQueryEvent: capture() takes 1 positional argument but 3 were given
+INFO:     127.0.0.1:52553 - "POST /api/autocomplete HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52567 - "POST /api/autocomplete HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52588 - "GET /api/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52608 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52608 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52673 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52736 - "POST /api/autocomplete HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52738 - "POST /api/autocomplete HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52736 - "POST /api/autocomplete HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52738 - "POST /api/autocomplete HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52736 - "POST /api/autocomplete HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52738 - "POST /api/autocomplete HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52736 - "POST /api/autocomplete HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52768 - "POST /api/autocomplete HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52772 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52772 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52774 - "POST /api/autocomplete HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52791 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52796 - "POST /api/autocomplete HTTP/1.1" 200 OK

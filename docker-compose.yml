@@ -27,3 +27,13 @@ services:
     restart: always
     environment:
       ENABLE_CUDA: '0'
+
+  chromadb:
+    image: chromadb/chroma:latest
+    ports:
+      - 8000:8000
+    volumes:
+      - ./chroma_data:/chroma/chroma
+    environment:
+      ANONYMIZED_TELEMETRY: "false"
+    restart: on-failure:0

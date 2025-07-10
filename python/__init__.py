@@ -1,0 +1,1 @@
+# Python package for AI training and vector database functionality
