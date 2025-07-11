@@ -1,0 +1,10 @@
+{
+  "base_model": "gpt2",
+  "model_size": "124M parameters",
+  "training_time_minutes": 12.763032948970794,
+  "examples_trained": 10000,
+  "total_steps": 1250,
+  "final_loss": "N/A",
+  "device": "mps",
+  "timestamp": "2025-07-11T18:55:48.218090"
+}

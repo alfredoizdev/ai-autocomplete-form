@@ -1,0 +1,221 @@
+{
+  "evaluation_date": "2025-07-11 19:01:09",
+  "models_tested": 2,
+  "test_prompts": 20,
+  "results": [
+    {
+      "model_name": "DistilGPT2 (Failed)",
+      "results": [
+        {
+          "prompt": "We are a couple who",
+          "completion": "inance and independent word doubt research eyeracuse sham protest art or inquire inquiry blind as debate nit studies study tearsestinal, inner unw",
+          "time": 1.4676918983459473
+        },
+        {
+          "prompt": "Fun loving couple seeking",
+          "completion": "andinance crisis word healthy unwracuse discussion research doubt protest tearsestinal's internal eye debate enqu is independent intensive term trace details unwanted",
+          "time": 0.6262688636779785
+        },
+        {
+          "prompt": "Married couple looking for",
+          "completion": "inance studies doubt inner research inquiry word debate term protest and enquracuse healthy blind lease purchase study unw or inquire discussion solarestinal details",
+          "time": 0.5378289222717285
+        },
+        {
+          "prompt": "We are both professionals who",
+          "completion": "inance research study inquiry debate as blind and discussionracuse search solar intensive crisis protest candidacy for healthy enqu or art studies unw doubt authorized",
+          "time": 0.5389807224273682
+        },
+        {
+          "prompt": "I am a single female",
+          "completion": "inquiry doubtinanceracuse debate word search research studies and enqu study or blind unwestinal internal abuse healthy legitimate purchase gifts trace protest for",
+          "time": 0.5395901203155518
+        },
+        {
+          "prompt": "I am looking for someone who",
+          "completion": "inanceracuse discussion debate study and research or enqu inquiry shamestinal protest art nit healthy doubt intensive detailed legitimate studies mention inner lease is",
+          "time": 0.6383049488067627
+        },
+        {
+          "prompt": "Single male seeking",
+          "completion": "inance research and doubt debateracuse or discussion unw inner protest art enqu inquiry cool for qualified studies lease intensive study, lock inquire healthy",
+          "time": 0.7174062728881836
+        },
+        {
+          "prompt": "I enjoy meeting new",
+          "completion": "inance is inquiry and lease doubt studies protestracuse intensive research orestinal search healthy, word unw unwanted's eye study tears as discussion",
+          "time": 0.5412421226501465
+        },
+        {
+          "prompt": "Looking for friends to",
+          "completion": "inance solar research or search studyracuse with intensive andestinal inquiry formation debate is sham studies cool doubt word qualified protest eye tears internal",
+          "time": 0.5439090728759766
+        },
+        {
+          "prompt": "We enjoy outdoor activities like",
+          "completion": "andinanceracuse protest inquiry inner or candidacy study purchase healthy discussionestinal word debate advanced research autonomous term studies sham doubt intensive lock lease",
+          "time": 0.5790162086486816
+        },
+        {
+          "prompt": "My hobbies include",
+          "completion": "andinanceracuse cool doubt or purchase research debate inner inquiryestinal. studies tears study leaserompt discussion inquire art exercise legitimate protest word",
+          "time": 0.553969144821167
+        },
+        {
+          "prompt": "We love to travel and",
+          "completion": "inance solar doubt blind coolracuse research inner lock eye or inquiry studies search purchase sham tears internalestinal lease word candidacy's qualified debate",
+          "time": 0.5423781871795654
+        },
+        {
+          "prompt": "Seeking like-minded people for",
+          "completion": "inanceestinal protest studies researchracuse enqu and solar discussion tears doubt purchase or healthy inquiry lease formation blind debate unw, inner gifts qualified",
+          "time": 0.6394839286804199
+        },
+        {
+          "prompt": "Interested in exploring",
+          "completion": "blindinance or research studies study protest enqu and tears cool discussionracuse inquiry wordestinal inquire unwanted with intensive mention healthy is trace eye",
+          "time": 0.5326130390167236
+        },
+        {
+          "prompt": "We are new to",
+          "completion": "inance discussion tears innerracuse and solar research or doubt inquiry debateestinal healthy protest with term study eye trace authorized lease word as art",
+          "time": 0.556915283203125
+        },
+        {
+          "prompt": "Looking to expand our",
+          "completion": "racuseinance art research as protest debate doubt tears, and discussion with inquire intensive enqu inquiry term studies cool healthy orestinal lavish blind",
+          "time": 0.5403308868408203
+        },
+        {
+          "prompt": "We prefer couples who",
+          "completion": "inance autonomous studies and solar research word unw discussion doubtracuse lease enquestinal debate art protest study healthy inquiry or lock purchase for tears",
+          "time": 0.5389440059661865
+        },
+        {
+          "prompt": "No single males",
+          "completion": "and inquiryinance cool researchracuse doubt sham protest sure debate unw. blind as studies enqu search sample intensive or art discussion trace independent",
+          "time": 0.5418128967285156
+        },
+        {
+          "prompt": "Must be discreet and",
+          "completion": "enquracuseinance research inquiry as term advancedestinal is cool crisis or doubt studies lease solar inner protest support sham discussion debate internal purchase",
+          "time": 0.5342190265655518
+        },
+        {
+          "prompt": "Age range",
+          "completion": "andinance studies or research healthy independent autonomous solarracuse cool candidacy enqu qualified with protest intensive word inquiry eyeestinal unw illicit, discussion",
+          "time": 2.068081855773926
+        }
+      ],
+      "avg_time": 0.6889493703842163,
+      "total_prompts": 20
+    },
+    {
+      "model_name": "GPT2 Improved",
+      "results": [
+        {
+          "prompt": "We are a couple who",
+          "completion": "love us out hiking and we enjoy our females with ourselves. We have many friends as together there women can also like some entertaining",
+          "time": 0.7938921451568604
+        },
+        {
+          "prompt": "Fun loving couple seeking",
+          "completion": "to find true mate for each of a great relationship women like her. We will meet with some personal experiences we love it very",
+          "time": 0.7798669338226318
+        },
+        {
+          "prompt": "Married couple looking for",
+          "completion": "a married small in beautiful single true fun, we are very together with to go women of every size who would love and some",
+          "time": 0.7594139575958252
+        },
+        {
+          "prompt": "We are both professionals who",
+          "completion": "enjoy a fun experience together as friends, looking and joking with our new women of married females we have great amazing hang it out",
+          "time": 0.8134200572967529
+        },
+        {
+          "prompt": "I am a single female",
+          "completion": ". I enjoy women, small wom people looking to learn females out of personal relationships they love exploring and like many who are married",
+          "time": 0.7628810405731201
+        },
+        {
+          "prompt": "I am looking for someone who",
+          "completion": "is with a friend, interesting couple people and women to enjoy some of my personal friends that they hang together from many wonderful mates",
+          "time": 0.7810232639312744
+        },
+        {
+          "prompt": "Single male seeking",
+          "completion": "a female women to play tennis that I am looking for who like the small ladies and enjoy exploring our privacy in observing it with",
+          "time": 0.778357982635498
+        },
+        {
+          "prompt": "I enjoy meeting new",
+          "completion": "people. I've met some women, as a small personal example in our couple we married to beautiful basketball and Basketball Tennis Small",
+          "time": 0.7646849155426025
+        },
+        {
+          "prompt": "Looking for friends to",
+          "completion": "talk and explore people we love, are looking off our experiences in small females who would like a simple adventure with trust together \u2026",
+          "time": 0.7554287910461426
+        },
+        {
+          "prompt": "We enjoy outdoor activities like",
+          "completion": "going out to see our friends, exploring some of them with small play off who can and are looking for a few people I",
+          "time": 0.7580268383026123
+        },
+        {
+          "prompt": "My hobbies include",
+          "completion": "playing basketball, looking for fun to be a playmate my mate and like new mates of some people that I are married with",
+          "time": 0.7600381374359131
+        },
+        {
+          "prompt": "We love to travel and",
+          "completion": "explore with my friends, enjoy a great relationship that we play tennis together... some fun surprises...... you are beautiful I trust",
+          "time": 0.770104169845581
+        },
+        {
+          "prompt": "Seeking like-minded people for",
+          "completion": "our upcoming tennis together and we can trust each of those to go with a small lifestyle in the fun, hang sized beautiful couples",
+          "time": 0.7741239070892334
+        },
+        {
+          "prompt": "Interested in exploring",
+          "completion": "the fun of some great women looking for that small couple a new love who would like to explore our beautiful females with her,",
+          "time": 0.7575650215148926
+        },
+        {
+          "prompt": "We are new to",
+          "completion": "this amazing basketball, tennis and volleyball together as many of our friends like looking for great personal things in these very interesting experiences.",
+          "time": 0.7561478614807129
+        },
+        {
+          "prompt": "Looking to expand our",
+          "completion": "group of women who are like and married people. She is interested in looking for her, fun Jenna Leslie Phillips as that they",
+          "time": 0.7583940029144287
+        },
+        {
+          "prompt": "We prefer couples who",
+          "completion": "explore monog women together and trust people of interesting females to be out exploring each others for our mates, friends & a few surprises",
+          "time": 0.7833242416381836
+        },
+        {
+          "prompt": "No single males",
+          "completion": "who are looking for the females to like and explore with women! We have fun exploring married, beautiful couples in our singles of",
+          "time": 0.7840261459350586
+        },
+        {
+          "prompt": "Must be discreet and",
+          "completion": "enjoy a personal, privacy couple we love to hang out with together!! We are amazing friends who can really find the trust of",
+          "time": 0.7655370235443115
+        },
+        {
+          "prompt": "Age range",
+          "completion": "of a small size with and for married women you can be sure to meet our few friends from the wonderful personal, in lifetime",
+          "time": 0.7838537693023682
+        }
+      ],
+      "avg_time": 0.7720055103302002,
+      "total_prompts": 20
+    }
+  ]
+}
