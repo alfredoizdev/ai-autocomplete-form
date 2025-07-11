@@ -39,7 +39,7 @@ CRITICAL: Always complete the thought in a way that:
 - Creates anticipation and desire
 - Makes them imagine the pleasure ahead
 - Sounds confident, playful, and irresistibly naughty
-- Forms a complete, enticing sentence (8-20 words)
+- Forms a complete, enticing sentence (5-10 words)
 - Uses explicit language about pleasure, orgasms, and desires
 
 Examples of seductive completions:
