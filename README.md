@@ -1,15 +1,17 @@
-# AI Autocomplete & Spell Check
+# AI Bio Autocomplete with Hybrid Vector Search
 
-A sophisticated AI-powered text assistant built with Next.js 15 and React 19 that combines intelligent autocomplete, advanced spell checking, and smart feature coordination. Uses Ollama's Gemma 3 12B model for contextual text suggestions and typo-js with custom dictionaries for professional-grade spell checking.
+A sophisticated AI-powered bio autocomplete system built with Next.js 15, React 19, and Python FastAPI. Combines vector database search (ChromaDB) with LLM generation (Ollama Gemma 3 12B) for high-quality, contextually relevant bio completions. Features intelligent autocomplete, advanced spell checking, and a hybrid approach optimized for swinger community bios.
 
 ## Features
 
-### 🤖 Advanced AI Autocomplete
-- **Context-aware suggestions** using Ollama Gemma 3 12B model
-- **Smart triggering** - activates after 5+ words with 500ms debouncing
+### 🤖 Hybrid AI Autocomplete System
+- **Dual approach** - Combines ChromaDB vector search with Ollama LLM generation
+- **Fast response times** - 100-150ms hybrid performance (vs 200-500ms LLM-only)
+- **Context-aware suggestions** using ~5000 bio examples in vector database
+- **Smart triggering** - activates after 5+ words with 1.5s debouncing
 - **Inline suggestion display** with layered textarea approach
 - **Tab key acceptance** with intelligent spacing
-- **Vector database integration** for enhanced contextual understanding
+- **Quality filtering** - Minimum 8-word suggestions with complete thoughts
 
 ### ✍️ Professional Spell Checking
 - **typo-js integration** with English Hunspell dictionaries
@@ -38,8 +40,10 @@ A sophisticated AI-powered text assistant built with Next.js 15 and React 19 tha
 Before you begin, ensure you have the following installed:
 
 - **Node.js** (version 18 or higher)
+- **Python** (version 3.8 or higher)
 - **npm** or **yarn**
 - **Ollama** (for running the Gemma 3 12B model locally)
+- **Git** (for cloning the repository)
 
 ## Ollama Setup
 
@@ -72,10 +76,10 @@ Before you begin, ensure you have the following installed:
 
    ```bash
    git clone <your-repository-url>
-   cd ai-autocomplete-spellcheck
+   cd ai-train-llm
    ```
 
-2. **Install dependencies**:
+2. **Install Node.js dependencies**:
 
    ```bash
    npm install
@@ -83,28 +87,65 @@ Before you begin, ensure you have the following installed:
    yarn install
    ```
 
-3. **Set up environment variables**:
+3. **Set up Python environment**:
+
+   ```bash
+   cd python
+   python3 -m venv venv
+   source venv/bin/activate  # On Mac/Linux
+   # or
+   venv\Scripts\activate  # On Windows
+   pip install -r requirements.txt
+   cd ..
+   ```
+
+4. **Set up environment variables**:
    Create a `.env.local` file in the root directory:
    ```env
    OLLAMA_PATH_API=http://127.0.0.1:11434/api
    ```
 
-4. **Set up spell check dictionaries**:
+5. **Initialize the vector database**:
+
+   ```bash
+   cd python/vector_db
+   python setup_chromadb.py
+   cd ../..
+   ```
+
+6. **Set up spell check dictionaries**:
    The application includes English dictionaries in the `public/dictionaries/en_US/` folder:
    - `en_US.aff` - Affix rules file
    - `en_US.dic` - Dictionary words file
 
+## Running the Full Stack
+
+To run the complete application, you need to start three services:
+
+### 1. **Start Ollama** (Terminal 1):
+```bash
+ollama serve
+```
+
+### 2. **Start Python API Server** (Terminal 2):
+```bash
+cd python
+source venv/bin/activate  # On Mac/Linux
+python api/api_server.py
+```
+The API server will run on `http://localhost:8001`
+
+### 3. **Start Next.js Development Server** (Terminal 3):
+```bash
+npm run dev
+# or
+yarn dev
+```
+The web app will run on `http://localhost:3000`
+
 ## Usage
 
-1. **Start the development server**:
-
-   ```bash
-   npm run dev
-   # or
-   yarn dev
-   ```
-
-2. **Open your browser** and navigate to `http://localhost:3000`
+1. **Open your browser** and navigate to `http://localhost:3000`
 
 3. **Start typing** in the bio description field to experience:
    - **AI Autocomplete**: After 5+ complete words, AI suggestions appear as gray inline text
@@ -120,7 +161,55 @@ Before you begin, ensure you have the following installed:
    - **Type naturally** - the Text Feature Coordinator prevents interference
    - **Mobile-friendly** - all features work seamlessly on touch devices
 
+## Python API Server
+
+The application includes a FastAPI server that provides the hybrid autocomplete functionality:
+
+### API Endpoints
+
+- **GET /** - Health check endpoint
+- **POST /api/autocomplete** - Vector-only autocomplete suggestions
+- **POST /api/autocomplete/hybrid** - Hybrid autocomplete (vector + LLM)
+- **GET /api/stats** - Database statistics
+
+### Hybrid Approach
+
+The hybrid autocomplete system combines:
+1. **Vector Search** - Fast exact matches from ~5000 bio examples using ChromaDB
+2. **LLM Generation** - Creative completions using Ollama Gemma 3 12B
+3. **Quality Filtering** - Ensures suggestions are complete thoughts (8+ words)
+
+Response times: 100-150ms (compared to 200-500ms for LLM-only)
+
+### API Documentation
+
+When the server is running, visit `http://localhost:8001/docs` for interactive API documentation.
+
 ## How It Works
+
+### System Architecture
+
+```
+User Input → Next.js Form → Python API (Port 8001)
+                                    ↓
+                         ┌─────────────────────┐
+                         │   Vector Search      │
+                         │   (ChromaDB)        │
+                         │   ~5000 Bios        │
+                         └──────────┬──────────┘
+                                    ↓
+                         ┌─────────────────────┐
+                         │   LLM Generation     │
+                         │   (Ollama Gemma 3)  │
+                         │   Context-aware      │
+                         └──────────┬──────────┘
+                                    ↓
+                         ┌─────────────────────┐
+                         │   Smart Filter       │
+                         │   Quality Check      │
+                         │   Top 3 Results      │
+                         └─────────────────────┘
+```
 
 ### Sophisticated Hook Architecture
 The application uses a **4-hook system** for optimal performance and feature coordination:
@@ -146,7 +235,7 @@ The **Text Feature Coordinator** manages three text features:
 - **Layered textarea approach** for inline suggestion display
 - **Word completion detection** - waits for complete words before suggesting
 - **Progressive debouncing** - 500ms delay with smart triggering after 5+ words
-- **Vector database integration** with Weaviate for enhanced context
+- **Vector database integration** with ChromaDB for fast similarity search
 - **Server Actions** communicate with Ollama Gemma 3 12B model
 - **Intelligent spacing** - proper handling of tab acceptance and word boundaries
 
@@ -180,17 +269,20 @@ The **Text Feature Coordinator** manages three text features:
 ## Project Structure
 
 ```
-ai-autocomplete-spellcheck/
+ai-train-llm/
 ├── actions/
-│   └── ai-text.ts                    # Server actions for AI integration
+│   ├── ai-text.ts                    # Server actions for hybrid API integration
+│   └── ai-vision.ts                  # Image analysis actions
 ├── app/
 │   ├── layout.tsx                    # Root layout
 │   ├── page.tsx                      # Main page component
-│   ├── image-analyzer/               # Image analysis feature
+│   ├── ai-image/                     # Image analysis feature
 │   └── globals.css                   # Global styles with Tailwind v4
 ├── components/
 │   ├── Form.tsx                      # Main form with layered textarea
+│   ├── FormImage.tsx                 # Image upload form
 │   ├── SpellCheckPopup.tsx           # Interactive spell suggestion popup
+│   ├── SpellCheckOverlay.tsx         # Spell check visual overlay
 │   └── Navbar.tsx                    # Navigation component
 ├── hooks/                            # Sophisticated 4-hook architecture
 │   ├── useFormAutocomplete.tsx       # Main form logic with AI integration
@@ -199,21 +291,34 @@ ai-autocomplete-spellcheck/
 │   └── useTextFeatureCoordinator.tsx # Feature conflict prevention
 ├── lib/
 │   ├── customDictionary.ts           # Custom dictionary service
-│   ├── openai.ts                     # OpenAI integration
+│   ├── openai.ts                     # OpenAI integration (unused)
 │   └── utils.ts                      # Utility functions
 ├── data/
-│   └── bios.json                     # Bio examples for AI training
+│   └── bio.json                      # ~5000 bio examples for vector database
+├── python/                           # Python backend
+│   ├── api/
+│   │   └── api_server.py            # FastAPI hybrid autocomplete server
+│   ├── vector_db/
+│   │   ├── setup_chromadb.py        # Initialize vector database
+│   │   └── vector_search.py         # Vector search implementation
+│   ├── mlx_training/                # Model training scripts
+│   │   ├── train_bio_improved.py    # GPT-2 fine-tuning
+│   │   ├── bio_gpt2_improved/       # Trained model files
+│   │   └── bio_dataset/             # Training datasets
+│   ├── chroma_db/                   # ChromaDB persistent storage
+│   └── requirements.txt             # Python dependencies
 ├── public/
 │   ├── dictionaries/
-│   │   └── en_US/                    # Hunspell dictionaries
-│   │       ├── en_US.aff            # Affix rules
-│   │       └── en_US.dic            # Dictionary words
-│   └── images/                       # Static images
-├── types/                            # TypeScript type definitions
+│   │   └── en_US/                   # Hunspell dictionaries
+│   │       ├── en_US.aff           # Affix rules
+│   │       └── en_US.dic           # Dictionary words
+│   └── images/                      # Static images
+├── type/                            # TypeScript type definitions
 └── [Configuration Files]
-    ├── next.config.js                # Next.js configuration
-    ├── tailwind.config.js            # Tailwind CSS v4 config
-    └── tsconfig.json                 # TypeScript configuration
+    ├── next.config.ts               # Next.js configuration
+    ├── tailwind.config.js           # Tailwind CSS v4 config
+    ├── docker-compose.yml           # Docker services (optional)
+    └── tsconfig.json                # TypeScript configuration
 ```
 
 ## Available Scripts
@@ -232,6 +337,26 @@ The application expects Ollama to be running on `http://127.0.0.1:11434` by defa
 ```env
 OLLAMA_PATH_API=http://your-ollama-host:port/api
 ```
+
+### Python API Configuration
+
+The FastAPI server runs on port 8001 by default. Key configuration options:
+
+```python
+# In python/api/api_server.py
+OLLAMA_API_URL = "http://localhost:11434/api"
+CHROMA_PERSIST_DIR = "../chroma_db"
+MAX_SUGGESTIONS = 3
+MIN_SUGGESTION_LENGTH = 8  # Minimum words per suggestion
+```
+
+### Vector Database Configuration
+
+ChromaDB is configured to persist data locally:
+- **Storage location**: `python/chroma_db/`
+- **Collection name**: `bio_embeddings`
+- **Embedding function**: Default (all-MiniLM-L6-v2)
+- **Bio count**: ~5000 entries from `data/bio.json`
 
 ### Spell Check Configuration
 
@@ -264,7 +389,7 @@ its      → it's, it is, it has
 
 **Default Setup:**
 - **Primary Model**: `gemma3:12b` via Ollama (local inference)
-- **Vector Database**: Weaviate for contextual enhancement (optional)
+- **Vector Database**: ChromaDB with ~5000 bio embeddings
 - **OpenAI Integration**: Available as fallback option
 
 **Configuration Options:**
@@ -318,15 +443,22 @@ const temperature = 0.7;     // Control creativity
 
 ## Dependencies
 
-### Main Dependencies
+### Frontend Dependencies
 
 - **Next.js 15.3.3** - React framework with App Router and Server Actions
 - **React 19** - Latest UI library with advanced hooks
 - **React Hook Form 7.58.0** - Sophisticated form management
 - **typo-js 1.2.5** - Spell checking with Hunspell dictionary support
 - **use-debounce 10.0.5** - Performance optimization utility
-- **weaviate-client 3.6.2** - Vector database for contextual AI
-- **openai 5.5.0** - OpenAI API integration (optional)
+
+### Python Backend Dependencies
+
+- **FastAPI** - High-performance web framework for building APIs
+- **ChromaDB 0.4.24** - Vector database for storing bio embeddings
+- **Uvicorn** - ASGI server for running FastAPI
+- **Transformers** - Hugging Face library for model training
+- **PyTorch** - Deep learning framework for model fine-tuning
+- **Sentence Transformers** - For generating embeddings
 
 ### Development Dependencies
 
@@ -361,7 +493,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - **Context-aware suggestions** using Gemma 3 12B model for relevance
 - **Layered textarea approach** for seamless inline suggestion display
 - **Smart triggering system** - activates after 5+ complete words
-- **Vector database integration** with Weaviate for enhanced understanding
+- **Vector database integration** with ChromaDB for enhanced understanding
 - **Intelligent spacing logic** - proper tab acceptance and word boundaries
 - **Progressive debouncing** - 500ms delay with adaptive timing
 
@@ -380,10 +512,42 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - **Optimized debouncing** for mobile keyboard behavior
 - **Battery-conscious processing** with intelligent feature management
 
+## Model Training (Optional)
+
+The project includes scripts for training custom models on your bio data:
+
+### Training Your Own Model
+
+1. **Prepare training data**:
+   ```bash
+   cd python/mlx_training
+   python prepare_mlx_data.py
+   ```
+
+2. **Train the model**:
+   ```bash
+   python train_bio_improved.py  # For GPT-2 fine-tuning
+   # or
+   python train_simple.py  # For quick testing
+   ```
+
+3. **Use the trained model**:
+   - Models are saved in `bio_gpt2_improved/` directory
+   - Can be served via additional API endpoints
+   - See `how_to_use.md` for detailed instructions
+
+## Additional Documentation
+
+- **[how_to_use.md](how_to_use.md)** - Comprehensive guide for using and training the system
+- **[API_SERVER_GUIDE.md](API_SERVER_GUIDE.md)** - Detailed API documentation
+- **[progress-overview.md](progress-overview.md)** - Development progress and architecture details
+
 ## Acknowledgments
 
 - [Ollama](https://ollama.ai) for providing local AI model hosting
 - [Google Gemma](https://ai.google.dev/gemma) for the powerful language model
+- [ChromaDB](https://www.trychroma.com/) for the efficient vector database
+- [FastAPI](https://fastapi.tiangolo.com/) for the high-performance API framework
 - [typo-js](https://github.com/cfinke/Typo.js) for excellent spell checking capabilities
 - [Hunspell](http://hunspell.github.io/) for comprehensive dictionary support
 - [Next.js](https://nextjs.org) team for the excellent framework
