@@ -179,7 +179,12 @@ const autoCapitalizeText = (text: string): string => {
   return result;
 };
 
-const useFormAutocomplete = () => {
+interface UseFormAutocompleteOptions {
+  disableAutocomplete?: boolean;
+}
+
+const useFormAutocomplete = (options: UseFormAutocompleteOptions = {}) => {
+  const { disableAutocomplete = false } = options;
   const [suggestion, setSuggestion] = useState("");
   const [isPending, startTransition] = useTransition();
   const [textareaHeight, setTextareaHeight] = useState("auto");
@@ -396,6 +401,12 @@ const useFormAutocomplete = () => {
 
   // Word-based autocomplete logic - simple and effective
   useEffect(() => {
+    // Skip if autocomplete is disabled (e.g., when kick detection is active)
+    if (disableAutocomplete) {
+      setSuggestion("");
+      return;
+    }
+    
     // Skip if we just replaced a spell check word or if autocomplete is already active
     if (justReplacedSpellCheckWord || isAutocompleteActive) {
       setSuggestion("");
@@ -466,7 +477,7 @@ const useFormAutocomplete = () => {
         }
       }
     });
-  }, [debouncedPrompt, promptValue, immediateAutocomplete, lastAcceptedWordCount, lastAcceptedPosition, justReplacedSpellCheckWord, forceAutocompleteCheck]);
+  }, [debouncedPrompt, promptValue, immediateAutocomplete, lastAcceptedWordCount, lastAcceptedPosition, justReplacedSpellCheckWord, forceAutocompleteCheck, disableAutocomplete]);
 
   const onSubmit: SubmitHandler<{ name: string; prompt: string }> = async (
     data
@@ -510,7 +521,7 @@ const useFormAutocomplete = () => {
   }, [promptValue, setValue]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Tab" && suggestion) {
+    if (e.key === "Tab" && suggestion && !disableAutocomplete) {
       e.preventDefault();
       const space = needsSpaceBeforeSuggestion(promptValue) ? " " : "";
       const newText = promptValue + space + suggestion;

@@ -24,14 +24,26 @@ const kickVariationPatterns = [
   // Alternative spellings (keek, keik, kiek)
   /\bk[e3][e3i1][kc]\b/gi,
   
-  // Parentheses patterns
-  /\bk\([i1l!|]\)[kc]\b/gi,
+  // Enhanced parentheses patterns - catches k(__)k, k(_)k, k( )k, k(i)k, etc.
+  /\bk\([^)]{0,3}\)[kc]\b/gi,
   
   // Multiple underscores
   /\bk_{1,3}[i1l!|]_{0,3}[kc]\b/gi,
   
   // Advanced pattern with any non-letter chars between
   /\bk[^a-z]{0,3}[i1l!|e3][^a-z]{0,3}[kc]\b/gi,
+  
+  // Any bracket type with any content - k[_]k, k{i}k, k<_>k, etc.
+  /\bk[(\[{<][^)\]}>]{0,3}[)\]}>][kc]\b/gi,
+  
+  // Missing letter patterns - k__k, k--k, k..k, k~~k
+  /\bk[_\-\.~]{1,3}[kc]\b/gi,
+  
+  // Multiple spaces pattern - k  k, k   k
+  /\bk\s{1,3}[kc]\b/gi,
+  
+  // General k***k pattern where *** is any non-letter chars (catches missing i)
+  /\bk[^a-z]{1,3}[kc]\b/gi,
   
   // Domain patterns (more flexible boundaries for URLs)
   /k[i1l!|._\-\s]{1,4}[kc]\s*[\.\,\·\•]\s*c[o0]m/gi,
@@ -289,7 +301,17 @@ export function detectKickVariations(text: string): DetectionResult {
           results.techniques.push('parentheses');
         } else if (index === 5) {
           results.techniques.push('underscores');
-        } else if (index >= 7) {
+        } else if (index === 6) {
+          results.techniques.push('advanced_pattern');
+        } else if (index === 7) {
+          results.techniques.push('brackets');
+        } else if (index === 8) {
+          results.techniques.push('missing_letter');
+        } else if (index === 9) {
+          results.techniques.push('spaces');
+        } else if (index === 10) {
+          results.techniques.push('general_obfuscation');
+        } else if (index >= 11) {
           results.techniques.push('domain_pattern');
         }
       }

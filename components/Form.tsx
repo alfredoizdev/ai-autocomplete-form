@@ -11,6 +11,15 @@ import { useKickDetection, useKickDetectionLogger } from "@/hooks/useKickDetecti
 import { KickDetectionWarning, InlineKickWarning } from "./KickDetectionWarning";
 
 const Form = () => {
+  // Use the text feature coordinator to prevent conflicts
+  const coordinator = useTextFeatureCoordinator();
+  
+  // State for showing kick warning
+  const [showKickWarning, setShowKickWarning] = useState(true);
+  
+  // State for disabling autocomplete
+  const [disableAutocomplete, setDisableAutocomplete] = useState(false);
+  
   const {
     register,
     handleSubmit,
@@ -27,19 +36,13 @@ const Form = () => {
     promptValue,
     needsSpaceBeforeSuggestion,
     notifySpellCheckReplacement,
-  } = useFormAutocomplete();
+  } = useFormAutocomplete({ disableAutocomplete });
 
   const { misspelledWords, isLoading: spellCheckLoading, getSuggestions, isProcessing, customDictionary, refreshSpellCheck } = useDebouncedSpellCheck(promptValue);
-  
-  // Use the text feature coordinator to prevent conflicts
-  const coordinator = useTextFeatureCoordinator();
   
   // Kick detection hook
   const { detection: kickDetection, isChecking: kickChecking, clearDetection } = useKickDetection(promptValue);
   const { logDetection } = useKickDetectionLogger();
-  
-  // State for showing kick warning
-  const [showKickWarning, setShowKickWarning] = useState(true);
 
   // State for spell check popup
   const [showPopup, setShowPopup] = useState(false);
@@ -126,6 +129,7 @@ const Form = () => {
     if (kickDetection) {
       logDetection(promptValue, kickDetection, 'edited');
       setShowKickWarning(false);
+      // Keep autocomplete disabled since kick is still detected
     }
   }, [kickDetection, promptValue, logDetection]);
   
@@ -134,8 +138,23 @@ const Form = () => {
     if (kickDetection) {
       logDetection(promptValue, kickDetection, 'dismissed');
       setShowKickWarning(false);
+      // Keep autocomplete disabled since kick is still detected
     }
   }, [kickDetection, promptValue, logDetection]);
+
+  // Quick synchronous check for obvious kick patterns
+  const quickKickCheck = useCallback((text: string): boolean => {
+    if (!text) return false;
+    
+    // Quick patterns that catch obvious kick variations
+    const quickPatterns = [
+      /k[^a-z]{0,3}[kc]/i,     // k()k, k__k, k--k, k  k, etc.
+      /kick/i,                  // direct kick
+      /k[i1l!|][kc]/i,         // k1k, k!k, klk
+    ];
+    
+    return quickPatterns.some(pattern => pattern.test(text));
+  }, []);
 
   // Handle teaching word correction - memoized for performance
   const handleTeachCorrection = useCallback((misspelledWord: string, correctWord: string) => {
@@ -251,12 +270,34 @@ const Form = () => {
 
 
 
-  // Reset kick warning when detection changes
+  // Reset kick warning when detection changes and manage autocomplete
   useEffect(() => {
-    if (kickDetection?.detected) {
+    const isKickDetected = kickDetection?.detected || false;
+    
+    // Only update if the state actually needs to change
+    if (isKickDetected && !disableAutocomplete) {
+      setShowKickWarning(true);
+      setDisableAutocomplete(true);
+      coordinator.lockFeature(TextFeature.AUTOCOMPLETE, 60000); // Lock for 1 minute
+      coordinator.setActiveFeature(TextFeature.KICK_DETECTION);
+    } else if (!isKickDetected && disableAutocomplete) {
+      // Only re-enable autocomplete if text doesn't contain obvious kick patterns
+      // This prevents autocomplete from running during the debounce window
+      if (!quickKickCheck(promptValue)) {
+        setDisableAutocomplete(false);
+        if (coordinator.isFeatureActive(TextFeature.KICK_DETECTION)) {
+          coordinator.setActiveFeature(null);
+        }
+      }
+      // If quick check still finds kick patterns, keep autocomplete disabled
+      // The next detection cycle will handle it properly
+    }
+    
+    // Reset warning visibility when kick is detected
+    if (isKickDetected && !showKickWarning) {
       setShowKickWarning(true);
     }
-  }, [kickDetection]);
+  }, [kickDetection?.detected, disableAutocomplete, showKickWarning, promptValue, quickKickCheck, coordinator.lockFeature, coordinator.setActiveFeature, coordinator.isFeatureActive]);
 
   // Close popup when clicking outside
   useEffect(() => {
@@ -491,7 +532,7 @@ const Form = () => {
 
         {/* Instructional message */}
         <div className="mt-3 text-xs text-gray-500 min-h-[16px]">
-          {suggestion ? (
+          {suggestion && coordinator.canActivateFeature(TextFeature.AUTOCOMPLETE) ? (
             <span>
               💡 Press{" "}
               <kbd className="px-1 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">
@@ -517,15 +558,7 @@ const Form = () => {
         )}
       </div>
       
-      {/* Full kick detection warning */}
-      {kickDetection && showKickWarning && kickDetection.confidence >= 70 && (
-        <KickDetectionWarning
-          detection={kickDetection}
-          onDismiss={handleKickDismiss}
-          onAcknowledge={handleKickAcknowledge}
-          className="mb-4"
-        />
-      )}
+      {/* Full kick detection warning - REMOVED per user request */}
 
       {/* Spell Check Popup */}
       {showPopup && (

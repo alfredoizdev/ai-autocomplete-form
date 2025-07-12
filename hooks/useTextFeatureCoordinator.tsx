@@ -4,6 +4,7 @@ export enum TextFeature {
   AUTOCOMPLETE = "autocomplete",
   SPELLCHECK = "spellcheck",
   CAPITALIZATION = "capitalization",
+  KICK_DETECTION = "kick_detection",
 }
 
 interface FeatureState {
@@ -55,6 +56,11 @@ const useTextFeatureCoordinator = () => {
   const canActivateFeature = useCallback((feature: TextFeature): boolean => {
     // Can't activate if this feature is locked
     if (state.featureLocks.has(feature)) return false;
+    
+    // Kick detection blocks autocomplete
+    if (feature === TextFeature.AUTOCOMPLETE && state.activeFeature === TextFeature.KICK_DETECTION) {
+      return false;
+    }
     
     // Allow autocomplete and spellcheck to coexist
     if (feature === TextFeature.AUTOCOMPLETE && state.activeFeature === TextFeature.SPELLCHECK) {
