@@ -4,6 +4,41 @@ import { Bio } from "@/type/Collection";
 
 const chatHistory: { role: "user" | "assistant"; content: string }[] = [];
 
+// Cache for API server status
+let apiServerAvailable: boolean | null = null;
+let lastHealthCheck = 0;
+const HEALTH_CHECK_INTERVAL = 60000; // Check every 60 seconds
+
+// Helper function to check if the Python API server is running
+async function checkApiServerHealth(): Promise<boolean> {
+  const now = Date.now();
+  
+  // Use cached result if recent
+  if (apiServerAvailable !== null && now - lastHealthCheck < HEALTH_CHECK_INTERVAL) {
+    return apiServerAvailable;
+  }
+  
+  try {
+    const response = await fetch('http://localhost:8001/', {
+      method: 'GET',
+      signal: AbortSignal.timeout(2000), // 2 second timeout
+    });
+    
+    apiServerAvailable = response.ok;
+    lastHealthCheck = now;
+    
+    if (apiServerAvailable) {
+      console.log('✅ Python API server is running on port 8001');
+    }
+    
+    return apiServerAvailable;
+  } catch (error) {
+    apiServerAvailable = false;
+    lastHealthCheck = now;
+    return false;
+  }
+}
+
 // This function is no longer used - vector search is handled by the Python API
 // export const setCollectionForVectorDB = async () => {
 //   const client = await weaviate.connectToLocal();
@@ -20,9 +55,13 @@ const chatHistory: { role: "user" | "assistant"; content: string }[] = [];
 // };
 
 export const askOllamaCompletationAction = async (input: string) => {
-  try {
-    // Use the new hybrid endpoint that combines vector search with LLM generation
-    const hybridResponse = await fetch('http://localhost:8001/api/autocomplete/hybrid', {
+  // Check if API server is available
+  const serverAvailable = await checkApiServerHealth();
+  
+  if (serverAvailable) {
+    try {
+      // Use the new hybrid endpoint that combines vector search with LLM generation
+      const hybridResponse = await fetch('http://localhost:8001/api/autocomplete/hybrid', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -45,8 +84,18 @@ export const askOllamaCompletationAction = async (input: string) => {
         return data.combined_suggestions[0];
       }
     }
-  } catch (error) {
-    console.error('Hybrid autocomplete API error:', error);
+    } catch (error: any) {
+      // Check if it's a connection error
+      if (error.cause?.code === 'ECONNREFUSED') {
+        console.error('❌ Python API server is not running on port 8001');
+        console.error('To start the server, run: ./start_api_server.sh');
+        console.error('Or manually: cd python && python3 api/api_server.py');
+      } else {
+        console.error('Hybrid autocomplete API error:', error);
+      }
+    }
+  } else {
+    console.log('⚠️ Python API server not available, using fallback Ollama method');
   }
 
   // Fallback to direct Ollama method if vector search fails or returns no results
