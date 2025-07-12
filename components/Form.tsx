@@ -7,6 +7,8 @@ import SpellCheckPopup from "./SpellCheckPopup";
 import SpellCheckOverlay from "./SpellCheckOverlay";
 import { useState, useEffect, useCallback } from "react";
 import useTextFeatureCoordinator, { TextFeature } from "@/hooks/useTextFeatureCoordinator";
+import { useKickDetection, useKickDetectionLogger } from "@/hooks/useKickDetection";
+import { KickDetectionWarning, InlineKickWarning } from "./KickDetectionWarning";
 
 const Form = () => {
   const {
@@ -31,6 +33,13 @@ const Form = () => {
   
   // Use the text feature coordinator to prevent conflicts
   const coordinator = useTextFeatureCoordinator();
+  
+  // Kick detection hook
+  const { detection: kickDetection, isChecking: kickChecking, clearDetection } = useKickDetection(promptValue);
+  const { logDetection } = useKickDetectionLogger();
+  
+  // State for showing kick warning
+  const [showKickWarning, setShowKickWarning] = useState(true);
 
   // State for spell check popup
   const [showPopup, setShowPopup] = useState(false);
@@ -111,6 +120,22 @@ const Form = () => {
       console.error(`Failed to add "${word}" to custom dictionary`);
     }
   }, [customDictionary]);
+
+  // Handle kick detection acknowledgment
+  const handleKickAcknowledge = useCallback(() => {
+    if (kickDetection) {
+      logDetection(promptValue, kickDetection, 'edited');
+      setShowKickWarning(false);
+    }
+  }, [kickDetection, promptValue, logDetection]);
+  
+  // Handle kick detection dismiss
+  const handleKickDismiss = useCallback(() => {
+    if (kickDetection) {
+      logDetection(promptValue, kickDetection, 'dismissed');
+      setShowKickWarning(false);
+    }
+  }, [kickDetection, promptValue, logDetection]);
 
   // Handle teaching word correction - memoized for performance
   const handleTeachCorrection = useCallback((misspelledWord: string, correctWord: string) => {
@@ -225,6 +250,13 @@ const Form = () => {
   }, [getSuggestions]);
 
 
+
+  // Reset kick warning when detection changes
+  useEffect(() => {
+    if (kickDetection?.detected) {
+      setShowKickWarning(true);
+    }
+  }, [kickDetection]);
 
   // Close popup when clicking outside
   useEffect(() => {
@@ -475,7 +507,25 @@ const Form = () => {
         {errors.prompt && (
           <p className="text-red-500 text-sm mt-1">{errors.prompt.message}</p>
         )}
+        
+        {/* Inline kick detection warning */}
+        {kickDetection && showKickWarning && (
+          <InlineKickWarning 
+            detection={kickDetection} 
+            className="mt-2"
+          />
+        )}
       </div>
+      
+      {/* Full kick detection warning */}
+      {kickDetection && showKickWarning && kickDetection.confidence >= 70 && (
+        <KickDetectionWarning
+          detection={kickDetection}
+          onDismiss={handleKickDismiss}
+          onAcknowledge={handleKickAcknowledge}
+          className="mb-4"
+        />
+      )}
 
       {/* Spell Check Popup */}
       {showPopup && (
