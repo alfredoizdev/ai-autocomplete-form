@@ -23,12 +23,31 @@ app.add_middleware(
 )
 
 # Load model
-model_path = Path(__file__).parent / "mlx_training" / "trained_small_model"
-model = AutoModelForCausalLM.from_pretrained(str(model_path))
-tokenizer = AutoTokenizer.from_pretrained(str(model_path))
+model_path = Path(__file__).parent.parent / "mlx_training" / "bio_distilgpt2_finetuned"
+
+# Load the base model first
+from transformers import GPT2LMHeadModel, GPT2Tokenizer
+print(f"Loading model from {model_path}")
+
+# For LoRA fine-tuned models, we need to load the base model and adapter
+try:
+    # Try loading as a full model first
+    model = AutoModelForCausalLM.from_pretrained(str(model_path))
+    tokenizer = AutoTokenizer.from_pretrained(str(model_path))
+except Exception as e:
+    print(f"Failed to load as full model, trying base model + adapter: {e}")
+    # Load base DistilGPT2 and the tokenizer
+    model = GPT2LMHeadModel.from_pretrained("distilgpt2")
+    tokenizer = GPT2Tokenizer.from_pretrained(str(model_path))
+
+# Set padding token
+if tokenizer.pad_token is None:
+    tokenizer.pad_token = tokenizer.eos_token
+
 device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
 model.to(device)
 model.eval()
+print(f"Model loaded successfully on {device}")
 
 class AutocompleteRequest(BaseModel):
     prompt: str
@@ -42,9 +61,9 @@ async def autocomplete(request: AutocompleteRequest):
     """Generate autocomplete suggestions using the trained model."""
     
     try:
-        # Format prompt
-        text = f"Bio: {request.prompt} ->"
-        inputs = tokenizer(text, return_tensors="pt").to(device)
+        # Just use the prompt directly - the model was likely trained on raw bio text
+        text = request.prompt
+        inputs = tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=512).to(device)
         
         suggestions = []
         
@@ -53,25 +72,35 @@ async def autocomplete(request: AutocompleteRequest):
             with torch.no_grad():
                 torch.manual_seed(42 + i)  # Different seed for each suggestion
                 
+                # Generate with more conservative parameters
                 outputs = model.generate(
-                    **inputs,
-                    max_new_tokens=15,
-                    temperature=0.8,
+                    input_ids=inputs['input_ids'],
+                    attention_mask=inputs['attention_mask'],
+                    max_new_tokens=20,
+                    min_new_tokens=5,
+                    temperature=0.7,
                     do_sample=True,
-                    top_p=0.9,
-                    pad_token_id=tokenizer.eos_token_id,
-                    eos_token_id=tokenizer.eos_token_id
+                    top_p=0.85,
+                    top_k=50,
+                    pad_token_id=tokenizer.pad_token_id,
+                    eos_token_id=tokenizer.eos_token_id,
+                    repetition_penalty=1.2,
+                    length_penalty=1.0
                 )
             
-            generated = tokenizer.decode(outputs[0], skip_special_tokens=True)
+            # Decode the full output
+            full_generated = tokenizer.decode(outputs[0], skip_special_tokens=True)
             
-            # Extract completion
-            if "->" in generated:
-                completion = generated.split("->")[-1].strip()
-                # Clean up the completion
-                completion = completion.split(".")[0].strip()
-                if completion and len(completion) > 2:
-                    suggestions.append(completion)
+            # Extract only the new part (remove the prompt)
+            if full_generated.startswith(text):
+                completion = full_generated[len(text):].strip()
+            else:
+                completion = full_generated.strip()
+            
+            # Clean up the completion
+            completion = completion.split("\n")[0].strip()  # Take first line only
+            if completion and len(completion.split()) >= 3:  # At least 3 words
+                suggestions.append(completion)
         
         # Remove duplicates while preserving order
         seen = set()
