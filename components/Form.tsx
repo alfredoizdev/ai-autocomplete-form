@@ -7,8 +7,8 @@ import SpellCheckPopup from "./SpellCheckPopup";
 import SpellCheckOverlay from "./SpellCheckOverlay";
 import { useState, useEffect, useCallback } from "react";
 import useTextFeatureCoordinator, { TextFeature } from "@/hooks/useTextFeatureCoordinator";
-import { useKickDetection, useKickDetectionLogger } from "@/hooks/useKickDetection";
-import { KickDetectionWarning, InlineKickWarning } from "./KickDetectionWarning";
+import { useKickDetection } from "@/hooks/useKickDetection";
+import { InlineKickWarning } from "./KickDetectionWarning";
 
 const Form = () => {
   // Use the text feature coordinator to prevent conflicts
@@ -41,8 +41,7 @@ const Form = () => {
   const { misspelledWords, isLoading: spellCheckLoading, getSuggestions, isProcessing, customDictionary, refreshSpellCheck } = useDebouncedSpellCheck(promptValue);
   
   // Kick detection hook
-  const { detection: kickDetection, isChecking: kickChecking, clearDetection } = useKickDetection(promptValue);
-  const { logDetection } = useKickDetectionLogger();
+  const { detection: kickDetection } = useKickDetection(promptValue);
 
   // State for spell check popup
   const [showPopup, setShowPopup] = useState(false);
@@ -124,23 +123,6 @@ const Form = () => {
     }
   }, [customDictionary]);
 
-  // Handle kick detection acknowledgment
-  const handleKickAcknowledge = useCallback(() => {
-    if (kickDetection) {
-      logDetection(promptValue, kickDetection, 'edited');
-      setShowKickWarning(false);
-      // Keep autocomplete disabled since kick is still detected
-    }
-  }, [kickDetection, promptValue, logDetection]);
-  
-  // Handle kick detection dismiss
-  const handleKickDismiss = useCallback(() => {
-    if (kickDetection) {
-      logDetection(promptValue, kickDetection, 'dismissed');
-      setShowKickWarning(false);
-      // Keep autocomplete disabled since kick is still detected
-    }
-  }, [kickDetection, promptValue, logDetection]);
 
   // Quick synchronous check for obvious kick patterns
   const quickKickCheck = useCallback((text: string): boolean => {
@@ -297,7 +279,7 @@ const Form = () => {
     if (isKickDetected && !showKickWarning) {
       setShowKickWarning(true);
     }
-  }, [kickDetection?.detected, disableAutocomplete, showKickWarning, promptValue, quickKickCheck, coordinator.lockFeature, coordinator.setActiveFeature, coordinator.isFeatureActive]);
+  }, [kickDetection?.detected, disableAutocomplete, showKickWarning, promptValue, quickKickCheck, coordinator]);
 
   // Close popup when clicking outside
   useEffect(() => {

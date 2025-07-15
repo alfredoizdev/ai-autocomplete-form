@@ -1,8 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+interface DetectionLog {
+  text: string;
+  result: {
+    detected: boolean;
+    confidence: number;
+    matches?: string[];
+  };
+  userAction: string;
+  timestamp?: string;
+}
+
 // Simple in-memory storage for demo purposes
 // In production, this would be stored in a database
-const detectionLogs: any[] = [];
+const detectionLogs: DetectionLog[] = [];
 
 export async function POST(req: NextRequest) {
   try {

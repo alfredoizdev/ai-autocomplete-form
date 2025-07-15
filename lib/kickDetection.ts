@@ -179,7 +179,7 @@ function levenshteinDistance(str1: string, str2: string): number {
 }
 
 // Calculate confidence score based on detection results
-function calculateConfidence(results: Partial<DetectionResult>, text?: string): number {
+function calculateConfidence(results: Partial<DetectionResult>): number {
   if (!results.matches || results.matches.length === 0) return 0;
   
   let confidence = 0;
@@ -328,7 +328,7 @@ export function detectKickVariations(text: string): DetectionResult {
   
   // Levenshtein distance check for fuzzy matching
   const words = normalizedText.split(/[\s._\-]+/);
-  words.forEach((word, wordIdx) => {
+  words.forEach((word) => {
     const cleaned = word.replace(/[^a-z0-9]/g, '');
     if (cleaned.length >= 3 && cleaned.length <= 6) {
       const distance = levenshteinDistance(cleaned, 'kick');

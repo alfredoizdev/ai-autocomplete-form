@@ -148,7 +148,7 @@ const FormOptimized = () => {
             promptValue={promptValue}
             suggestion={suggestion}
             overlayHeight={overlayHeight}
-            needsSpace={needsSpaceBeforeSuggestion(promptValue)}
+            needsSpace={!!needsSpaceBeforeSuggestion(promptValue)}
           />
           
           {/* Hidden measure textarea */}

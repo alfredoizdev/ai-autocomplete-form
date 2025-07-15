@@ -200,6 +200,7 @@ const useFormAutocomplete = (options: UseFormAutocompleteOptions = {}) => {
   const [savedSuggestion, setSavedSuggestion] = useState<string>("");
   const [immediateAutocomplete, setImmediateAutocomplete] = useState(false);
   const [previousTextLength, setPreviousTextLength] = useState(0);
+  const [previousTextSnapshot, setPreviousTextSnapshot] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const measureRef = useRef<HTMLTextAreaElement>(null);
 
@@ -334,31 +335,41 @@ const useFormAutocomplete = (options: UseFormAutocompleteOptions = {}) => {
     return `${calculatedHeight}px`;
   };
 
-  // Clear suggestions when text is empty or significantly reduced
+  // Clear suggestions when text is empty or significantly changed
   useEffect(() => {
     const currentLength = promptValue.length;
     
-    // If text is completely empty, reset autocomplete state
+    // If text is completely empty, reset everything
     if (isTextEmpty(promptValue)) {
       resetAutocompleteState();
       setPreviousTextLength(0);
+      setPreviousTextSnapshot("");
       return;
     }
     
     // Detect major deletion (more than 50% of text removed at once)
     if (previousTextLength > 0 && currentLength < previousTextLength * 0.5) {
       console.log("Major text deletion detected, resetting autocomplete state");
-      // Reset autocomplete states but don't clear all text
-      setSuggestion("");
-      setSavedSuggestion("");
-      setLastAcceptedWordCount(0);
-      setLastAcceptedPosition(0);
-      // Server will detect this change and manage chat history accordingly
+      resetAutocompleteState();
     }
     
-    // Update previous length for next comparison
+    // Detect significant content change (not just appending)
+    if (previousTextSnapshot && previousTextSnapshot.length > 10) {
+      // Check if the beginning of the text has changed significantly
+      const commonPrefixLength = Math.min(10, previousTextSnapshot.length);
+      const previousPrefix = previousTextSnapshot.substring(0, commonPrefixLength);
+      const currentPrefix = promptValue.substring(0, commonPrefixLength);
+      
+      if (previousPrefix !== currentPrefix) {
+        console.log("Significant text change detected, resetting autocomplete state");
+        resetAutocompleteState();
+      }
+    }
+    
+    // Update tracking variables for next comparison
     setPreviousTextLength(currentLength);
-  }, [promptValue, previousTextLength]);
+    setPreviousTextSnapshot(promptValue);
+  }, [promptValue, previousTextLength, previousTextSnapshot, resetAutocompleteState]);
 
   // ResizeObserver to monitor textarea size changes
   useLayoutEffect(() => {

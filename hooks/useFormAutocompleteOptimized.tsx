@@ -1,4 +1,4 @@
-import { streamOllamaCompletion } from "@/actions/ai-text-streaming";
+import { streamOllamaCompletion, clearSuggestionCache } from "@/actions/ai-text-streaming";
 import {
   useEffect,
   useLayoutEffect,
@@ -177,6 +177,8 @@ const useFormAutocompleteOptimized = (options: UseFormAutocompleteOptions = {}) 
   const [immediateAutocomplete, setImmediateAutocomplete] = useState(false);
   const [typingSpeed, setTypingSpeed] = useState<number>(0);
   const [lastTypingTime, setLastTypingTime] = useState<number>(Date.now());
+  const [previousTextLength, setPreviousTextLength] = useState(0);
+  const [previousTextSnapshot, setPreviousTextSnapshot] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const measureRef = useRef<HTMLTextAreaElement>(null);
 
@@ -300,11 +302,44 @@ const useFormAutocompleteOptimized = (options: UseFormAutocompleteOptions = {}) 
     setLastTypingTime(Date.now());
   }, [promptValue]);
 
+  // Clear suggestions when text is empty or significantly changed
   useEffect(() => {
+    const currentLength = promptValue.length;
+    
+    // If text is completely empty, reset everything
     if (isTextEmpty(promptValue)) {
       resetAutocompleteState();
+      clearSuggestionCache(); // Clear cache to prevent old suggestions
+      setPreviousTextLength(0);
+      setPreviousTextSnapshot("");
+      return;
     }
-  }, [promptValue, isTextEmpty, resetAutocompleteState]);
+    
+    // Detect major deletion (more than 50% of text removed at once)
+    if (previousTextLength > 0 && currentLength < previousTextLength * 0.5) {
+      console.log("Major text deletion detected, resetting autocomplete state");
+      resetAutocompleteState();
+      clearSuggestionCache(); // Clear cache when significant deletion occurs
+    }
+    
+    // Detect significant content change (not just appending)
+    if (previousTextSnapshot && previousTextSnapshot.length > 10) {
+      // Check if the beginning of the text has changed significantly
+      const commonPrefixLength = Math.min(10, previousTextSnapshot.length);
+      const previousPrefix = previousTextSnapshot.substring(0, commonPrefixLength);
+      const currentPrefix = promptValue.substring(0, commonPrefixLength);
+      
+      if (previousPrefix !== currentPrefix) {
+        console.log("Significant text change detected, resetting autocomplete state");
+        resetAutocompleteState();
+        clearSuggestionCache(); // Clear cache when content changes significantly
+      }
+    }
+    
+    // Update tracking variables for next comparison
+    setPreviousTextLength(currentLength);
+    setPreviousTextSnapshot(promptValue);
+  }, [promptValue, previousTextLength, previousTextSnapshot, isTextEmpty, resetAutocompleteState]);
 
   useLayoutEffect(() => {
     if (!textareaRef.current) return;

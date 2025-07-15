@@ -2,13 +2,9 @@
 // import { Bios } from "@/data/Bios";
 // import { Bio } from "@/type/Collection";
 
-const chatHistory: { role: "user" | "assistant"; content: string }[] = [];
+// Removed global chat history - autocomplete should be stateless
+// Each request should be independent without carrying previous context
 
-// Function to clear chat history when user restarts (internal use only)
-const clearChatHistory = () => {
-  chatHistory.length = 0; // Clear the array while maintaining the reference
-  console.log("Chat history cleared for new session");
-};
 
 // Cache for API server status
 let apiServerAvailable: boolean | null = null;
@@ -63,24 +59,64 @@ async function checkApiServerHealth(): Promise<boolean> {
 //   console.log(`✅ Inserted ${entries.length} bios into Weaviate.`);
 // };
 
-// Track previous input to detect major changes
-let previousInput = "";
-
-export const askOllamaCompletationAction = async (input: string) => {
-  // Check if this is a major change or restart
-  if (previousInput.length > 0) {
-    // If input is much shorter than previous (cleared and restarted)
-    if (input.length < previousInput.length * 0.5) {
-      clearChatHistory();
+// Helper function to remove the prompt from the beginning of the AI response
+const stripPromptFromResponse = (prompt: string, response: string): string => {
+  if (!prompt || !response) return response;
+  
+  // Normalize both strings for comparison (trim and lowercase)
+  const normalizedPrompt = prompt.trim().toLowerCase();
+  const normalizedResponse = response.trim().toLowerCase();
+  
+  // Check if response starts with the prompt
+  if (normalizedResponse.startsWith(normalizedPrompt)) {
+    // Remove the prompt portion, preserving original casing
+    const cleanedResponse = response.trim().substring(prompt.trim().length).trim();
+    return cleanedResponse;
+  }
+  
+  // Also check if response contains prompt with slight variations (extra spaces, punctuation)
+  const promptWords = normalizedPrompt.split(/\s+/);
+  const responseWords = normalizedResponse.split(/\s+/);
+  
+  // If first N words match (where N is number of words in prompt), strip them
+  if (promptWords.length > 0 && responseWords.length >= promptWords.length) {
+    let matches = true;
+    for (let i = 0; i < promptWords.length; i++) {
+      if (promptWords[i] !== responseWords[i]) {
+        matches = false;
+        break;
+      }
     }
-    // If the input is completely different (not just appending)
-    else if (previousInput.length > 20 && !input.startsWith(previousInput.substring(0, 20))) {
-      clearChatHistory();
+    
+    if (matches) {
+      // Find where to cut in the original response
+      let cutIndex = 0;
+      let wordCount = 0;
+      for (let i = 0; i < response.length; i++) {
+        if (/\s/.test(response[i])) {
+          if (wordCount === promptWords.length - 1) {
+            cutIndex = i;
+            break;
+          }
+          // Skip consecutive spaces
+          while (i < response.length - 1 && /\s/.test(response[i + 1])) {
+            i++;
+          }
+          wordCount++;
+        }
+      }
+      
+      if (cutIndex > 0) {
+        return response.substring(cutIndex).trim();
+      }
     }
   }
   
-  // Update previous input for next comparison
-  previousInput = input;
+  return response;
+};
+
+export const askOllamaCompletationAction = async (input: string) => {
+  // Autocomplete is now stateless - no history tracking
   // Check if API server is available
   const serverAvailable = await checkApiServerHealth();
 
@@ -110,9 +146,10 @@ export const askOllamaCompletationAction = async (input: string) => {
           `Suggestions: ${data.combined_suggestions.length} (${data.exact_matches.length} exact, ${data.llm_completions.length} generated)`
         );
 
-        // Return the first combined suggestion
+        // Return the first combined suggestion after stripping the prompt
         if (data.combined_suggestions && data.combined_suggestions.length > 0) {
-          return data.combined_suggestions[0];
+          const suggestion = data.combined_suggestions[0];
+          return stripPromptFromResponse(input, suggestion);
         }
       }
     } catch (error: any) {
@@ -141,23 +178,28 @@ export const askOllamaCompletationAction = async (input: string) => {
 
 Write like you're seducing someone into your bed. Make them feel desired, excited, and eager to explore.
 
-CRITICAL: Always complete the thought in a way that:
+CRITICAL INSTRUCTION: You must output ONLY the completion text, NOT the original prompt. Never repeat what the user has already written.
+
+Rules for completion:
 - Creates anticipation and desire
 - Makes them imagine the pleasure ahead
 - Sounds confident, playful, and irresistibly naughty
 - Forms a complete, enticing sentence (8-20 words)
 - Uses explicit language about pleasure, orgasms, and desires
 
-Examples of seductive completions:
+Examples of CORRECT completions (notice we only return the new part):
 "I am a young male swinger looking for" → "sexy couples who want to explore every inch of pleasure together tonight"
 "We love meeting" → "adventurous souls ready to turn our wildest fantasies into unforgettable orgasmic reality"
 "My biggest turn on is" → "watching my partner moan with pleasure while we share you completely"
 "Looking for couples who" → "crave intense oral pleasure and aren't afraid to get deliciously dirty with us"
 
-Be explicitly sexual. Make them want to message immediately. Output ONLY the seductive completion.`,
+Examples of INCORRECT completions (DO NOT do this):
+"I am a young male swinger looking for" → "I am a young male swinger looking for sexy couples..."
+"We love meeting" → "We love meeting adventurous souls..."
+
+Be explicitly sexual. Make them want to message immediately. Output ONLY the continuation, NEVER repeat the input.`,
       },
-      // Only include recent history, not all history
-      ...chatHistory.slice(-4), // Only last 2 exchanges for context
+      // No chat history - each autocomplete request is independent
       {
         role: "user",
         content: `Complete this bio text: ${input}`,
@@ -186,6 +228,11 @@ Be explicitly sexual. Make them want to message immediately. Output ONLY the sed
       ?.replace(/\.{3,}/g, "") // Remove any ellipsis (3 or more dots)
       ?.replace(/…/g, "") // Remove single ellipsis character
       ?.trim(); // Trim again after cleaning
+    
+    // Strip the prompt from the response if it was repeated
+    if (output) {
+      output = stripPromptFromResponse(input, output);
+    }
 
     // Post-process: ensure lowercase if input ends with comma or no sentence-ending punctuation
     if (output && input) {
@@ -201,16 +248,7 @@ Be explicitly sexual. Make them want to message immediately. Output ONLY the sed
       }
     }
 
-    if (output) {
-      chatHistory.push({ role: "user", content: input });
-      chatHistory.push({ role: "assistant", content: output });
-      
-      // Limit chat history to prevent context overflow (keep last 6 exchanges = 12 messages)
-      const maxHistoryLength = 12;
-      if (chatHistory.length > maxHistoryLength) {
-        chatHistory.splice(0, chatHistory.length - maxHistoryLength);
-      }
-    }
+    // No longer storing chat history - each request is independent
 
     return output || "No answer found";
   } catch (fallbackError) {

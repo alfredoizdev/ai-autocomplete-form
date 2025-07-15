@@ -2,8 +2,7 @@ import {
   detectKickVariations, 
   contextualAnalysis, 
   progressiveDetection,
-  extractMLFeatures,
-  type DetectionResult 
+  extractMLFeatures
 } from '../kickDetection';
 
 describe('Kick.com Detection Module', () => {

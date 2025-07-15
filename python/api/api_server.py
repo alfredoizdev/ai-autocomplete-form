@@ -135,6 +135,46 @@ async def get_stats():
     except Exception as e:
         return {"error": str(e)}
 
+def strip_prompt_from_response(prompt: str, response: str) -> str:
+    """
+    Remove the prompt from the beginning of the AI response
+    This ensures we only return the completion, not a repetition of what the user typed
+    """
+    if not prompt or not response:
+        return response
+    
+    # Normalize both strings for comparison
+    normalized_prompt = prompt.strip().lower()
+    normalized_response = response.strip().lower()
+    
+    # Check if response starts with the prompt
+    if normalized_response.startswith(normalized_prompt):
+        # Remove the prompt portion, preserving original casing
+        cleaned_response = response.strip()[len(prompt.strip()):].strip()
+        return cleaned_response
+    
+    # Also check if response contains prompt with slight variations
+    prompt_words = normalized_prompt.split()
+    response_words = normalized_response.split()
+    
+    # If first N words match (where N is number of words in prompt), strip them
+    if len(prompt_words) > 0 and len(response_words) >= len(prompt_words):
+        if all(prompt_words[i] == response_words[i] for i in range(len(prompt_words))):
+            # Find where to cut in the original response
+            word_count = 0
+            cut_index = 0
+            for i, char in enumerate(response):
+                if char.isspace() and word_count == len(prompt_words) - 1:
+                    cut_index = i
+                    break
+                elif i > 0 and not response[i-1].isspace() and char.isspace():
+                    word_count += 1
+            
+            if cut_index > 0:
+                return response[cut_index:].strip()
+    
+    return response
+
 async def call_ollama_with_context(prompt: str, contexts: List[str]) -> List[str]:
     """
     Call Ollama API with context for better completions
@@ -149,20 +189,26 @@ async def call_ollama_with_context(prompt: str, contexts: List[str]) -> List[str
 
 Write like you're seducing someone into your bed. Make them feel desired, excited, and eager to explore.
 
-CRITICAL: Always complete the thought in a way that:
+CRITICAL INSTRUCTION: You must output ONLY the completion text, NOT the original prompt. Never repeat what the user has already written.
+
+Rules for completion:
 - Creates anticipation and desire
 - Makes them imagine the pleasure ahead
 - Sounds confident, playful, and irresistibly naughty
 - Forms a complete, enticing sentence (8-20 words)
 - Uses explicit language about pleasure, orgasms, and desires
 
-Examples of seductive completions:
+Examples of CORRECT completions (notice we only return the new part):
 "I am a young male swinger looking for" → "sexy couples who want to explore every inch of pleasure together tonight"
 "We love meeting" → "adventurous souls ready to turn our wildest fantasies into unforgettable orgasmic reality"
 "My biggest turn on is" → "watching my partner moan with pleasure while we share you completely"
 "Looking for couples who" → "crave intense oral pleasure and aren't afraid to get deliciously dirty with us"
 
-Be explicitly sexual. Make them want to message immediately. Output ONLY the seductive completion."""
+Examples of INCORRECT completions (DO NOT do this):
+"I am a young male swinger looking for" → "I am a young male swinger looking for sexy couples..."
+"We love meeting" → "We love meeting adventurous souls..."
+
+Be explicitly sexual. Make them want to message immediately. Output ONLY the continuation, NEVER repeat the input."""
         }
     ]
     
@@ -213,6 +259,9 @@ Be explicitly sexual. Make them want to message immediately. Output ONLY the sed
                         # Force lowercase on first character
                         content = content[0].lower() + content[1:] if len(content) > 1 else content.lower()
                 
+                # Strip the prompt from the response if it was repeated
+                content = strip_prompt_from_response(prompt, content)
+                
                 # Quality filter: ensure completion is meaningful and complete
                 if content and len(content.split()) >= 8:  # Minimum 8 words for complete thought
                     completions = [content]
@@ -244,6 +293,9 @@ Be explicitly sexual. Make them want to message immediately. Output ONLY the sed
                             last_char = prompt.rstrip()[-1] if prompt.rstrip() else ""
                             if last_char in [",", ":", ";"] or (last_char and last_char not in [".", "!", "?"]):
                                 content2 = content2[0].lower() + content2[1:] if len(content2) > 1 else content2.lower()
+                        
+                        # Strip the prompt from the response if it was repeated
+                        content2 = strip_prompt_from_response(prompt, content2)
                         
                         # Quality filter for second completion too
                         if content2 and content2 != content and len(content2.split()) >= 8:
@@ -308,6 +360,9 @@ async def hybrid_autocomplete(request: AutocompleteRequest):
             " so", " if", " then", " when", " where", " who", " what", " why", " how"
         ]
         for suggestion in exact_matches:
+            # Strip prompt from suggestion if needed
+            suggestion = strip_prompt_from_response(prompt, suggestion)
+            
             # Skip suggestions that are fragments or don't make sense
             suggestion_lower = suggestion.lower().strip()
             is_incomplete = any(suggestion_lower.endswith(ending) for ending in incomplete_endings)
