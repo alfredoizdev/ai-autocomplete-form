@@ -146,6 +146,36 @@ class BioVectorSearch:
         # Remove extra whitespace
         text = " ".join(text.split())
         
+        # Filter out known problematic fragments
+        if text.strip().startswith(". We so look forward"):
+            return ""
+        
+        # Filter out fragments that start with punctuation followed by uppercase
+        # This catches ". We", ", And", etc.
+        if re.match(r'^[.,;:]\s+[A-Z]', text):
+            return ""
+            
+        # Filter out very short fragments
+        if len(text.split()) < 5:
+            return ""
+        
+        # Filter out incomplete thoughts - suggestions that end with common incomplete patterns
+        incomplete_endings = [
+            " the", " a", " an", " to", " for", " with", " at", " in", " on", " of",
+            " is", " are", " was", " were", " has", " have", " had",
+            " will", " would", " could", " should", " might", " can",
+            " and", " or", " but", " so", " if", " then", " when", " where", " who", " what", " why", " how"
+        ]
+        
+        text_lower = text.lower().strip()
+        if any(text_lower.endswith(ending) for ending in incomplete_endings):
+            return ""
+        
+        # Ensure the suggestion forms a complete thought (at least 8 words for quality)
+        word_count = len(text.split())
+        if word_count < 8:
+            return ""
+        
         # Remove incomplete sentences at the end
         if text.endswith((".", "!", "?")):
             return text

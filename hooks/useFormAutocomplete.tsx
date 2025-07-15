@@ -199,6 +199,7 @@ const useFormAutocomplete = (options: UseFormAutocompleteOptions = {}) => {
   const [lastSpellCheckCursorPos, setLastSpellCheckCursorPos] = useState<number | null>(null);
   const [savedSuggestion, setSavedSuggestion] = useState<string>("");
   const [immediateAutocomplete, setImmediateAutocomplete] = useState(false);
+  const [previousTextLength, setPreviousTextLength] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const measureRef = useRef<HTMLTextAreaElement>(null);
 
@@ -208,6 +209,14 @@ const useFormAutocomplete = (options: UseFormAutocompleteOptions = {}) => {
     setLastAcceptedWordCount(0);
     setLastAcceptedPosition(0);
     setJustReplacedSpellCheckWord(false);
+    setSavedSuggestion("");
+    setImmediateAutocomplete(false);
+    // Cancel any in-flight autocomplete request
+    if (lastAutocompleteRequest) {
+      lastAutocompleteRequest.abort();
+      setLastAutocompleteRequest(null);
+    }
+    // Chat history will be managed server-side based on text changes
   };
 
   // Check if text is truly empty (handles whitespace-only content)
@@ -325,13 +334,31 @@ const useFormAutocomplete = (options: UseFormAutocompleteOptions = {}) => {
     return `${calculatedHeight}px`;
   };
 
-  // Clear suggestions when text is empty
+  // Clear suggestions when text is empty or significantly reduced
   useEffect(() => {
+    const currentLength = promptValue.length;
+    
     // If text is completely empty, reset autocomplete state
     if (isTextEmpty(promptValue)) {
       resetAutocompleteState();
+      setPreviousTextLength(0);
+      return;
     }
-  }, [promptValue]);
+    
+    // Detect major deletion (more than 50% of text removed at once)
+    if (previousTextLength > 0 && currentLength < previousTextLength * 0.5) {
+      console.log("Major text deletion detected, resetting autocomplete state");
+      // Reset autocomplete states but don't clear all text
+      setSuggestion("");
+      setSavedSuggestion("");
+      setLastAcceptedWordCount(0);
+      setLastAcceptedPosition(0);
+      // Server will detect this change and manage chat history accordingly
+    }
+    
+    // Update previous length for next comparison
+    setPreviousTextLength(currentLength);
+  }, [promptValue, previousTextLength]);
 
   // ResizeObserver to monitor textarea size changes
   useLayoutEffect(() => {

@@ -4,6 +4,12 @@
 
 const chatHistory: { role: "user" | "assistant"; content: string }[] = [];
 
+// Function to clear chat history when user restarts (internal use only)
+const clearChatHistory = () => {
+  chatHistory.length = 0; // Clear the array while maintaining the reference
+  console.log("Chat history cleared for new session");
+};
+
 // Cache for API server status
 let apiServerAvailable: boolean | null = null;
 let lastHealthCheck = 0;
@@ -57,7 +63,24 @@ async function checkApiServerHealth(): Promise<boolean> {
 //   console.log(`✅ Inserted ${entries.length} bios into Weaviate.`);
 // };
 
+// Track previous input to detect major changes
+let previousInput = "";
+
 export const askOllamaCompletationAction = async (input: string) => {
+  // Check if this is a major change or restart
+  if (previousInput.length > 0) {
+    // If input is much shorter than previous (cleared and restarted)
+    if (input.length < previousInput.length * 0.5) {
+      clearChatHistory();
+    }
+    // If the input is completely different (not just appending)
+    else if (previousInput.length > 20 && !input.startsWith(previousInput.substring(0, 20))) {
+      clearChatHistory();
+    }
+  }
+  
+  // Update previous input for next comparison
+  previousInput = input;
   // Check if API server is available
   const serverAvailable = await checkApiServerHealth();
 
@@ -133,7 +156,8 @@ Examples of seductive completions:
 
 Be explicitly sexual. Make them want to message immediately. Output ONLY the seductive completion.`,
       },
-      ...chatHistory,
+      // Only include recent history, not all history
+      ...chatHistory.slice(-4), // Only last 2 exchanges for context
       {
         role: "user",
         content: `Complete this bio text: ${input}`,
@@ -180,6 +204,12 @@ Be explicitly sexual. Make them want to message immediately. Output ONLY the sed
     if (output) {
       chatHistory.push({ role: "user", content: input });
       chatHistory.push({ role: "assistant", content: output });
+      
+      // Limit chat history to prevent context overflow (keep last 6 exchanges = 12 messages)
+      const maxHistoryLength = 12;
+      if (chatHistory.length > maxHistoryLength) {
+        chatHistory.splice(0, chatHistory.length - maxHistoryLength);
+      }
     }
 
     return output || "No answer found";

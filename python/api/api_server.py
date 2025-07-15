@@ -203,7 +203,13 @@ Be explicitly sexual. Make them want to message immediately. Output ONLY the sed
                 # Post-process: ensure lowercase if input ends with comma or no sentence-ending punctuation
                 if content and prompt:
                     last_char = prompt.rstrip()[-1] if prompt.rstrip() else ""
-                    if last_char in [",", ":", ";"] or (last_char and last_char not in [".", "!", "?"]):
+                    # Check if the prompt ends with "respond" which often needs a different completion
+                    if prompt.rstrip().lower().endswith("respond"):
+                        # Don't force lowercase, and filter out fragments
+                        if content.startswith(", ") or content.startswith(". "):
+                            # Skip fragments that don't make sense
+                            content = ""
+                    elif last_char in [",", ":", ";"] or (last_char and last_char not in [".", "!", "?"]):
                         # Force lowercase on first character
                         content = content[0].lower() + content[1:] if len(content) > 1 else content.lower()
                 
@@ -295,14 +301,19 @@ async def hybrid_autocomplete(request: AutocompleteRequest):
         seen = set()
         
         # Add exact matches first (but filter out poor quality ones)
-        incomplete_endings = [" in", " for", " with", " at", " to", " of", " the", " a", " an", " or", " and", " but"]
+        incomplete_endings = [
+            " in", " for", " with", " at", " to", " of", " the", " a", " an", " or", " and", " but",
+            " is", " are", " was", " were", " has", " have", " had",
+            " will", " would", " could", " should", " might", " can",
+            " so", " if", " then", " when", " where", " who", " what", " why", " how"
+        ]
         for suggestion in exact_matches:
             # Skip suggestions that are fragments or don't make sense
             suggestion_lower = suggestion.lower().strip()
             is_incomplete = any(suggestion_lower.endswith(ending) for ending in incomplete_endings)
             
             if (suggestion_lower not in seen and 
-                len(suggestion.split()) >= 5 and  # Increased minimum
+                len(suggestion.split()) >= 8 and  # Require at least 8 words for complete thoughts
                 not suggestion.startswith(", which") and
                 not suggestion.endswith(" is") and
                 not is_incomplete and
