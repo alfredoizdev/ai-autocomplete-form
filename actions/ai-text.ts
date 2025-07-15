@@ -1,6 +1,6 @@
 "use server";
-import { Bios } from "@/data/Bios";
-import { Bio } from "@/type/Collection";
+// import { Bios } from "@/data/Bios";
+// import { Bio } from "@/type/Collection";
 
 const chatHistory: { role: "user" | "assistant"; content: string }[] = [];
 
@@ -12,25 +12,28 @@ const HEALTH_CHECK_INTERVAL = 60000; // Check every 60 seconds
 // Helper function to check if the Python API server is running
 async function checkApiServerHealth(): Promise<boolean> {
   const now = Date.now();
-  
+
   // Use cached result if recent
-  if (apiServerAvailable !== null && now - lastHealthCheck < HEALTH_CHECK_INTERVAL) {
+  if (
+    apiServerAvailable !== null &&
+    now - lastHealthCheck < HEALTH_CHECK_INTERVAL
+  ) {
     return apiServerAvailable;
   }
-  
+
   try {
-    const response = await fetch('http://localhost:8001/', {
-      method: 'GET',
+    const response = await fetch("http://localhost:8001/", {
+      method: "GET",
       signal: AbortSignal.timeout(2000), // 2 second timeout
     });
-    
+
     apiServerAvailable = response.ok;
     lastHealthCheck = now;
-    
+
     if (apiServerAvailable) {
-      console.log('✅ Python API server is running on port 8001');
+      console.log("✅ Python API server is running on port 8001");
     }
-    
+
     return apiServerAvailable;
   } catch (error) {
     apiServerAvailable = false;
@@ -57,45 +60,52 @@ async function checkApiServerHealth(): Promise<boolean> {
 export const askOllamaCompletationAction = async (input: string) => {
   // Check if API server is available
   const serverAvailable = await checkApiServerHealth();
-  
+
   if (serverAvailable) {
     try {
       // Use the new hybrid endpoint that combines vector search with LLM generation
-      const hybridResponse = await fetch('http://localhost:8001/api/autocomplete/hybrid', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        prompt: input
-      }),
-    });
+      const hybridResponse = await fetch(
+        "http://localhost:8001/api/autocomplete/hybrid",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            prompt: input,
+          }),
+        }
+      );
 
-    if (hybridResponse.ok) {
-      const data = await hybridResponse.json();
-      
-      // Log performance metrics
-      console.log(`Hybrid autocomplete: ${data.elapsed_ms}ms`);
-      console.log(`Context used: ${data.context_used}`);
-      console.log(`Suggestions: ${data.combined_suggestions.length} (${data.exact_matches.length} exact, ${data.llm_completions.length} generated)`);
-      
-      // Return the first combined suggestion
-      if (data.combined_suggestions && data.combined_suggestions.length > 0) {
-        return data.combined_suggestions[0];
+      if (hybridResponse.ok) {
+        const data = await hybridResponse.json();
+
+        // Log performance metrics
+        console.log(`Hybrid autocomplete: ${data.elapsed_ms}ms`);
+        console.log(`Context used: ${data.context_used}`);
+        console.log(
+          `Suggestions: ${data.combined_suggestions.length} (${data.exact_matches.length} exact, ${data.llm_completions.length} generated)`
+        );
+
+        // Return the first combined suggestion
+        if (data.combined_suggestions && data.combined_suggestions.length > 0) {
+          return data.combined_suggestions[0];
+        }
       }
-    }
     } catch (error: any) {
       // Check if it's a connection error
-      if (error.cause?.code === 'ECONNREFUSED') {
-        console.error('❌ Python API server is not running on port 8001');
-        console.error('To start the server, run: ./start_api_server.sh');
-        console.error('Or manually: cd python && python3 api/api_server.py');
+      if (error.cause?.code === "ECONNREFUSED") {
+        console.error("❌ Python API server is not running on port 8001");
+        console.error("To start the server, run: ./start_api_server.sh");
+        console.error("Or manually: cd python && python3 api/api_server.py");
       } else {
-        console.error('Hybrid autocomplete API error:', error);
+        console.error("Hybrid autocomplete API error:", error);
       }
     }
   } else {
-    console.log('⚠️ Python API server not available, using fallback Ollama method');
+    console.log(
+      "⚠️ Python API server not available, using fallback Ollama method"
+    );
   }
 
   // Fallback to direct Ollama method if vector search fails or returns no results
@@ -147,16 +157,21 @@ Be explicitly sexual. Make them want to message immediately. Output ONLY the sed
 
     const data = await response.json();
 
-    let output = data?.message?.content?.trim()
-      ?.replace(/\.{3,}/g, '') // Remove any ellipsis (3 or more dots)
-      ?.replace(/…/g, '') // Remove single ellipsis character
+    let output = data?.message?.content
+      ?.trim()
+      ?.replace(/\.{3,}/g, "") // Remove any ellipsis (3 or more dots)
+      ?.replace(/…/g, "") // Remove single ellipsis character
       ?.trim(); // Trim again after cleaning
 
     // Post-process: ensure lowercase if input ends with comma or no sentence-ending punctuation
     if (output && input) {
       const lastChar = input.trim().slice(-1);
-      if (lastChar === ',' || lastChar === ':' || lastChar === ';' || 
-          (lastChar && !['.' , '!', '?'].includes(lastChar))) {
+      if (
+        lastChar === "," ||
+        lastChar === ":" ||
+        lastChar === ";" ||
+        (lastChar && ![".", "!", "?"].includes(lastChar))
+      ) {
         // Force lowercase on first character
         output = output.charAt(0).toLowerCase() + output.slice(1);
       }
@@ -169,7 +184,7 @@ Be explicitly sexual. Make them want to message immediately. Output ONLY the sed
 
     return output || "No answer found";
   } catch (fallbackError) {
-    console.error('Ollama fallback error:', fallbackError);
+    console.error("Ollama fallback error:", fallbackError);
     return "No answer found";
   }
 };
