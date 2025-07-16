@@ -187,6 +187,57 @@ export default function TestKickPage() {
       // Complex zero-width patterns
       'Find me on k\u200Bi\u200Bck for updates',
       'k\u200B\u200C\u200D\u00AD\uFEFF\u2060i\u200B\u200C\u200D\u00AD\uFEFF\u2060ck',
+      
+      // PHASE 2.3 TEST CASES - "hk" Ending Patterns
+      '--- PHASE 2.3 TESTS ---',
+      
+      // The reported bypass case
+      'k..i..hk',
+      'find me at k..i..hk',
+      
+      // Basic "hk" endings
+      'kihk',
+      'k1hk',
+      'klhk',
+      'k!hk',
+      
+      // "hk" with separators
+      'k-i-hk',
+      'k_i_hk',
+      'k.i.hk',
+      'k...i...hk',
+      'k--i--hk',
+      'k__i__hk',
+      
+      // General patterns with "hk"
+      'k i hk',
+      'k  i  hk',
+      'k(i)hk',
+      'k[i]hk',
+      'k{i}hk',
+      
+      // Phonetic variations with "hk"
+      'keehk',
+      'kaihk',
+      'kyahk',
+      'kouhk',
+      'keahk',
+      
+      // Complex patterns with "hk"
+      'k(..i..)hk',
+      'k(__i__)hk',
+      'k(._i_.)hk',
+      'k(...ei...)hk',
+      
+      // Extended "hk" endings
+      'k..i..khk',
+      'k..i..chk',
+      'k-i-khk',
+      'k_i_chk',
+      
+      // Zero-width + "hk" endings
+      'k\u200Bi\u200Bhk',
+      'k\u200B.\u200Bi\u200B.\u200Bhk',
     ];
 
     const testResults = phase1TestCases.map(testCase => {

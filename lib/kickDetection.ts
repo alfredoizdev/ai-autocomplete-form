@@ -117,6 +117,26 @@ const kickVariationPatterns = [
   // Mixed number-letter vowel patterns (k3ek, ke3k)
   /\bk[e3][aeiou3][kc]\b/gi,
   
+  // PHASE 2.3 ADDITIONS - "hk" ending patterns:
+  
+  // Basic "hk" endings (kihk, k1hk, klhk)
+  /\bk[i1l!|]hk\b/gi,
+  
+  // "hk" with separators (k..i..hk, k-i-hk, k_i_hk)
+  /\bk[._\-]{1,3}[i1l!|][._\-]{0,3}hk\b/gi,
+  
+  // General pattern with "hk" ending
+  /\bk[^a-z]{0,5}[i1l!|e3][^a-z]{0,5}hk\b/gi,
+  
+  // Phonetic variations with "hk" (keehk, kaihk, kyahk)
+  /\bk[aeiouey]{1,2}hk\b/gi,
+  
+  // Complex patterns with "hk" (k(i)hk, k(..i..)hk)
+  /\bk\([^)]{0,8}\)hk\b/gi,
+  
+  // Extended "hk" endings (khk, chk) - k..i..khk, k..i..chk
+  /\bk[^a-z]{0,5}[i1l!|e3][^a-z]{0,5}[kc]hk\b/gi,
+  
   // Domain patterns (more flexible boundaries for URLs)
   /k[i1l!|._\-\s]{1,4}[kc]\s*[\.\,\·\•]\s*c[o0]m/gi,
   /k[i1l!|._\-\s]{1,4}[kc]\s+dot\s+c[o0]m/gi,
@@ -330,6 +350,9 @@ function calculateConfidence(results: Partial<DetectionResult>): number {
         results.matches.some(m => m.length > 5)) {
       techniqueBoost += 10; // Long separated patterns are suspicious
     }
+    if (results.techniques?.includes('hk_ending')) {
+      techniqueBoost += 15; // "hk" endings are suspicious obfuscation attempts
+    }
     
     confidence = Math.min(95, baseConfidence + techniqueBoost);
   }
@@ -481,7 +504,19 @@ export function detectKickVariations(text: string): DetectionResult {
           results.techniques.push('short_variation');
         } else if (index === 32) {
           results.techniques.push('mixed_vowel');
-        } else if (index >= 33) {
+        } else if (index === 33) {
+          results.techniques.push('hk_ending');
+        } else if (index === 34) {
+          results.techniques.push('hk_ending');
+        } else if (index === 35) {
+          results.techniques.push('hk_ending');
+        } else if (index === 36) {
+          results.techniques.push('hk_ending');
+        } else if (index === 37) {
+          results.techniques.push('hk_ending');
+        } else if (index === 38) {
+          results.techniques.push('hk_ending');
+        } else if (index >= 39) {
           results.techniques.push('domain_pattern');
         }
       }
@@ -612,9 +647,9 @@ export function cachedDetection(text: string): DetectionResult {
 // Progressive detection for performance optimization
 export function progressiveDetection(text: string): DetectionResult {
   // Level 1: Quick pattern check
-  // Updated pattern to catch phonetic variations like "keek", "kyck", etc.
-  // Matches: k + (various middle patterns) + optional [kcq]
-  const quickCheck = /k(?:[^a-z]{0,3}[i1l!|e3aeiouey][^a-z]{0,3}|[aeiouey0-9]{1,2}|\W{0,5}|i[cqk])[kcq]?/i;
+  // Updated pattern to catch phonetic variations like "keek", "kyck", etc. and "hk" endings
+  // Matches: k + (various middle patterns) + optional [kchq] or hk
+  const quickCheck = /k(?:[^a-z]{0,3}[i1l!|e3aeiouey][^a-z]{0,3}|[aeiouey0-9]{1,2}|\W{0,5}|i[cqk])(?:[kchq]{0,2}|hk)?/i;
   if (!quickCheck.test(text.toLowerCase())) {
     return { 
       detected: false, 

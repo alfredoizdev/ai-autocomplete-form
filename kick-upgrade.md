@@ -4,7 +4,7 @@
 This document outlines a phased approach to enhance kick detection capabilities to catch sophisticated obfuscation attempts while maintaining simplicity and performance.
 
 **Last Updated**: 2025-07-16
-**Current Status**: Phase 1.7.1 Complete - Fixed progressive detection for phonetic variations
+**Current Status**: Phase 2.3 Complete - Fixed "hk" ending bypass patterns
 
 ## Current Capabilities Analysis
 The existing system already handles:
@@ -443,6 +443,65 @@ export function normalizeText(text: string): {
 - Pattern still catches obfuscated variations with special characters
 - All legitimate words (peek, meek, seek, week, keep, keen) remain undetected ✓
 - Lint passes without errors ✓
+
+---
+
+### Phase 2.3: "hk" Ending Detection Fix ✅
+**Goal**: Detect patterns using "hk" as ending to bypass detection
+
+**Status**: COMPLETED (2025-07-16)
+
+**Issue Identified**:
+- User reported "k..i..hk" was not being detected
+- All existing patterns only checked for [kc] or "ck" endings
+- "hk" endings completely bypassed detection
+- Pattern passed quick check but failed all actual regex matches
+
+**Tasks**:
+- [x] Analyze why "hk" endings bypass detection
+- [x] Add 6 new patterns for "hk" endings
+- [x] Update progressive detection quick check
+- [x] Add "hk_ending" technique identification
+- [x] Add confidence boost for "hk" patterns
+- [x] Add comprehensive test cases
+- [x] Verify no false positives
+
+**Code Changes**:
+```typescript
+// Added 6 new patterns to kickDetection.ts:
+// 1. Basic "hk" endings: /\bk[i1l!|]hk\b/gi - kihk, k1hk
+// 2. Separators with "hk": /\bk[._\-]{1,3}[i1l!|][._\-]{0,3}hk\b/gi
+// 3. General "hk" pattern: /\bk[^a-z]{0,5}[i1l!|e3][^a-z]{0,5}hk\b/gi
+// 4. Phonetic with "hk": /\bk[aeiouey]{1,2}hk\b/gi - keehk, kyahk
+// 5. Complex "hk": /\bk\([^)]{0,8}\)hk\b/gi - k(i)hk, k(..i..)hk
+// 6. Extended "hk": /\bk[^a-z]{0,5}[i1l!|e3][^a-z]{0,5}[kc]hk\b/gi - k..i..khk
+
+// Updated quick check pattern:
+const quickCheck = /k(?:[^a-z]{0,3}[i1l!|e3aeiouey][^a-z]{0,3}|[aeiouey0-9]{1,2}|\W{0,5}|i[cqk])(?:[kchq]{0,2}|hk)?/i;
+```
+
+**Test Cases Added**:
+- `k..i..hk` - The reported bypass ✓
+- `kihk`, `k1hk`, `klhk` - Basic variations ✓
+- `k-i-hk`, `k_i_hk`, `k.i.hk` - Separators ✓
+- `keehk`, `kyahk`, `kaihk` - Phonetic variations ✓
+- `k(i)hk`, `k(..i..)hk` - Parentheses patterns ✓
+- `k..i..khk`, `k..i..chk` - Extended endings ✓
+- 30+ additional test cases for comprehensive coverage
+
+**Results**:
+- "k..i..hk" and all variations now properly detected
+- Added "hk_ending" technique with 15-point confidence boost
+- No false positives identified
+- Lint passes without errors ✓
+- Build succeeds without TypeScript errors ✓
+- Test page updated with Phase 2.3 cases
+
+**Success Criteria**: ✓ ALL MET
+- "hk" ending bypass fixed ✓
+- Comprehensive pattern coverage ✓
+- Performance maintained ✓
+- No breaking changes ✓
 
 ---
 
