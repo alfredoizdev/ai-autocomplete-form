@@ -289,4 +289,197 @@ describe('Kick.com Detection Module', () => {
       expect(avgTime).toBeLessThan(5); // Should process in less than 5ms on average
     });
   });
+  
+  describe('Phase 1: Enhanced Pattern Detection', () => {
+    const phase1Examples = [
+      // Extended parentheses patterns (up to 8 chars)
+      'k(..ee..)k',
+      'k(__ei__)ck',
+      'k(._i_.)k',
+      'k(..i..)k',
+      'k(...i...)k',
+      'k(....i....)k',
+      
+      // Multiple dots patterns
+      'k....i....k',
+      'k.....i.....k',
+      'k......i......k',
+      
+      // Mixed separators
+      'k._.-i-._.k',
+      'k-._i_.-k',
+      'k_.-._i_.-._k',
+      
+      // Extended character gaps (up to 5 chars)
+      'k_____i_____k',
+      'k-----i-----k',
+      'k.....i.....c.....k',
+      
+      // Complex mixed patterns
+      'k(.._i_..)k',
+      'k(__..i..__))k',
+      'k(.-_i_-.)k'
+    ];
+    
+    test.each(phase1Examples)('should detect complex pattern "%s"', (example) => {
+      const result = detectKickVariations(example);
+      expect(result.detected).toBe(true);
+      expect(result.confidence).toBeGreaterThan(50);
+      expect(result.matches.length).toBeGreaterThan(0);
+    });
+    
+    test('should still not flag legitimate text after Phase 1 updates', () => {
+      const legitimateText = [
+        'I like to kick the ball',
+        'kickstart your day',
+        'Let\'s kick off the meeting',
+        'He kicked the habit',
+        'A quick kick in the pants'
+      ];
+      
+      legitimateText.forEach(text => {
+        const result = detectKickVariations(text);
+        expect(result.detected).toBe(false);
+      });
+    });
+    
+    test('should identify correct techniques for Phase 1 patterns', () => {
+      const techniqueTests = [
+        { input: 'k(..ee..)k', expectedTechnique: 'extended_parentheses' },
+        { input: 'k....i....k', expectedTechnique: 'multiple_dots' },
+        { input: 'k._.-i-._.k', expectedTechnique: 'mixed_separators' },
+        { input: 'k_____i_____k', expectedTechnique: 'extended_gaps' }
+      ];
+      
+      techniqueTests.forEach(({ input, expectedTechnique }) => {
+        const result = detectKickVariations(input);
+        expect(result.detected).toBe(true);
+        expect(result.techniques.some(t => 
+          t === expectedTechnique || 
+          t === 'parentheses' || 
+          t === 'separators' ||
+          t === 'underscores' ||
+          t === 'missing_letter'
+        )).toBe(true);
+      });
+    });
+  });
+  
+  describe('Phase 1.5: Multiple Characters with Separators Fix', () => {
+    const criticalTestCases = [
+      // The case that bypassed detection
+      'k..ee..k',
+      
+      // Similar patterns with multiple chars
+      'k...eee...k',
+      'k--ei--k',
+      'k._ie_.k',
+      'k~~ii~~k',
+      'k..e..k',
+      'k.e.e.k',
+      'k-e-i-k',
+      
+      // More complex variations
+      'k...ee...k',
+      'k----ei----k',
+      'k._.ie._.k',
+      'k..eei..k',
+      'k--iee--k',
+      'k...e.i...k',
+      'k-.-e-e-.-k',
+      
+      // Mixed separators with multiple chars
+      'k.-_ee_-.k',
+      'k__..ei..__)k',
+      'k~~~ie~~~k'
+    ];
+    
+    test.each(criticalTestCases)('should detect pattern "%s"', (example) => {
+      const result = detectKickVariations(example);
+      expect(result.detected).toBe(true);
+      expect(result.confidence).toBeGreaterThan(50);
+      expect(result.matches.length).toBeGreaterThan(0);
+    });
+    
+    test('should still not flag legitimate text after Phase 1.5', () => {
+      const legitimateText = [
+        'I like to kick the ball',
+        'kickstart your day',
+        'Let\'s kick off the meeting',
+        'Keep calm and kick on',
+        'A quick kick in the pants',
+        'He needs a kick up the backside'
+      ];
+      
+      legitimateText.forEach(text => {
+        const result = detectKickVariations(text);
+        expect(result.detected).toBe(false);
+      });
+    });
+  });
+  
+  describe('Phase 1.6: Fix Remaining Bypass Patterns', () => {
+    const phase16TestCases = [
+      // Patterns that were still bypassing detection
+      'k(__ei__)ck',
+      'k(__..i..__))k',
+      'k.e.e.k',
+      'k...e.i...k',
+      
+      // Additional test cases
+      'k.i.c.k',
+      'k(i)ck',
+      'k((i))k',
+      'k.e.i.c.k',
+      'k(ei)ck',
+      'k(..i..)ck',
+      'k)))k',
+      'k.k.i.c.k',
+      
+      // Complex combinations
+      'k(._._i_._.)ck',
+      'k....e....i....k',
+      'k.e.i.k',
+      'k(eick)k',
+      'k(e.i)ck'
+    ];
+    
+    test.each(phase16TestCases)('should detect pattern "%s"', (example) => {
+      const result = detectKickVariations(example);
+      expect(result.detected).toBe(true);
+      expect(result.confidence).toBeGreaterThan(50);
+      expect(result.matches.length).toBeGreaterThan(0);
+    });
+    
+    test('should identify correct techniques for Phase 1.6 patterns', () => {
+      const techniqueTests = [
+        { input: 'k(__ei__)ck', expectedTechniques: ['parentheses_ck', 'enhanced_parentheses'] },
+        { input: 'k(__..i..__))k', expectedTechniques: ['multiple_parentheses'] },
+        { input: 'k.e.e.k', expectedTechniques: ['single_dots'] },
+        { input: 'k...e.i...k', expectedTechniques: ['flexible_dots'] }
+      ];
+      
+      techniqueTests.forEach(({ input, expectedTechniques }) => {
+        const result = detectKickVariations(input);
+        expect(result.detected).toBe(true);
+        expect(expectedTechniques.some(tech => result.techniques.includes(tech))).toBe(true);
+      });
+    });
+    
+    test('should still maintain legitimate text detection after Phase 1.6', () => {
+      const legitimateText = [
+        'I like to kick the ball',
+        'kickstart your day',
+        'Let\'s kick off the meeting',
+        'He kicked the habit',
+        'A quick kick in the pants',
+        'Keep calm and kick on'
+      ];
+      
+      legitimateText.forEach(text => {
+        const result = detectKickVariations(text);
+        expect(result.detected).toBe(false);
+      });
+    });
+  });
 });

@@ -45,6 +45,57 @@ const kickVariationPatterns = [
   // General k***k pattern where *** is any non-letter chars (catches missing i)
   /\bk[^a-z]{1,3}[kc]\b/gi,
   
+  // PHASE 1 ADDITIONS:
+  
+  // Extended parentheses patterns (up to 8 chars) - k(..ee..)k, k(__ei__)ck
+  /\bk\([^)]{0,8}\)[kc]\b/gi,
+  
+  // Multiple dots pattern - k....i....k
+  /\bk\.{2,6}[i1l!|e3]\.{2,6}[kc]\b/gi,
+  
+  // Mixed separators pattern - k._.-i-._.k
+  /\bk[._\-]{1,2}[._\-]{1,2}[i1l!|e3][._\-]{1,2}[._\-]{1,2}[kc]\b/gi,
+  
+  // Extended character gaps (up to 5 chars between letters)
+  /\bk[^a-z]{0,5}[i1l!|e3][^a-z]{0,5}[kc]\b/gi,
+  
+  // Extended gaps with specific separators
+  /\bk[_\-\.]{4,8}[i1l!|e3][_\-\.]{4,8}[kc]\b/gi,
+  
+  // Complex parentheses with mixed content - k(._i_.)k, k(.._i_..)k
+  /\bk\([._\-]{0,3}[i1l!|e3][._\-]{0,3}\)[kc]\b/gi,
+  
+  // PHASE 1.5 ADDITIONS - Fix for k..ee..k bypass:
+  
+  // Multiple letters with dots (catches k..ee..k, k...ei...k)
+  /\bk\.{1,6}[e3]{1,2}[i1l!|e3]{0,2}\.{1,6}[kc]\b/gi,
+  
+  // Any 2-4 letters with various separators
+  /\bk[._\-\s]{1,5}[a-z13!|]{2,4}[._\-\s]{1,5}[kc]\b/gi,
+  
+  // Common vowel patterns with separators (ee, ei, ie, ii)
+  /\bk[^a-z]{1,5}[e3]{1,2}[i1e3]{0,2}[^a-z]{1,5}[kc]\b/gi,
+  
+  // Flexible middle section (1-4 chars, any mix)
+  /\bk[^a-z]{0,5}[a-z0-9!|@#$%^&*()_+=\-]{1,4}[^a-z]{0,5}[kc]\b/gi,
+  
+  // PHASE 1.6 ADDITIONS - Fix remaining bypasses:
+  
+  // Parentheses with "ck" ending - k(__ei__)ck
+  /\bk\([^)]{0,8}\)ck\b/gi,
+  
+  // Multiple/nested parentheses - k(__..i..__))k
+  /\bk\([^)]*\){1,3}[kc]\b/gi,
+  
+  // Single dots between each letter - k.e.e.k, k.i.c.k
+  /\bk\.?[e3i1l!|]\.?[e3i1l!|]?\.?[e3i1l!|]?\.?[kc]\b/gi,
+  
+  // Flexible dot patterns with letter combinations - k...e.i...k
+  /\bk[\.]{1,5}[a-z13!|][\.]{0,5}[a-z13!|]?[\.]{0,5}[a-z13!|]?[\.]{1,5}[kc]\b/gi,
+  
+  // Enhanced parentheses content (letters AND separators)
+  /\bk\([^)]*[a-z13!|]+[^)]*\)[kc]{1,2}\b/gi,
+  
   // Domain patterns (more flexible boundaries for URLs)
   /k[i1l!|._\-\s]{1,4}[kc]\s*[\.\,\·\•]\s*c[o0]m/gi,
   /k[i1l!|._\-\s]{1,4}[kc]\s+dot\s+c[o0]m/gi,
@@ -311,7 +362,37 @@ export function detectKickVariations(text: string): DetectionResult {
           results.techniques.push('spaces');
         } else if (index === 10) {
           results.techniques.push('general_obfuscation');
-        } else if (index >= 11) {
+        } else if (index === 11) {
+          results.techniques.push('extended_parentheses');
+        } else if (index === 12) {
+          results.techniques.push('multiple_dots');
+        } else if (index === 13) {
+          results.techniques.push('mixed_separators');
+        } else if (index === 14) {
+          results.techniques.push('extended_gaps');
+        } else if (index === 15) {
+          results.techniques.push('extended_gaps');
+        } else if (index === 16) {
+          results.techniques.push('parentheses');
+        } else if (index === 17) {
+          results.techniques.push('multi_char_dots');
+        } else if (index === 18) {
+          results.techniques.push('multi_char_separators');
+        } else if (index === 19) {
+          results.techniques.push('vowel_patterns');
+        } else if (index === 20) {
+          results.techniques.push('flexible_middle');
+        } else if (index === 21) {
+          results.techniques.push('parentheses_ck');
+        } else if (index === 22) {
+          results.techniques.push('multiple_parentheses');
+        } else if (index === 23) {
+          results.techniques.push('single_dots');
+        } else if (index === 24) {
+          results.techniques.push('flexible_dots');
+        } else if (index === 25) {
+          results.techniques.push('enhanced_parentheses');
+        } else if (index >= 26) {
           results.techniques.push('domain_pattern');
         }
       }
@@ -368,7 +449,7 @@ export function detectKickVariations(text: string): DetectionResult {
   }
   
   // Calculate confidence based on match quality
-  results.confidence = calculateConfidence(results, text);
+  results.confidence = calculateConfidence(results);
   
   return results;
 }
