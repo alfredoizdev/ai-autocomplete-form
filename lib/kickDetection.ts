@@ -96,6 +96,24 @@ const kickVariationPatterns = [
   // Enhanced parentheses content (letters AND separators)
   /\bk\([^)]*[a-z13!|]+[^)]*\)[kc]{1,2}\b/gi,
   
+  // PHASE 1.7 ADDITIONS - Phonetic variations:
+  
+  // Double vowel patterns (keek, kook, kuuk)
+  /\bk[e3]{2}[kc]\b/gi,
+  /\bk[aeiou]{2}[kc]\b/gi,
+  
+  // Vowel variations with y (kyck, kyyk)
+  /\bky{1,2}[kc]\b/gi,
+  
+  // Single vowel sound-alike patterns (keak, kouk, kaik)
+  /\bk[aeiouey]{1,2}[kc]\b/gi,
+  
+  // Short variations (kic, kiq, kik)
+  /\bki[cqk]\b/gi,
+  
+  // Mixed number-letter vowel patterns (k3ek, ke3k)
+  /\bk[e3][aeiou3][kc]\b/gi,
+  
   // Domain patterns (more flexible boundaries for URLs)
   /k[i1l!|._\-\s]{1,4}[kc]\s*[\.\,\·\•]\s*c[o0]m/gi,
   /k[i1l!|._\-\s]{1,4}[kc]\s+dot\s+c[o0]m/gi,
@@ -392,7 +410,19 @@ export function detectKickVariations(text: string): DetectionResult {
           results.techniques.push('flexible_dots');
         } else if (index === 25) {
           results.techniques.push('enhanced_parentheses');
-        } else if (index >= 26) {
+        } else if (index === 26) {
+          results.techniques.push('double_vowel');
+        } else if (index === 27) {
+          results.techniques.push('double_vowel');
+        } else if (index === 28) {
+          results.techniques.push('y_vowel');
+        } else if (index === 29) {
+          results.techniques.push('vowel_variation');
+        } else if (index === 30) {
+          results.techniques.push('short_variation');
+        } else if (index === 31) {
+          results.techniques.push('mixed_vowel');
+        } else if (index >= 32) {
           results.techniques.push('domain_pattern');
         }
       }
@@ -413,11 +443,19 @@ export function detectKickVariations(text: string): DetectionResult {
     const cleaned = word.replace(/[^a-z0-9]/g, '');
     if (cleaned.length >= 3 && cleaned.length <= 6) {
       const distance = levenshteinDistance(cleaned, 'kick');
-      // More strict threshold: only 1 edit for "kick" variations
-      // This prevents matching words like "back", "tick", "pick", etc.
-      if (distance === 1 && !results.matches.includes(word)) {
+      
+      // Known phonetic variations that sound like "kick" (distance 2)
+      const phoneticVariations = ['keek', 'keak', 'kyck', 'kyek', 'kouk', 'kaik'];
+      const isPhoneticVariation = phoneticVariations.includes(cleaned);
+      
+      // Allow distance 2 for known phonetic variations, distance 1 for others
+      const maxDistance = isPhoneticVariation ? 2 : 1;
+      
+      if (distance <= maxDistance && distance > 0 && !results.matches.includes(word)) {
         // Additional check: ensure it's not a common English word
-        const commonWords = ['tick', 'pick', 'lick', 'sick', 'wick', 'dick', 'nick', 'rick'];
+        const commonWords = ['tick', 'pick', 'lick', 'sick', 'wick', 'dick', 'nick', 'rick', 
+                           'back', 'pack', 'lack', 'sack', 'rack', 'tack', 'hack',
+                           'peek', 'meek', 'seek', 'week', 'keep', 'keen'];
         if (!commonWords.includes(cleaned)) {
           results.detected = true;
           results.matches.push(word);

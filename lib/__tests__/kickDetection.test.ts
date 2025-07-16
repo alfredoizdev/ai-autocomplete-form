@@ -482,4 +482,69 @@ describe('Kick.com Detection Module', () => {
       });
     });
   });
+  
+  describe('Phase 1.7: Phonetic Variations', () => {
+    describe('Phonetic Sound-Alike Detection', () => {
+      const phoneticVariations = [
+        { input: 'keek', expectedTechnique: 'alternative_spelling' },
+        { input: 'find me on keek', expectedTechnique: 'alternative_spelling' },
+        { input: 'keak', expectedTechnique: 'vowel_variation' },
+        { input: 'kyck', expectedTechnique: 'y_vowel' },
+        { input: 'kyyk', expectedTechnique: 'y_vowel' },
+        { input: 'kouk', expectedTechnique: 'vowel_variation' },
+        { input: 'kaik', expectedTechnique: 'vowel_variation' },
+        { input: 'kic', expectedTechnique: 'short_variation' },
+        { input: 'kiq', expectedTechnique: 'short_variation' },
+        { input: 'kook', expectedTechnique: 'double_vowel' },
+        { input: 'kuuk', expectedTechnique: 'double_vowel' },
+        { input: 'k33k', expectedTechnique: 'alternative_spelling' },
+        { input: 'ke3k', expectedTechnique: 'mixed_vowel' },
+        { input: 'k3ek', expectedTechnique: 'mixed_vowel' }
+      ];
+      
+      test.each(phoneticVariations)('should detect phonetic variation "%s"', ({ input, expectedTechnique }) => {
+        const result = detectKickVariations(input);
+        expect(result.detected).toBe(true);
+        expect(result.techniques).toContain(expectedTechnique);
+        expect(result.confidence).toBeGreaterThan(30);
+      });
+    });
+    
+    describe('Phonetic False Positive Prevention', () => {
+      const legitimateWords = [
+        'peek', 'meek', 'seek', 'week', 'geek',
+        'keep', 'keen', 'peep', 'beep', 'deep',
+        'cook', 'book', 'look', 'took', 'hook',
+        'kayak', 'peak', 'leak', 'weak', 'beak'
+      ];
+      
+      test.each(legitimateWords)('should NOT detect legitimate word "%s"', (word) => {
+        const result = detectKickVariations(word);
+        expect(result.detected).toBe(false);
+        expect(result.confidence).toBe(0);
+      });
+    });
+    
+    test('should detect "keek" with fuzzy match as well', () => {
+      const result = detectKickVariations('keek');
+      expect(result.detected).toBe(true);
+      // Should be detected by both alternative_spelling pattern and fuzzy match
+      expect(result.techniques.length).toBeGreaterThan(0);
+    });
+    
+    test('should handle mixed context with phonetic variations', () => {
+      const testCases = [
+        'Follow me on keek for gaming streams',
+        'check out my kyck channel',
+        'streaming on keak platform'
+      ];
+      
+      testCases.forEach(text => {
+        const result = detectKickVariations(text);
+        const contextResult = contextualAnalysis(text, result);
+        expect(contextResult.detected).toBe(true);
+        expect(contextResult.confidence).toBeGreaterThan(60);
+      });
+    });
+  });
 });

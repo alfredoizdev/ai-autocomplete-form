@@ -103,6 +103,43 @@ export default function TestKickPage() {
       'k.e.i.k',
       'k(eick)k',
       'k(e.i)ck',
+      
+      // PHASE 1.7 TEST CASES - Phonetic variations
+      '--- PHASE 1.7 TESTS ---',
+      
+      // The original issue
+      'keek',
+      'find me on keek',
+      'Follow me on keek',
+      'check out my keek channel',
+      
+      // Other phonetic variations
+      'keak',
+      'kyck',
+      'kyyk',
+      'kouk',
+      'kaik',
+      'kic',
+      'kiq',
+      
+      // Double vowel patterns
+      'kook',
+      'kuuk',
+      'kiik',
+      
+      // More complex phonetic variations
+      'k33k',
+      'ke3k',
+      'k3ek',
+      
+      // Should NOT detect these
+      'peek',
+      'meek',
+      'seek',
+      'week',
+      'kayak',
+      'keep',
+      'keen',
     ];
 
     const testResults = phase1TestCases.map(testCase => {
