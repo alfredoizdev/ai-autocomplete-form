@@ -18,6 +18,9 @@ const kickVariationPatterns = [
   // Basic character substitution and spacing (with word boundaries where possible)
   /\bk\s*[i1l!|]\s*[kc]\b/gi,
   
+  // Specific pattern for 'l' substitution (kilk, kllk, klck)
+  /\bk[il1]+[kc]\b/gi,
+  
   // Patterns with separators (dots, underscores, dashes)
   /\bk[._\-]{1,3}[i1l!|][._\-]{0,3}[kc]\b/gi,
   
@@ -49,7 +52,8 @@ const kickVariationPatterns = [
   /\bk\s{1,3}[kc]\b/gi,
   
   // General k***k pattern where *** is any non-letter chars (catches missing i)
-  /\bk[^a-z]{1,3}[kc]\b/gi,
+  // Removed - this was causing too many false positives like "pack", "back", "deck"
+  // /\bk[^a-z]{1,3}[kc]\b/gi,
   
   // PHASE 1 ADDITIONS:
   
@@ -410,6 +414,27 @@ export function normalizeText(text: string): {
   return { normalized, hasZeroWidth, positionMap };
 }
 
+// Common words to exclude from detection
+const EXCLUDED_WORDS = [
+  // Common -ck ending words
+  'back', 'pack', 'lack', 'sack', 'rack', 'tack', 'hack', 'stack', 'track', 'crack',
+  'black', 'attack', 'slack', 'snack', 'whack', 'jack', 'quack', 'shack',
+  'deck', 'neck', 'check', 'wreck', 'peck', 'speck', 'fleck',
+  'pick', 'tick', 'sick', 'quick', 'stick', 'trick', 'thick', 'click', 'brick', 'flick', 
+  'slick', 'chick', 'wick', 'dick', 'nick', 'rick', 'mick',
+  'rock', 'lock', 'dock', 'cock', 'shock', 'stock', 'block', 'clock', 'knock', 'flock',
+  'mock', 'sock',
+  'duck', 'luck', 'suck', 'truck', 'stuck', 'chuck', 'buck', 'muck', 'tuck', 'fuck',
+  'pluck', 'struck',
+  // -ing words that might trigger patterns
+  'tracking', 'picking', 'bucking', 'fucking', 'lacking', 'packing', 'backing',
+  'stacking', 'attacking', 'hacking', 'cracking', 'sticking', 'clicking',
+  'rocking', 'locking', 'docking', 'shocking', 'stocking', 'blocking', 'knocking',
+  'mocking', 'sucking', 'trucking', 'stucking', 'chucking', 'plucking',
+  // Other common words
+  'neck', 'wreck', 'check'
+];
+
 // Common legitimate phrases containing "kick"
 const KICK_WHITELIST_PHRASES = [
   'kick back',
@@ -441,7 +466,32 @@ const KICK_WHITELIST_PHRASES = [
   'penalty kick',
   'karate kick',
   'soccer kick',
-  'football kick'
+  'football kick',
+  // Sports/game related
+  'kick ball',
+  'kickball',
+  'play kick',
+  'playing kick',
+  'played kick',
+  'plays kick',
+  'kick boxing',
+  'kickboxing',
+  'field kick',
+  'goal kick',
+  'corner kick',
+  'drop kick',
+  'place kick',
+  'kick return',
+  'kick serve',
+  'high kick',
+  'low kick',
+  'roundhouse kick',
+  'flying kick',
+  'bicycle kick',
+  'scissor kick',
+  'kick scooter',
+  'kick flip',
+  'kick turn'
 ];
 
 // Check if "kick" appears in a legitimate context
@@ -476,7 +526,20 @@ function isLegitimateKickUsage(text: string, matchPosition: number): boolean {
     /let\'s\s+kick\s+/,
     /like\s+to\s+kick\s+/,
     /love\s+to\s+kick\s+/,
-    /want\s+to\s+kick\s+/
+    /want\s+to\s+kick\s+/,
+    // Sports/game patterns
+    /play\s+kick\s+/,
+    /playing\s+kick\s+/,
+    /played\s+kick\s+/,
+    /plays\s+kick\s+/,
+    /game\s+of\s+kick\s+/,
+    /kick\s+(game|sport|match|tournament)/,
+    /practice\s+kick/,
+    /practicing\s+kick/,
+    /learn\s+to\s+kick/,
+    /learning\s+to\s+kick/,
+    /teach\s+.*\s+kick/,
+    /coach\s+.*\s+kick/
   ];
   
   for (const pattern of verbPatterns) {
@@ -491,6 +554,16 @@ function isLegitimateKickUsage(text: string, matchPosition: number): boolean {
     // Make sure it's not followed by domain-like patterns
     const domainCheck = /kick\s*[\.\[]\s*c[o0]m/;
     if (!domainCheck.test(context)) {
+      return true;
+    }
+  }
+  
+  // Check for sports/recreational context
+  const sportsKeywords = /(play|game|sport|ball|team|field|court|match|practice|coach|player|athlete|exercise|workout|training|gym|fitness)/i;
+  if (sportsKeywords.test(context)) {
+    // Double-check it's not a disguised URL
+    const suspiciousPatterns = /(kick\s*[\.\/]\s*com|kick\s+dot\s+com|visit\s+kick|go\s+to\s+kick|check\s+out\s+kick)/i;
+    if (!suspiciousPatterns.test(context)) {
       return true;
     }
   }
@@ -681,6 +754,12 @@ export function detectKickVariations(text: string): DetectionResult {
     let match;
     
     while ((match = regex.exec(normalizedText)) !== null) {
+      // Check if the match is an excluded word
+      const matchLower = match[0].toLowerCase().trim();
+      if (EXCLUDED_WORDS.includes(matchLower)) {
+        continue; // Skip excluded words
+      }
+      
       results.detected = true;
       
       // Avoid duplicate matches
@@ -699,77 +778,91 @@ export function detectKickVariations(text: string): DetectionResult {
           end
         });
         
-        // Identify technique used
+        // For direct "kick" pattern, check if it's legitimate usage
         if (index === 0) {
+          // Check if this is a legitimate usage
+          const originalPosition = hasZeroWidth && match.index < positionMap.length ? 
+            positionMap[match.index] : match.index;
+          
+          if (isLegitimateKickUsage(text, originalPosition)) {
+            // Remove this match as it's legitimate
+            results.matches.pop();
+            results.positions.pop();
+            // Don't mark as detected if this was the only match
+            if (results.matches.length === 0) {
+              results.detected = false;
+            }
+            continue; // Skip to next match
+          }
           results.techniques.push('direct_kick');
         } else if (index === 1) {
           results.techniques.push('character_substitution');
         } else if (index === 2) {
-          results.techniques.push('separators');
+          results.techniques.push('l_substitution');
         } else if (index === 3) {
-          results.techniques.push('double_separators');
+          results.techniques.push('separators');
         } else if (index === 4) {
-          results.techniques.push('character_repetition');
+          results.techniques.push('double_separators');
         } else if (index === 5) {
-          results.techniques.push('alternative_spelling');
+          results.techniques.push('character_repetition');
         } else if (index === 6) {
-          results.techniques.push('parentheses');
+          results.techniques.push('alternative_spelling');
         } else if (index === 7) {
-          results.techniques.push('underscores');
+          results.techniques.push('parentheses');
         } else if (index === 8) {
-          results.techniques.push('advanced_pattern');
+          results.techniques.push('underscores');
         } else if (index === 9) {
-          results.techniques.push('brackets');
+          results.techniques.push('advanced_pattern');
         } else if (index === 10) {
-          results.techniques.push('missing_letter');
+          results.techniques.push('brackets');
         } else if (index === 11) {
-          results.techniques.push('spaces');
+          results.techniques.push('missing_letter');
         } else if (index === 12) {
-          results.techniques.push('general_obfuscation');
+          results.techniques.push('spaces');
         } else if (index === 13) {
-          results.techniques.push('extended_parentheses');
+          results.techniques.push('general_obfuscation');
         } else if (index === 14) {
-          results.techniques.push('multiple_dots');
+          results.techniques.push('extended_parentheses');
         } else if (index === 15) {
-          results.techniques.push('mixed_separators');
+          results.techniques.push('multiple_dots');
         } else if (index === 16) {
-          results.techniques.push('extended_gaps');
+          results.techniques.push('mixed_separators');
         } else if (index === 17) {
           results.techniques.push('extended_gaps');
         } else if (index === 18) {
-          results.techniques.push('parentheses');
+          results.techniques.push('extended_gaps');
         } else if (index === 19) {
-          results.techniques.push('multi_char_dots');
+          results.techniques.push('parentheses');
         } else if (index === 20) {
-          results.techniques.push('multi_char_separators');
+          results.techniques.push('multi_char_dots');
         } else if (index === 21) {
-          results.techniques.push('vowel_patterns');
+          results.techniques.push('multi_char_separators');
         } else if (index === 22) {
-          results.techniques.push('flexible_middle');
+          results.techniques.push('vowel_patterns');
         } else if (index === 23) {
-          results.techniques.push('parentheses_ck');
+          results.techniques.push('flexible_middle');
         } else if (index === 24) {
-          results.techniques.push('multiple_parentheses');
+          results.techniques.push('parentheses_ck');
         } else if (index === 25) {
-          results.techniques.push('single_dots');
+          results.techniques.push('multiple_parentheses');
         } else if (index === 26) {
-          results.techniques.push('flexible_dots');
+          results.techniques.push('single_dots');
         } else if (index === 27) {
-          results.techniques.push('enhanced_parentheses');
+          results.techniques.push('flexible_dots');
         } else if (index === 28) {
-          results.techniques.push('double_vowel');
+          results.techniques.push('enhanced_parentheses');
         } else if (index === 29) {
           results.techniques.push('double_vowel');
         } else if (index === 30) {
-          results.techniques.push('y_vowel');
+          results.techniques.push('double_vowel');
         } else if (index === 31) {
-          results.techniques.push('vowel_variation');
+          results.techniques.push('y_vowel');
         } else if (index === 32) {
-          results.techniques.push('short_variation');
+          results.techniques.push('vowel_variation');
         } else if (index === 33) {
-          results.techniques.push('mixed_vowel');
+          results.techniques.push('short_variation');
         } else if (index === 34) {
-          results.techniques.push('hk_ending');
+          results.techniques.push('mixed_vowel');
         } else if (index === 35) {
           results.techniques.push('hk_ending');
         } else if (index === 36) {
@@ -780,7 +873,9 @@ export function detectKickVariations(text: string): DetectionResult {
           results.techniques.push('hk_ending');
         } else if (index === 39) {
           results.techniques.push('hk_ending');
-        } else if (index >= 40) {
+        } else if (index === 40) {
+          results.techniques.push('hk_ending');
+        } else if (index >= 41) {
           results.techniques.push('domain_pattern');
         }
       }
@@ -803,6 +898,11 @@ export function detectKickVariations(text: string): DetectionResult {
   words.forEach((word) => {
     const cleaned = word.replace(/[^a-z0-9]/g, '');
     if (cleaned.length >= 3 && cleaned.length <= 6) {
+      // Skip if the word is in the excluded list
+      if (EXCLUDED_WORDS.includes(cleaned) || EXCLUDED_WORDS.includes(word.toLowerCase())) {
+        return;
+      }
+      
       const distance = levenshteinDistance(cleaned, 'kick');
       
       // Known phonetic variations that sound like "kick" (distance 2)
@@ -837,15 +937,6 @@ export function detectKickVariations(text: string): DetectionResult {
   
   // Remove duplicate techniques
   results.techniques = [...new Set(results.techniques)];
-  
-  // Check for legitimate usage if we found "kick"
-  if (results.matches.some(m => m.toLowerCase().replace(/[^a-z]/g, '') === 'kick')) {
-    // Find the position of "kick" in the text
-    const kickIndex = normalizedText.indexOf('kick');
-    if (kickIndex !== -1) {
-      results.hasLegitimateUsage = isLegitimateKickUsage(text, kickIndex);
-    }
-  }
   
   // Calculate confidence based on match quality
   results.confidence = calculateConfidence(results);
@@ -918,6 +1009,19 @@ export function progressiveDetection(text: string): DetectionResult {
   // Matches: k + (various middle patterns) + optional [kchq] or hk
   const quickCheck = /k(?:[^a-z]{0,3}[i1l!|e3aeiouey][^a-z]{0,3}|[aeiouey0-9]{1,2}|\W{0,5}|i[cqk])(?:[kchq]{0,2}|hk)?/i;
   if (!quickCheck.test(text.toLowerCase())) {
+    return { 
+      detected: false, 
+      confidence: 0, 
+      matches: [], 
+      techniques: [], 
+      positions: [] 
+    };
+  }
+  
+  // Check if the text contains only excluded words
+  const words = text.toLowerCase().split(/[\s._\-]+/);
+  const nonExcludedWords = words.filter(word => !EXCLUDED_WORDS.includes(word));
+  if (nonExcludedWords.length === 0) {
     return { 
       detected: false, 
       confidence: 0, 

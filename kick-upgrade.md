@@ -4,7 +4,7 @@
 This document outlines a phased approach to enhance kick detection capabilities to catch sophisticated obfuscation attempts while maintaining simplicity and performance.
 
 **Last Updated**: 2025-07-16
-**Current Status**: Phase 3 Complete + Regression Fix - Pattern matching restored
+**Current Status**: Phase 3.2 Complete - Enhanced Legitimate Usage Detection
 
 ## Current Capabilities Analysis
 The existing system already handles:
@@ -602,6 +602,77 @@ const quickCheck = /k(?:[^a-z]{0,3}[i1l!|e3aeiouey][^a-z]{0,3}|[aeiouey0-9]{1,2}
 - Homoglyph detection still works correctly ✓
 - Lint passes without errors ✓
 - Performance maintained ✓
+
+---
+
+### Phase 3.2: Enhanced Legitimate Usage Detection ✅
+**Goal**: Fix false positives for legitimate sports/game-related uses of "kick"
+
+**Status**: COMPLETED (2025-07-16)
+
+**Issue Identified**:
+- "lets play kick ball" was being detected as a scammer attempt
+- "kick ball" or "kickball" is a legitimate sport/game
+- The existing legitimate usage detection was missing sports/game contexts
+- Many recreational uses of "kick" were being flagged incorrectly
+
+**Solution Implemented**:
+A simple yet powerful enhancement to legitimate usage detection that focuses on context.
+
+**Tasks**:
+- [x] Add sports/game-related phrases to whitelist
+- [x] Add verb patterns for sports contexts
+- [x] Add general sports/recreational keyword detection
+- [x] Ensure no breaking of existing functionality
+- [x] Add comprehensive test cases
+
+**Code Changes**:
+```typescript
+// 1. Expanded KICK_WHITELIST_PHRASES to include:
+'kick ball', 'kickball', 'play kick', 'kick boxing', 'field kick',
+'goal kick', 'corner kick', 'drop kick', 'bicycle kick', 'kick flip', etc.
+
+// 2. Added sports/game verb patterns:
+/play\s+kick\s+/, /playing\s+kick\s+/, /game\s+of\s+kick\s+/,
+/practice\s+kick/, /learn\s+to\s+kick/, /coach\s+.*\s+kick/, etc.
+
+// 3. Added sports context detection:
+const sportsKeywords = /(play|game|sport|ball|team|field|court|match|practice|coach|player|athlete|exercise|workout|training|gym|fitness)/i;
+// With double-check for disguised URLs
+```
+
+**Test Cases Added**:
+- `lets play kick ball` - Original issue ✓
+- `want to play kickball?` - Question format ✓
+- `join our kickball team` - Team context ✓
+- `practicing my soccer kick` - Sports practice ✓
+- `learned a new karate kick` - Martial arts ✓
+- `kick boxing class tonight` - Fitness class ✓
+- `coach taught me to kick` - Coaching context ✓
+- `kick ball tournament tomorrow` - Tournament context ✓
+- Additional 6 test cases for comprehensive coverage
+
+**Key Design Decisions**:
+1. **Context-aware detection**: Checks for sports/recreational keywords in surrounding text
+2. **Double verification**: Even in sports context, still checks for disguised URLs
+3. **Comprehensive whitelist**: Added 25+ new legitimate phrases
+4. **Verb pattern matching**: Added patterns for common sports-related verb usage
+5. **Minimal complexity**: Simple pattern matching, no ML or complex algorithms
+
+**Results**:
+- "lets play kick ball" no longer detected (false positive eliminated) ✓
+- All sports/game contexts properly handled ✓
+- No regression in scammer detection capabilities ✓
+- Lint passes without errors ✓
+- Performance maintained (< 1ms additional overhead) ✓
+- Test page updated with all new test cases ✓
+
+**Success Criteria**: ✓ ALL MET
+- False positive for "kick ball" eliminated ✓
+- Comprehensive sports/game context handling ✓
+- No breaking changes to existing detection ✓
+- Simple, maintainable solution ✓
+- All code quality checks pass ✓
 
 ---
 

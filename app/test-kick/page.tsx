@@ -50,6 +50,17 @@ export default function TestKickPage() {
       'I like to kick the ball',
       'kickstart your day',
       'Let\'s kick off the meeting',
+      'lets play kick ball',
+      'want to play kickball?',
+      'join our kickball team',
+      'practicing my soccer kick',
+      'learned a new karate kick',
+      'playing kick the can',
+      'kick boxing class tonight',
+      'coach taught me to kick',
+      'kick ball tournament tomorrow',
+      'kids love to play kick ball',
+      'kickball game after school',
       
       // PHASE 1.5 TEST CASES
       '--- PHASE 1.5 TESTS ---',
