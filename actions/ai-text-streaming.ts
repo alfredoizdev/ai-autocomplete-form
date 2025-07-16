@@ -6,7 +6,10 @@ interface StreamChunk {
 }
 
 // Cache for autocomplete suggestions
-const suggestionCache = new Map<string, { suggestion: string; timestamp: number }>();
+const suggestionCache = new Map<
+  string,
+  { suggestion: string; timestamp: number }
+>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 // Clean old cache entries
@@ -28,22 +31,25 @@ export const clearSuggestionCache = () => {
 // Helper function to remove the prompt from the beginning of the AI response
 const stripPromptFromResponse = (prompt: string, response: string): string => {
   if (!prompt || !response) return response;
-  
+
   // Normalize both strings for comparison (trim and lowercase)
   const normalizedPrompt = prompt.trim().toLowerCase();
   const normalizedResponse = response.trim().toLowerCase();
-  
+
   // Check if response starts with the prompt
   if (normalizedResponse.startsWith(normalizedPrompt)) {
     // Remove the prompt portion, preserving original casing
-    const cleanedResponse = response.trim().substring(prompt.trim().length).trim();
+    const cleanedResponse = response
+      .trim()
+      .substring(prompt.trim().length)
+      .trim();
     return cleanedResponse;
   }
-  
+
   // Also check if response contains prompt with slight variations (extra spaces, punctuation)
   const promptWords = normalizedPrompt.split(/\s+/);
   const responseWords = normalizedResponse.split(/\s+/);
-  
+
   // If first N words match (where N is number of words in prompt), strip them
   if (promptWords.length > 0 && responseWords.length >= promptWords.length) {
     let matches = true;
@@ -53,7 +59,7 @@ const stripPromptFromResponse = (prompt: string, response: string): string => {
         break;
       }
     }
-    
+
     if (matches) {
       // Find where to cut in the original response
       let cutIndex = 0;
@@ -71,13 +77,13 @@ const stripPromptFromResponse = (prompt: string, response: string): string => {
           wordCount++;
         }
       }
-      
+
       if (cutIndex > 0) {
         return response.substring(cutIndex).trim();
       }
     }
   }
-  
+
   return response;
 };
 
@@ -86,7 +92,7 @@ const simpleHash = (str: string): string => {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
+    hash = (hash << 5) - hash + char;
     hash = hash & hash; // Convert to 32-bit integer
   }
   return Math.abs(hash).toString(36);
@@ -105,7 +111,7 @@ export async function* streamOllamaCompletion(input: string) {
   cleanCache();
   const cacheKey = getCacheKey(input);
   const cached = suggestionCache.get(cacheKey);
-  
+
   if (cached) {
     yield { text: cached.suggestion, done: true } as StreamChunk;
     return;
@@ -113,21 +119,24 @@ export async function* streamOllamaCompletion(input: string) {
 
   try {
     // Try hybrid API first with streaming support
-    const hybridResponse = await fetch('http://localhost:8001/api/autocomplete/hybrid', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        prompt: input,
-        stream: true // Request streaming if supported
-      }),
-    });
+    const hybridResponse = await fetch(
+      "http://localhost:8001/api/autocomplete/hybrid",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          prompt: input,
+          stream: true, // Request streaming if supported
+        }),
+      }
+    );
 
     if (hybridResponse.ok && hybridResponse.body) {
       const reader = hybridResponse.body.getReader();
       const decoder = new TextDecoder();
-      let accumulated = '';
+      let accumulated = "";
 
       try {
         while (true) {
@@ -135,7 +144,7 @@ export async function* streamOllamaCompletion(input: string) {
           if (done) break;
 
           const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split('\n');
+          const lines = chunk.split("\n");
 
           for (const line of lines) {
             if (line.trim()) {
@@ -144,15 +153,23 @@ export async function* streamOllamaCompletion(input: string) {
                 if (data.chunk) {
                   const previousLength = accumulated.length;
                   accumulated += data.chunk;
-                  
+
                   // For streaming, we need to be careful about when to strip the prompt
                   // Only strip from the first chunk that completes the prompt
-                  if (previousLength < input.length && accumulated.length >= input.length) {
+                  if (
+                    previousLength < input.length &&
+                    accumulated.length >= input.length
+                  ) {
                     // We just crossed the prompt boundary, check if we need to strip
-                    const strippedAccumulated = stripPromptFromResponse(input, accumulated);
+                    const strippedAccumulated = stripPromptFromResponse(
+                      input,
+                      accumulated
+                    );
                     if (strippedAccumulated !== accumulated) {
                       // The prompt was included, yield only the new part
-                      const newContent = strippedAccumulated.substring(previousLength > 0 ? previousLength - input.length : 0);
+                      const newContent = strippedAccumulated.substring(
+                        previousLength > 0 ? previousLength - input.length : 0
+                      );
                       if (newContent) {
                         yield { text: newContent, done: false } as StreamChunk;
                       }
@@ -177,17 +194,20 @@ export async function* streamOllamaCompletion(input: string) {
         // Cache the complete suggestion after stripping the prompt
         if (accumulated) {
           const cleaned = stripPromptFromResponse(input, accumulated);
-          suggestionCache.set(cacheKey, { suggestion: cleaned, timestamp: Date.now() });
+          suggestionCache.set(cacheKey, {
+            suggestion: cleaned,
+            timestamp: Date.now(),
+          });
         }
 
-        yield { text: '', done: true } as StreamChunk;
+        yield { text: "", done: true } as StreamChunk;
         return;
       } catch (error) {
-        console.error('Streaming error:', error);
+        console.error("Streaming error:", error);
       }
     }
   } catch (error) {
-    console.error('Hybrid API streaming error:', error);
+    console.error("Hybrid API streaming error:", error);
   }
 
   // Fallback to direct Ollama with streaming
@@ -199,20 +219,23 @@ export async function* streamOllamaCompletion(input: string) {
 
 Write like you're seducing someone into your bed. Make them feel desired, excited, and eager to explore.
 
+Do not sound fancy it doesnt work with swingers.
+
 CRITICAL INSTRUCTION: You must output ONLY the completion text, NOT the original prompt. Never repeat what the user has already written.
 
 Rules for completion:
 - Creates anticipation and desire
 - Makes them imagine the pleasure ahead
-- Sounds confident, playful, and irresistibly naughty
+- Be direct yet creative
+- Sounds confident, kinky and irresistibly naughty
 - Forms a complete, enticing sentence (8-20 words)
-- Uses explicit language about pleasure, orgasms, and desires
+- Uses explicit language about pleasure, orgasms
 
 Examples of CORRECT completions (notice we only return the new part):
-"I am a young male swinger looking for" → "sexy couples who want to explore every inch of pleasure together tonight"
-"We love meeting" → "adventurous souls ready to turn our wildest fantasies into unforgettable orgasmic reality"
-"My biggest turn on is" → "watching my partner moan with pleasure while we share you completely"
-"Looking for couples who" → "crave intense oral pleasure and aren't afraid to get deliciously dirty with us"
+"I am looking for couples or single ladies" → "am ddf, free, and looking for friends and playmates"
+"Looking for fun and discret pleasures" → " with adventurous souls ready to turn our wildest fantasies into reality"
+"I am a young male swinger looking for" → "partners who appreciate a dominant lover and crave deep, throbbing, orgasmic release."
+"We like quiet evenings at our house" → "and to soft swing to full swap with playful couples"
 
 Examples of INCORRECT completions (DO NOT do this):
 "I am a young male swinger looking for" → "I am a young male swinger looking for sexy couples..."
@@ -240,18 +263,18 @@ Be explicitly sexual. Make them want to message immediately. Output ONLY the con
       }),
     });
 
-    if (!response.body) throw new Error('No response body');
+    if (!response.body) throw new Error("No response body");
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
-    let accumulated = '';
+    let accumulated = "";
 
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
 
       const chunk = decoder.decode(value, { stream: true });
-      const lines = chunk.split('\n');
+      const lines = chunk.split("\n");
 
       for (const line of lines) {
         if (line.trim()) {
@@ -260,25 +283,31 @@ Be explicitly sexual. Make them want to message immediately. Output ONLY the con
             if (data.message?.content) {
               const content = data.message.content;
               accumulated += content;
-              
+
               // For Ollama streaming, we need to handle accumulated text differently
               const previousLength = accumulated.length;
-              
+
               // Process the chunk
               let processedChunk = content
-                ?.replace(/\.{3,}/g, '')
-                ?.replace(/…/g, '')
+                ?.replace(/\.{3,}/g, "")
+                ?.replace(/…/g, "")
                 ?.trim();
 
               // Check if we need to strip the prompt from accumulated text
               if (accumulated.toLowerCase().startsWith(input.toLowerCase())) {
                 // The AI is including the prompt, we need to strip it
-                const strippedAccumulated = stripPromptFromResponse(input, accumulated);
-                
+                const strippedAccumulated = stripPromptFromResponse(
+                  input,
+                  accumulated
+                );
+
                 // Calculate what part of the stripped text is new
                 if (previousLength <= input.length) {
                   // We were still in the prompt part, yield only truly new content
-                  const newContent = strippedAccumulated.substring(0, content.length);
+                  const newContent = strippedAccumulated.substring(
+                    0,
+                    content.length
+                  );
                   if (newContent) {
                     processedChunk = newContent;
                   } else {
@@ -289,7 +318,7 @@ Be explicitly sexual. Make them want to message immediately. Output ONLY the con
                   // We were already past the prompt
                   processedChunk = content;
                 }
-                
+
                 // Update accumulated to the stripped version
                 accumulated = strippedAccumulated;
               }
@@ -297,9 +326,15 @@ Be explicitly sexual. Make them want to message immediately. Output ONLY the con
               // Handle capitalization for the first real chunk
               if (processedChunk && input) {
                 const lastChar = input.trim().slice(-1);
-                if (lastChar === ',' || lastChar === ':' || lastChar === ';' || 
-                    (lastChar && !['.' , '!', '?'].includes(lastChar))) {
-                  processedChunk = processedChunk.charAt(0).toLowerCase() + processedChunk.slice(1);
+                if (
+                  lastChar === "," ||
+                  lastChar === ":" ||
+                  lastChar === ";" ||
+                  (lastChar && ![".", "!", "?"].includes(lastChar))
+                ) {
+                  processedChunk =
+                    processedChunk.charAt(0).toLowerCase() +
+                    processedChunk.slice(1);
                 }
               }
 
@@ -317,12 +352,15 @@ Be explicitly sexual. Make them want to message immediately. Output ONLY the con
     // Cache the complete suggestion after stripping the prompt
     if (accumulated) {
       const cleaned = stripPromptFromResponse(input, accumulated);
-      suggestionCache.set(cacheKey, { suggestion: cleaned, timestamp: Date.now() });
+      suggestionCache.set(cacheKey, {
+        suggestion: cleaned,
+        timestamp: Date.now(),
+      });
     }
 
-    yield { text: '', done: true } as StreamChunk;
+    yield { text: "", done: true } as StreamChunk;
   } catch (error) {
-    console.error('Ollama streaming error:', error);
-    yield { text: 'No answer found', done: true } as StreamChunk;
+    console.error("Ollama streaming error:", error);
+    yield { text: "No answer found", done: true } as StreamChunk;
   }
 }
