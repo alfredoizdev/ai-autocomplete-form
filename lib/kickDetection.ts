@@ -12,6 +12,9 @@ export interface DetectionResult {
 
 // Core pattern definitions based on real user examples
 const kickVariationPatterns = [
+  // Direct "kick" detection (for platform references)
+  /\bkick\b/gi,
+  
   // Basic character substitution and spacing (with word boundaries where possible)
   /\bk\s*[i1l!|]\s*[kc]\b/gi,
   
@@ -144,10 +147,173 @@ const kickVariationPatterns = [
 ];
 
 // Unicode confusables that look like 'kick' characters
+// Comprehensive database of homoglyphs from various Unicode blocks
 const homoglyphs: Record<string, string[]> = {
-  'k': ['к', 'κ', 'ķ', 'ҡ', 'ҝ', 'ќ'],  // Cyrillic and Greek
-  'i': ['і', 'í', 'ì', 'ï', 'ı', '1', 'l', '|', '!'],
-  'c': ['с', 'ς', 'ċ', 'ĉ', 'ć', 'č'],
+  'k': [
+    // Cyrillic letters
+    'к',     // U+043A - Cyrillic small letter ka
+    'К',     // U+041A - Cyrillic capital letter ka
+    'ҡ',     // U+04A1 - Cyrillic small letter bashkir ka
+    'ҝ',     // U+049D - Cyrillic small letter ka with vertical stroke
+    'ќ',     // U+045C - Cyrillic small letter kje
+    'қ',     // U+049B - Cyrillic small letter ka with descender
+    'ҟ',     // U+049F - Cyrillic small letter ka with stroke
+    'ҝ',     // U+049D - Cyrillic small letter ka with vertical stroke
+    
+    // Greek letters
+    'κ',     // U+03BA - Greek small letter kappa
+    'Κ',     // U+039A - Greek capital letter kappa
+    'ϰ',     // U+03F0 - Greek kappa symbol
+    
+    // Latin extended
+    'ķ',     // U+0137 - Latin small letter k with cedilla
+    'ĸ',     // U+0138 - Latin small letter kra
+    'ḱ',     // U+1E31 - Latin small letter k with acute
+    'ḳ',     // U+1E33 - Latin small letter k with dot below
+    'ḵ',     // U+1E35 - Latin small letter k with line below
+    'ⱪ',     // U+2C6A - Latin small letter k with descender
+    '𝐤',    // U+1D424 - Mathematical bold small k
+    '𝑘',    // U+1D458 - Mathematical italic small k
+    '𝒌',    // U+1D48C - Mathematical bold italic small k
+    '𝓀',    // U+1D4C0 - Mathematical script small k
+    '𝔨',    // U+1D528 - Mathematical fraktur small k
+    '𝕜',    // U+1D55C - Mathematical double-struck small k
+    
+    // Fullwidth
+    'ｋ',    // U+FF4B - Fullwidth Latin small letter k
+  ],
+  
+  'i': [
+    // Cyrillic letters
+    'і',     // U+0456 - Cyrillic small letter byelorussian-ukrainian i
+    'І',     // U+0406 - Cyrillic capital letter byelorussian-ukrainian i
+    'ї',     // U+0457 - Cyrillic small letter yi
+    'Ї',     // U+0407 - Cyrillic capital letter yi
+    
+    // Greek letters
+    'ι',     // U+03B9 - Greek small letter iota
+    'Ι',     // U+0399 - Greek capital letter iota
+    'ί',     // U+03AF - Greek small letter iota with tonos
+    'ἰ',     // U+1F30 - Greek small letter iota with psili
+    'ἱ',     // U+1F31 - Greek small letter iota with dasia
+    'ϊ',     // U+03CA - Greek small letter iota with dialytika
+    
+    // Latin extended and diacritics
+    'í',     // U+00ED - Latin small letter i with acute
+    'ì',     // U+00EC - Latin small letter i with grave
+    'ï',     // U+00EF - Latin small letter i with diaeresis
+    'î',     // U+00EE - Latin small letter i with circumflex
+    'ī',     // U+012B - Latin small letter i with macron
+    'ĭ',     // U+012D - Latin small letter i with breve
+    'į',     // U+012F - Latin small letter i with ogonek
+    'ı',     // U+0131 - Latin small letter dotless i
+    'ḭ',     // U+1E2D - Latin small letter i with tilde below
+    'ḯ',     // U+1E2F - Latin small letter i with diaeresis and acute
+    'ỉ',     // U+1EC9 - Latin small letter i with hook above
+    'ị',     // U+1ECB - Latin small letter i with dot below
+    
+    // Mathematical symbols
+    '𝐢',    // U+1D422 - Mathematical bold small i
+    '𝑖',    // U+1D456 - Mathematical italic small i  
+    '𝒊',    // U+1D48A - Mathematical bold italic small i
+    '𝓲',    // U+1D4F2 - Mathematical script small i
+    '𝔦',    // U+1D526 - Mathematical fraktur small i
+    '𝕚',    // U+1D55A - Mathematical double-struck small i
+    
+    // Look-alike numbers and symbols
+    '1',     // Digit one
+    'l',     // Latin small letter l
+    '|',     // Vertical bar
+    '!',     // Exclamation mark
+    'ǀ',     // U+01C0 - Latin letter dental click
+    'ⅰ',     // U+2170 - Small Roman numeral one
+    'Ⅰ',     // U+2160 - Roman numeral one
+    '⏽',     // U+23FD - Power on symbol
+    '│',     // U+2502 - Box drawings light vertical
+    '┃',     // U+2503 - Box drawings heavy vertical
+    '∣',     // U+2223 - Divides
+    
+    // Fullwidth
+    'ｉ',    // U+FF49 - Fullwidth Latin small letter i
+  ],
+  
+  'c': [
+    // Cyrillic letters
+    'с',     // U+0441 - Cyrillic small letter es
+    'С',     // U+0421 - Cyrillic capital letter es
+    'ҫ',     // U+04AB - Cyrillic small letter es with descender
+    
+    // Greek letters
+    'ς',     // U+03C2 - Greek small letter final sigma
+    'σ',     // U+03C3 - Greek small letter sigma (in some fonts)
+    'ϲ',     // U+03F2 - Greek lunate sigma symbol
+    'Ϲ',     // U+03F9 - Greek capital lunate sigma symbol
+    
+    // Latin extended
+    'ċ',     // U+010B - Latin small letter c with dot above
+    'ĉ',     // U+0109 - Latin small letter c with circumflex
+    'ć',     // U+0107 - Latin small letter c with acute
+    'č',     // U+010D - Latin small letter c with caron
+    'ç',     // U+00E7 - Latin small letter c with cedilla
+    'ḉ',     // U+1E09 - Latin small letter c with cedilla and acute
+    'ȼ',     // U+023C - Latin small letter c with stroke
+    'ƈ',     // U+0188 - Latin small letter c with hook
+    
+    // Mathematical symbols
+    '𝐜',    // U+1D41C - Mathematical bold small c
+    '𝑐',    // U+1D450 - Mathematical italic small c
+    '𝒄',    // U+1D484 - Mathematical bold italic small c
+    '𝓬',    // U+1D4EC - Mathematical script small c
+    '𝔠',    // U+1D520 - Mathematical fraktur small c
+    '𝕔',    // U+1D554 - Mathematical double-struck small c
+    
+    // Look-alike symbols
+    '⊂',     // U+2282 - Subset of
+    '⟨',     // U+27E8 - Mathematical left angle bracket
+    '〈',     // U+3008 - Left angle bracket
+    '﹤',     // U+FE64 - Small less-than sign
+    '＜',     // U+FF1C - Fullwidth less-than sign
+    'ϲ',     // U+03F2 - Greek lunate sigma symbol
+    
+    // Removed regular parenthesis '(' as it breaks pattern matching
+    // Only keeping decorative parentheses that actually look like 'c'
+    '❨',     // U+2768 - Medium left parenthesis ornament
+    '⁽',     // U+207D - Superscript left parenthesis
+    
+    // Fullwidth
+    'ｃ',    // U+FF43 - Fullwidth Latin small letter c
+  ],
+  
+  // Additional mapping for 'h' to detect "hk" endings with homoglyphs
+  'h': [
+    // Cyrillic letters
+    'һ',     // U+04BB - Cyrillic small letter shha
+    'Һ',     // U+04BA - Cyrillic capital letter shha
+    'н',     // U+043D - Cyrillic small letter en (looks like h in some fonts)
+    'Н',     // U+041D - Cyrillic capital letter en
+    
+    // Greek letters
+    'η',     // U+03B7 - Greek small letter eta (in some fonts)
+    'ή',     // U+03AE - Greek small letter eta with tonos
+    
+    // Latin extended
+    'ħ',     // U+0127 - Latin small letter h with stroke
+    'ĥ',     // U+0125 - Latin small letter h with circumflex
+    'ḣ',     // U+1E23 - Latin small letter h with dot above
+    'ḥ',     // U+1E25 - Latin small letter h with dot below
+    'ḧ',     // U+1E27 - Latin small letter h with diaeresis
+    'ḩ',     // U+1E29 - Latin small letter h with cedilla
+    'ḫ',     // U+1E2B - Latin small letter h with breve below
+    'ẖ',     // U+1E96 - Latin small letter h with line below
+    
+    // Mathematical symbols
+    '𝐡',    // U+1D421 - Mathematical bold small h
+    '𝒉',    // U+1D489 - Mathematical bold italic small h
+    'ℎ',     // U+210E - Planck constant
+    
+    // Fullwidth
+    'ｈ',    // U+FF48 - Fullwidth Latin small letter h
+  ]
 };
 
 // Zero-width and invisible Unicode characters used for obfuscation
@@ -162,6 +328,62 @@ const ZERO_WIDTH_CHARS = [
 
 // Create regex pattern for zero-width characters
 const ZERO_WIDTH_PATTERN = new RegExp(`[${ZERO_WIDTH_CHARS.join('')}]`, 'g');
+
+// Create reverse mapping for homoglyph normalization
+const homoglyphToBase: Map<string, string> = new Map();
+
+// Initialize the reverse mapping
+function initializeHomoglyphMapping() {
+  for (const [base, variants] of Object.entries(homoglyphs)) {
+    for (const variant of variants) {
+      homoglyphToBase.set(variant, base);
+    }
+  }
+  // Also map the base characters to themselves
+  homoglyphToBase.set('k', 'k');
+  homoglyphToBase.set('i', 'i');
+  homoglyphToBase.set('c', 'c');
+  homoglyphToBase.set('h', 'h');
+}
+
+// Initialize on module load
+initializeHomoglyphMapping();
+
+// Normalize homoglyphs to their base Latin characters
+export function normalizeHomoglyphs(text: string): {
+  normalized: string;
+  hasHomoglyphs: boolean;
+  homoglyphCount: number;
+  detectedHomoglyphs: string[];
+} {
+  let normalized = '';
+  let hasHomoglyphs = false;
+  let homoglyphCount = 0;
+  const detectedHomoglyphs: string[] = [];
+  
+  for (const char of text) {
+    const baseChar = homoglyphToBase.get(char);
+    if (baseChar && baseChar !== char) {
+      // Found a homoglyph
+      normalized += baseChar;
+      hasHomoglyphs = true;
+      homoglyphCount++;
+      if (!detectedHomoglyphs.includes(char)) {
+        detectedHomoglyphs.push(char);
+      }
+    } else {
+      // Regular character or unmapped character
+      normalized += char;
+    }
+  }
+  
+  return {
+    normalized,
+    hasHomoglyphs,
+    homoglyphCount,
+    detectedHomoglyphs
+  };
+}
 
 // Normalize text by removing zero-width characters while preserving position mapping
 export function normalizeText(text: string): {
@@ -353,6 +575,9 @@ function calculateConfidence(results: Partial<DetectionResult>): number {
     if (results.techniques?.includes('hk_ending')) {
       techniqueBoost += 15; // "hk" endings are suspicious obfuscation attempts
     }
+    if (results.techniques?.includes('advanced_homoglyph')) {
+      techniqueBoost += 25; // Advanced homoglyphs are highly suspicious
+    }
     
     confidence = Math.min(95, baseConfidence + techniqueBoost);
   }
@@ -369,20 +594,41 @@ function calculateConfidence(results: Partial<DetectionResult>): number {
 function detectHomoglyphs(text: string): { detected: boolean; matches: string[] } {
   const matches: string[] = [];
   
-  // Build regex pattern for homoglyphs
-  const kChars = ['k', ...homoglyphs.k].join('');
-  const iChars = ['i', ...homoglyphs.i].join('');
-  const cChars = ['c', ...homoglyphs.c].join('');
+  // Build regex pattern for homoglyphs - need to escape special regex characters
+  const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   
-  // Create pattern that matches any combination of these characters
-  const homoglyphPattern = new RegExp(
-    `[${kChars}]\\s*[${iChars}]\\s*[${cChars}]\\s*[${kChars}]`,
-    'gi'
-  );
+  // Build character sets for each position
+  const kChars = ['k', 'K', ...homoglyphs.k].map(escapeRegex).join('');
+  const iChars = ['i', 'I', ...homoglyphs.i].map(escapeRegex).join('');
+  const cChars = ['c', 'C', ...homoglyphs.c].map(escapeRegex).join('');
+  const hChars = homoglyphs.h ? ['h', 'H', ...homoglyphs.h].map(escapeRegex).join('') : '';
   
-  let match;
-  while ((match = homoglyphPattern.exec(text)) !== null) {
-    matches.push(match[0]);
+  // Create patterns for various combinations
+  const patterns = [
+    // Basic kick pattern with homoglyphs
+    new RegExp(`[${kChars}]\\s*[${iChars}]\\s*[${cChars}]\\s*[${kChars}]`, 'gi'),
+    // kick with spaces/separators
+    new RegExp(`[${kChars}][._\\-\\s]{0,3}[${iChars}][._\\-\\s]{0,3}[${cChars}][._\\-\\s]{0,3}[${kChars}]`, 'gi'),
+    // kihk pattern with homoglyphs (hk ending)
+    new RegExp(`[${kChars}]\\s*[${iChars}]\\s*[${hChars}]\\s*[${kChars}]`, 'gi'),
+    // Just k-i-c (without trailing k)
+    new RegExp(`[${kChars}][._\\-\\s]{0,3}[${iChars}][._\\-\\s]{0,3}[${cChars}](?!\\w)`, 'gi'),
+  ];
+  
+  // Apply each pattern
+  for (const pattern of patterns) {
+    let match;
+    while ((match = pattern.exec(text)) !== null) {
+      // Check if this contains actual homoglyphs (not just regular letters)
+      const hasActualHomoglyph = [...match[0]].some(char => {
+        const baseChar = homoglyphToBase.get(char);
+        return baseChar && baseChar !== char.toLowerCase();
+      });
+      
+      if (hasActualHomoglyph && !matches.includes(match[0])) {
+        matches.push(match[0]);
+      }
+    }
   }
   
   return {
@@ -410,7 +656,23 @@ export function detectKickVariations(text: string): DetectionResult {
     results.techniques.push('zero_width');
   }
   
+  // Then check for homoglyphs (for detection only, not for pattern matching)
+  const { 
+    hasHomoglyphs, 
+    detectedHomoglyphs 
+  } = normalizeHomoglyphs(zeroWidthNormalized);
+  
+  // If homoglyphs were found, add to techniques
+  if (hasHomoglyphs) {
+    results.techniques.push('advanced_homoglyph');
+    // Add specific homoglyph info to matches for debugging
+    if (detectedHomoglyphs.length > 0) {
+      results.matches.push(`[Homoglyphs: ${detectedHomoglyphs.join(', ')}]`);
+    }
+  }
+  
   // Normalize for analysis (but keep original for position tracking)
+  // Use zero-width normalized text for pattern matching to preserve pattern characters
   const normalizedText = zeroWidthNormalized.toLowerCase();
   
   // Pattern matching with position tracking
@@ -439,73 +701,73 @@ export function detectKickVariations(text: string): DetectionResult {
         
         // Identify technique used
         if (index === 0) {
-          results.techniques.push('character_substitution');
+          results.techniques.push('direct_kick');
         } else if (index === 1) {
-          results.techniques.push('separators');
+          results.techniques.push('character_substitution');
         } else if (index === 2) {
-          results.techniques.push('double_separators');
+          results.techniques.push('separators');
         } else if (index === 3) {
-          results.techniques.push('character_repetition');
+          results.techniques.push('double_separators');
         } else if (index === 4) {
-          results.techniques.push('alternative_spelling');
+          results.techniques.push('character_repetition');
         } else if (index === 5) {
-          results.techniques.push('parentheses');
+          results.techniques.push('alternative_spelling');
         } else if (index === 6) {
-          results.techniques.push('underscores');
+          results.techniques.push('parentheses');
         } else if (index === 7) {
-          results.techniques.push('advanced_pattern');
+          results.techniques.push('underscores');
         } else if (index === 8) {
-          results.techniques.push('brackets');
+          results.techniques.push('advanced_pattern');
         } else if (index === 9) {
-          results.techniques.push('missing_letter');
+          results.techniques.push('brackets');
         } else if (index === 10) {
-          results.techniques.push('spaces');
+          results.techniques.push('missing_letter');
         } else if (index === 11) {
-          results.techniques.push('general_obfuscation');
+          results.techniques.push('spaces');
         } else if (index === 12) {
-          results.techniques.push('extended_parentheses');
+          results.techniques.push('general_obfuscation');
         } else if (index === 13) {
-          results.techniques.push('multiple_dots');
+          results.techniques.push('extended_parentheses');
         } else if (index === 14) {
-          results.techniques.push('mixed_separators');
+          results.techniques.push('multiple_dots');
         } else if (index === 15) {
-          results.techniques.push('extended_gaps');
+          results.techniques.push('mixed_separators');
         } else if (index === 16) {
           results.techniques.push('extended_gaps');
         } else if (index === 17) {
-          results.techniques.push('parentheses');
+          results.techniques.push('extended_gaps');
         } else if (index === 18) {
-          results.techniques.push('multi_char_dots');
+          results.techniques.push('parentheses');
         } else if (index === 19) {
-          results.techniques.push('multi_char_separators');
+          results.techniques.push('multi_char_dots');
         } else if (index === 20) {
-          results.techniques.push('vowel_patterns');
+          results.techniques.push('multi_char_separators');
         } else if (index === 21) {
-          results.techniques.push('flexible_middle');
+          results.techniques.push('vowel_patterns');
         } else if (index === 22) {
-          results.techniques.push('parentheses_ck');
+          results.techniques.push('flexible_middle');
         } else if (index === 23) {
-          results.techniques.push('multiple_parentheses');
+          results.techniques.push('parentheses_ck');
         } else if (index === 24) {
-          results.techniques.push('single_dots');
+          results.techniques.push('multiple_parentheses');
         } else if (index === 25) {
-          results.techniques.push('flexible_dots');
+          results.techniques.push('single_dots');
         } else if (index === 26) {
-          results.techniques.push('enhanced_parentheses');
+          results.techniques.push('flexible_dots');
         } else if (index === 27) {
-          results.techniques.push('double_vowel');
+          results.techniques.push('enhanced_parentheses');
         } else if (index === 28) {
           results.techniques.push('double_vowel');
         } else if (index === 29) {
-          results.techniques.push('y_vowel');
+          results.techniques.push('double_vowel');
         } else if (index === 30) {
-          results.techniques.push('vowel_variation');
+          results.techniques.push('y_vowel');
         } else if (index === 31) {
-          results.techniques.push('short_variation');
+          results.techniques.push('vowel_variation');
         } else if (index === 32) {
-          results.techniques.push('mixed_vowel');
+          results.techniques.push('short_variation');
         } else if (index === 33) {
-          results.techniques.push('hk_ending');
+          results.techniques.push('mixed_vowel');
         } else if (index === 34) {
           results.techniques.push('hk_ending');
         } else if (index === 35) {
@@ -516,19 +778,24 @@ export function detectKickVariations(text: string): DetectionResult {
           results.techniques.push('hk_ending');
         } else if (index === 38) {
           results.techniques.push('hk_ending');
-        } else if (index >= 39) {
+        } else if (index === 39) {
+          results.techniques.push('hk_ending');
+        } else if (index >= 40) {
           results.techniques.push('domain_pattern');
         }
       }
     }
   });
   
-  // Check for homoglyphs (on zero-width normalized text for consistency)
-  const homoglyphResult = detectHomoglyphs(normalizedText);
+  // Check for homoglyphs on the original text (after zero-width normalization)
+  // This ensures we detect the actual homoglyphs before normalization
+  const homoglyphResult = detectHomoglyphs(zeroWidthNormalized);
   if (homoglyphResult.detected) {
     results.detected = true;
     results.matches.push(...homoglyphResult.matches);
-    results.techniques.push('homoglyph');
+    if (!results.techniques.includes('homoglyph')) {
+      results.techniques.push('homoglyph');
+    }
   }
   
   // Levenshtein distance check for fuzzy matching

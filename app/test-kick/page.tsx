@@ -238,6 +238,83 @@ export default function TestKickPage() {
       // Zero-width + "hk" endings
       'k\u200Bi\u200Bhk',
       'k\u200B.\u200Bi\u200B.\u200Bhk',
+      
+      // PHASE 3 TEST CASES - Extended Homoglyphs
+      '--- PHASE 3 TESTS ---',
+      
+      // Cyrillic homoglyphs
+      'кick',  // Cyrillic к
+      'kiск',  // Cyrillic с
+      'кiск',  // Both Cyrillic
+      'КІск',  // All caps Cyrillic
+      'ҡіҫк',  // Various Cyrillic variants
+      
+      // Greek homoglyphs
+      'κick',  // Greek kappa
+      'kiςk',  // Greek final sigma
+      'κιϲκ',  // All Greek
+      'ΚΙϹΚ',  // All caps Greek
+      
+      // Latin extended homoglyphs
+      'ķíčķ',  // Latin with diacritics
+      'ḳīċḵ',  // Latin extended
+      'ĸìćķ',  // More Latin variants
+      
+      // Mathematical symbols
+      '𝐤𝐢𝐜𝐤',  // Mathematical bold
+      '𝑘𝑖𝑐𝑘',  // Mathematical italic
+      '𝒌𝒊𝒄𝒌',  // Mathematical bold italic
+      '𝓀𝓲𝓬𝓀',  // Mathematical script
+      '𝔨𝔦𝔠𝔨',  // Mathematical fraktur
+      '𝕜𝕚𝕔𝕜',  // Mathematical double-struck
+      
+      // Mixed homoglyphs
+      'к1ϲk',  // Cyrillic k, digit 1, Greek c
+      'ķi|k',  // Latin k with cedilla, pipe for i
+      '𝐤ιck',  // Math bold k, Greek iota
+      'кїςк',  // Cyrillic k, Cyrillic yi, Greek sigma
+      
+      // Fullwidth characters
+      'ｋｉｃｋ',  // All fullwidth
+      'ｋick',    // Mixed fullwidth
+      
+      // Look-alike symbols for i
+      'k|ck',   // Pipe
+      'k!ck',   // Exclamation
+      'k1ck',   // Digit one
+      'kⅰck',   // Roman numeral
+      'k│ck',   // Box drawing
+      
+      // Look-alike symbols for c
+      'ki(k',   // Parenthesis as c
+      'ki⊂k',   // Subset symbol
+      'ki⟨k',   // Angle bracket
+      
+      // Complex mixed homoglyphs
+      'ķ│ςķ',   // Latin k, box drawing, Greek sigma
+      '𝔨!ϲ𝔨',   // Fraktur k, exclamation, Greek lunate sigma
+      'К1СК',   // All caps Cyrillic with digit 1
+      
+      // Homoglyphs with separators
+      'к.i.c.k',  // Cyrillic k with dots
+      'κ_ι_ς_κ',  // Greek with underscores
+      '𝐤-𝐢-𝐜-𝐤',  // Math bold with dashes
+      
+      // Homoglyphs with zero-width
+      'к\u200Bi\u200Bck',  // Cyrillic k + zero-width
+      'κ\u00ADι\u00ADck',  // Greek kappa + soft hyphen
+      
+      // "hk" endings with homoglyphs
+      'кihk',   // Cyrillic k
+      'κιhκ',   // Greek
+      'ķīħķ',   // Latin extended
+      'k𝐢𝐡𝐤',   // Math bold
+      'кїнк',   // All Cyrillic (н looks like h)
+      
+      // Should NOT detect regular text with Unicode
+      'I like café',
+      'Résumé attached',
+      'Naïve approach',
     ];
 
     const testResults = phase1TestCases.map(testCase => {
@@ -278,7 +355,7 @@ export default function TestKickPage() {
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
       <div className="p-8 max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6 text-white">Kick Detection Test Results (Phase 1 & 2)</h1>
+        <h1 className="text-3xl font-bold mb-6 text-white">Kick Detection Test Results (Phase 1, 2 & 3)</h1>
         
         <div className="mb-6 p-4 bg-gray-900 border border-gray-800 rounded-lg">
           <h2 className="text-lg font-semibold text-gray-100">Summary: {detectedCount}/{results.length} tests passed</h2>
