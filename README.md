@@ -5,20 +5,23 @@ A sophisticated AI-powered bio autocomplete system built with Next.js 15, React 
 ## 🚀 Recent Updates
 
 ### Latest Features (2025)
-- **🛡️ Kick.com Link Detection** - Advanced detection of kick.com URLs with 28+ obfuscation patterns
+- **🛡️ Kick.com Link Detection v2** - Enhanced detection with 40+ patterns including phonetic variations and zero-width character support
 - **⚡ Optimized Autocomplete** - New `/optimized` route with 60-80% reduced latency via streaming
 - **🔧 Enhanced ChromaDB** - Now indexes all 5000 bios for better vector search results
-- **🐛 Bug Fixes** - Fixed autocomplete to work when users clear bio and start over
+- **✨ Phonetic Pattern Detection** - Catches sound-alike variations (keek, kyck, keak)
+- **🐛 Build Fixes** - Zero errors in production build with full TypeScript compliance
 
 ## Features
 
-### 🛡️ Kick.com Link Detection System
-- **Advanced URL detection** with 28+ obfuscation pattern variations
-- **Multi-layer detection** - Pattern matching, fuzzy matching, and homoglyph detection
+### 🛡️ Kick.com Link Detection System v2
+- **Advanced URL detection** with 40+ obfuscation patterns (up from 28)
+- **Phonetic detection** - Catches sound-alike variations (keek, kyck, keak, kik)
+- **Zero-width character detection** - Identifies invisible Unicode obfuscation
+- **Multi-layer detection** - Pattern matching, fuzzy matching, homoglyph, and phonetic
 - **Real-time warnings** with confidence levels (Low/Medium/High)
-- **Smart pattern recognition** - Detects spaces, dots, special chars, leetspeak
-- **Comprehensive logging** for pattern improvement and analysis
-- **User-friendly warnings** - Clear messaging about prohibited content
+- **Smart pattern recognition** - Spaces, dots, parentheses, special chars, leetspeak
+- **False positive prevention** - Excludes legitimate words (kayak, peek, etc.)
+- **Performance optimized** - Sub-5ms detection with intelligent caching
 
 ### ⚡ Optimized Autocomplete (/optimized route)
 - **True streaming responses** - 60-80% reduced latency (50-100ms)
@@ -42,10 +45,10 @@ A sophisticated AI-powered bio autocomplete system built with Next.js 15, React 
 - **typo-js integration** with English Hunspell dictionaries
 - **Custom dictionary system** with localStorage persistence
 - **Word mapping functionality** - learns user corrections
-- **Contraction handling** - automatically suggests 35+ common contractions
+- **Contraction handling** - automatically suggests 80+ common contractions
 - **Click-to-correct interface** with intelligent popup positioning
 - **Performance optimized** with 800ms debouncing and suggestion caching
-- **Auto-correction dictionary** - 35+ common misspellings with preserved capitalization
+- **Auto-correction dictionary** - 80+ common misspellings with preserved capitalization
 
 - **Pattern learning** - Logs detection attempts for continuous improvement
 
@@ -182,6 +185,7 @@ The web app will run on `http://localhost:3000`
   - Smart caching with 90% API call reduction
   - React 19 performance features
 - **`/ai-image`** - Image analysis feature for bio photos
+- **`/test-kick`** - Visual test page for kick detection patterns (dev only)
 
 ## Usage
 
@@ -294,18 +298,26 @@ The **Text Feature Coordinator** manages three text features:
 - **Streaming responses** - Character-by-character display in optimized mode
 - **Smart caching** - 90% reduction in redundant API calls with 5-minute TTL
 
-### Kick.com Link Detection System
-- **Pattern matching engine** - Detects 28+ real-world obfuscation patterns:
-  - Character spacing: `k i k`, `k.i.k`, `k-i-k`
+### Kick.com Link Detection System v2
+- **Pattern matching engine** - Detects 40+ real-world obfuscation patterns:
+  - Character spacing: `k i k`, `k.i.k`, `k-i-k`, `k....i....k`
   - Character substitution: `k1k`, `k!k`, `klk` (l for i)
   - Character insertion: `kiik`, `kiiik`, `killk`
-  - Alternative spellings: `keek`, `keik`, `kiek`
-  - Special formatting: `k(i)k`, `k___ik`
-- **Fuzzy matching** - Levenshtein distance algorithm catches close variations
-- **Homoglyph detection** - Identifies Unicode look-alikes (кick with Cyrillic к)
+  - Phonetic variations: `keek`, `kyck`, `keak`, `kik`
+  - Special formatting: `k(i)k`, `k(__ei__)k`, `k(._i_.)k`
+  - Extended patterns: `k..ee..k`, `k._.-i-._.k`
+  - Zero-width characters: `k​i​c​k` (with invisible Unicode)
+- **Multi-layer detection approach**:
+  - Pattern matching with 40+ regex patterns
+  - Fuzzy matching with Levenshtein distance
+  - Homoglyph detection for Unicode look-alikes
+  - Phonetic matching for sound-alike variations
+  - Zero-width character normalization
+- **False positive prevention** - Excludes legitimate words (kayak, peek, etc.)
 - **Context analysis** - Increases confidence with streaming-related keywords
 - **Performance optimized** - Sub-5ms detection with progressive checking
 - **Non-intrusive warnings** - Color-coded by confidence (red/orange/yellow)
+- **Position tracking** - Accurate even with invisible characters
 - **Learning system** - Logs patterns for continuous improvement
 
 ### Advanced Spell Check System
@@ -314,7 +326,7 @@ The **Text Feature Coordinator** manages three text features:
   - Add/remove custom words
   - Word mapping system for learning corrections
   - Persistent storage across browser sessions
-- **Contraction handling** - automatic suggestions for 35+ common contractions:
+- **Contraction handling** - automatic suggestions for 80+ common contractions:
   - `dont` → `don't`, `do not`
   - `youre` → `you're`, `you are`
   - `wont` → `won't`, `will not`
@@ -448,7 +460,7 @@ Spell checking features advanced configuration options:
 - **Word mapping**: Learn and remember user corrections
 
 **Contraction Handling:**
-The system automatically handles 35+ common contractions:
+The system automatically handles 80+ common contractions:
 ```javascript
 // Examples of automatic contraction suggestions
 dont     → don't, do not
@@ -456,6 +468,9 @@ youre    → you're, you are
 wont     → won't, will not
 havent   → haven't, have not
 its      → it's, it is, it has
+hes      → he's, he is, he has
+shes     → she's, she is, she has
+mustnt   → mustn't, must not
 ```
 
 **Custom Dictionary Features:**
@@ -486,11 +501,13 @@ const temperature = 0.7;     // Control creativity
 
 ## Recent Updates (2025)
 
-### 🛡️ Kick.com Link Detection
-- Implemented comprehensive pattern matching for 28+ obfuscation techniques
-- Added fuzzy matching and homoglyph detection for advanced evasion attempts
-- Real-time warnings with confidence-based color coding
-- Logging system for continuous pattern learning
+### 🛡️ Kick.com Link Detection v2 (Phase 1-2 Complete)
+- Expanded pattern matching from 28 to 40+ obfuscation techniques
+- Added phonetic detection for sound-alike variations (keek, kyck, keak)
+- Implemented zero-width character detection for invisible Unicode obfuscation
+- Enhanced parentheses and extended character gap patterns
+- Fixed critical bypasses and improved false positive prevention
+- Maintained sub-5ms performance with intelligent caching
 
 ### ⚡ Performance Optimizations
 - **Streaming Responses**: 60-80% faster perceived latency with character-by-character display
@@ -501,7 +518,7 @@ const temperature = 0.7;     // Control creativity
 
 ### ✨ Enhanced User Experience
 - Reduced autocomplete trigger from 5 to 3-4 words
-- Improved spell correction with 35+ common misspellings
+- Improved spell correction with 80+ common misspellings
 - Auto-capitalization for sentences and pronouns
 - Prevention of word repetition in suggestions
 - Mobile-optimized 16px fonts to prevent zoom
@@ -646,7 +663,8 @@ The project includes scripts for training custom models on your bio data:
 - **[progress-overview.md](app_docs/progress-overview.md)** - Development progress and architecture details
 
 ### Feature Documentation
-- **[kick.md](app_docs/kick.md)** - Kick.com detection strategy and implementation
+- **[kick-upgrade.md](kick-upgrade.md)** - Complete kick detection v2 implementation (Phase 1-2)
+- **[kick.md](app_docs/kick.md)** - Original kick detection strategy
 - **[kick-implementation-summary.md](app_docs/kick-implementation-summary.md)** - Quick overview of kick detection
 - **[AUTOCOMPLETE_OPTIMIZATIONS.md](app_docs/AUTOCOMPLETE_OPTIMIZATIONS.md)** - Performance optimization details
 - **[simon_updates.md](app_docs/simon_updates.md)** - Detailed changelog of all updates

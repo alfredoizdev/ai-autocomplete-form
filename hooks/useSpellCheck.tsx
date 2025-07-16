@@ -64,6 +64,16 @@ const contractionMappings: Record<string, string[]> = {
   theyll: ["they'll", "they will"],
   theyd: ["they'd", "they would", "they had"],
 
+  // He variations
+  hes: ["he's", "he is", "he has"],
+  hell: ["he'll", "he will"],
+  hed: ["he'd", "he would", "he had"],
+
+  // She variations
+  shes: ["she's", "she is", "she has"],
+  shell: ["she'll", "she will"],
+  shed: ["she'd", "she would", "she had"],
+
   // It variations
   its: ["it's", "it is", "it has"],
   itd: ["it'd", "it would", "it had"],
@@ -116,6 +126,15 @@ const contractionMappings: Record<string, string[]> = {
   thats: ["that's", "that is", "that has"],
   thatd: ["that'd", "that would", "that had"],
   thatll: ["that'll", "that will"],
+
+  // This (rare)
+  thiss: ["this's", "this is"],
+
+  // Less common contractions
+  mightnt: ["mightn't", "might not"],
+  mustnt: ["mustn't", "must not"],
+  neednt: ["needn't", "need not"],
+  darent: ["daren't", "dare not"],
 };
 
 // Get contraction suggestions for a word
