@@ -553,7 +553,9 @@ export function cachedDetection(text: string): DetectionResult {
 // Progressive detection for performance optimization
 export function progressiveDetection(text: string): DetectionResult {
   // Level 1: Quick pattern check
-  const quickCheck = /k[^a-z]{0,3}[i1l!|][^a-z]{0,3}[kc]/i;
+  // Updated pattern to catch phonetic variations like "keek", "kyck", etc.
+  // Matches: k + (various middle patterns) + optional [kcq]
+  const quickCheck = /k(?:[^a-z]{0,3}[i1l!|e3aeiouey][^a-z]{0,3}|[aeiouey0-9]{1,2}|\W{0,5}|i[cqk])[kcq]?/i;
   if (!quickCheck.test(text.toLowerCase())) {
     return { 
       detected: false, 
