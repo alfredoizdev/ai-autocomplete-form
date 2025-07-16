@@ -5,7 +5,6 @@
 // Removed global chat history - autocomplete should be stateless
 // Each request should be independent without carrying previous context
 
-
 // Cache for API server status
 let apiServerAvailable: boolean | null = null;
 let lastHealthCheck = 0;
@@ -62,22 +61,25 @@ async function checkApiServerHealth(): Promise<boolean> {
 // Helper function to remove the prompt from the beginning of the AI response
 const stripPromptFromResponse = (prompt: string, response: string): string => {
   if (!prompt || !response) return response;
-  
+
   // Normalize both strings for comparison (trim and lowercase)
   const normalizedPrompt = prompt.trim().toLowerCase();
   const normalizedResponse = response.trim().toLowerCase();
-  
+
   // Check if response starts with the prompt
   if (normalizedResponse.startsWith(normalizedPrompt)) {
     // Remove the prompt portion, preserving original casing
-    const cleanedResponse = response.trim().substring(prompt.trim().length).trim();
+    const cleanedResponse = response
+      .trim()
+      .substring(prompt.trim().length)
+      .trim();
     return cleanedResponse;
   }
-  
+
   // Also check if response contains prompt with slight variations (extra spaces, punctuation)
   const promptWords = normalizedPrompt.split(/\s+/);
   const responseWords = normalizedResponse.split(/\s+/);
-  
+
   // If first N words match (where N is number of words in prompt), strip them
   if (promptWords.length > 0 && responseWords.length >= promptWords.length) {
     let matches = true;
@@ -87,7 +89,7 @@ const stripPromptFromResponse = (prompt: string, response: string): string => {
         break;
       }
     }
-    
+
     if (matches) {
       // Find where to cut in the original response
       let cutIndex = 0;
@@ -105,13 +107,13 @@ const stripPromptFromResponse = (prompt: string, response: string): string => {
           wordCount++;
         }
       }
-      
+
       if (cutIndex > 0) {
         return response.substring(cutIndex).trim();
       }
     }
   }
-  
+
   return response;
 };
 
@@ -181,17 +183,19 @@ Write like you're seducing someone into your bed. Make them feel desired, excite
 CRITICAL INSTRUCTION: You must output ONLY the completion text, NOT the original prompt. Never repeat what the user has already written.
 
 Rules for completion:
+- Do not sound too fancy it doesnt work with swingers
 - Creates anticipation and desire
 - Makes them imagine the pleasure ahead
-- Sounds confident, playful, and irresistibly naughty
+- Be direct yet creative
+- Sounds confident, kinky and irresistibly naughty
 - Forms a complete, enticing sentence (8-20 words)
-- Uses explicit language about pleasure, orgasms, and desires
+- Uses explicit language about pleasure, orgasms
 
 Examples of CORRECT completions (notice we only return the new part):
-"I am a young male swinger looking for" → "sexy couples who want to explore every inch of pleasure together tonight"
-"We love meeting" → "adventurous souls ready to turn our wildest fantasies into unforgettable orgasmic reality"
-"My biggest turn on is" → "watching my partner moan with pleasure while we share you completely"
-"Looking for couples who" → "crave intense oral pleasure and aren't afraid to get deliciously dirty with us"
+"I am looking for couples or single ladies" → "am ddf, free, and looking for friends and playmates"
+"Looking for fun and discret pleasures" → " with adventurous souls ready to turn our wildest fantasies into reality"
+"I am a young male swinger looking for" → "partners who appreciate a dominant lover and crave deep, throbbing, orgasmic release."
+"We like quiet evenings at our house" → "and to soft swing to full swap with playful couples"
 
 Examples of INCORRECT completions (DO NOT do this):
 "I am a young male swinger looking for" → "I am a young male swinger looking for sexy couples..."
@@ -228,7 +232,7 @@ Be explicitly sexual. Make them want to message immediately. Output ONLY the con
       ?.replace(/\.{3,}/g, "") // Remove any ellipsis (3 or more dots)
       ?.replace(/…/g, "") // Remove single ellipsis character
       ?.trim(); // Trim again after cleaning
-    
+
     // Strip the prompt from the response if it was repeated
     if (output) {
       output = stripPromptFromResponse(input, output);
