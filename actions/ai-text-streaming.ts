@@ -23,7 +23,7 @@ const cleanCache = () => {
 };
 
 // Clear all cache - useful when text is cleared or significantly changed
-export const clearSuggestionCache = () => {
+export const clearSuggestionCache = async () => {
   suggestionCache.clear();
   console.log("Suggestion cache cleared");
 };

@@ -7,14 +7,13 @@ import {
   useTransition,
   useCallback,
   useMemo,
-  memo,
   useDeferredValue,
 } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { useDebounce } from "use-debounce";
 
 // Memoized helper functions
-const getCurrentSentenceAtCursor = memo((
+const getCurrentSentenceAtCursor = (
   text: string,
   cursorPos: number = text.length
 ): string => {
@@ -33,9 +32,9 @@ const getCurrentSentenceAtCursor = memo((
 
   const currentSentence = text.substring(sentenceStart, cursorPos).trim();
   return currentSentence;
-});
+};
 
-const getWordsBeforeCursor = memo((
+const getWordsBeforeCursor = (
   text: string,
   cursorPos: number = text.length
 ): string[] => {
@@ -47,9 +46,9 @@ const getWordsBeforeCursor = memo((
     .trim()
     .split(/\s+/)
     .filter((word) => word.length > 0);
-});
+};
 
-const getWordCountAtCursor = memo((
+const getWordCountAtCursor = (
   text: string,
   cursorPos: number = text.length
 ): number => {
@@ -59,9 +58,9 @@ const getWordCountAtCursor = memo((
   if (!textToCursor) return 0;
   
   return textToCursor.split(/\s+/).filter(word => word.length > 0).length;
-});
+};
 
-const getWordCountSincePosition = memo((
+const getWordCountSincePosition = (
   text: string,
   sincePosition: number,
   cursorPos: number = text.length
@@ -72,9 +71,9 @@ const getWordCountSincePosition = memo((
   if (!textSincePosition) return 0;
   
   return textSincePosition.split(/\s+/).filter(word => word.length > 0).length;
-});
+};
 
-const isReadyForSuggestions = memo((
+const isReadyForSuggestions = (
   text: string,
   cursorPos: number = text.length,
   lastAcceptedWordCount: number = 0,
@@ -95,17 +94,17 @@ const isReadyForSuggestions = memo((
   // Reduced to 3 new words for more frequent suggestions
   const newWordsTyped = getWordCountSincePosition(text, lastAcceptedPosition, cursorPos);
   return newWordsTyped >= 3;
-});
+};
 
-const needsSpaceBeforeSuggestion = memo((text: string): boolean => {
+const needsSpaceBeforeSuggestion = (text: string): boolean => {
   if (!text) return false;
   if (/\s$/.test(text)) return false;
   if (/[.,!?;:]$/.test(text)) return true;
   if (/\w$/.test(text)) return true;
   return false;
-});
+};
 
-const applyBasicCapitalization = memo((text: string): string => {
+const applyBasicCapitalization = (text: string): string => {
   if (!text) return text;
 
   let result = text;
@@ -124,9 +123,9 @@ const applyBasicCapitalization = memo((text: string): string => {
   result = result.replace(/\b(i)\s/g, "I ");
 
   return result;
-});
+};
 
-const autoCapitalizeText = memo((text: string): string => {
+const autoCapitalizeText = (text: string): string => {
   if (!text) return text;
 
   let result = text;
@@ -153,7 +152,7 @@ const autoCapitalizeText = memo((text: string): string => {
   });
 
   return result;
-});
+};
 
 interface UseFormAutocompleteOptions {
   disableAutocomplete?: boolean;
