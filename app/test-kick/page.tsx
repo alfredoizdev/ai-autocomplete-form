@@ -9,6 +9,8 @@ interface TestResult {
   confidence: number;
   techniques: string[];
   matches: string[];
+  hasZeroWidth?: boolean;
+  normalizedInput?: string;
 }
 
 export default function TestKickPage() {
@@ -140,16 +142,70 @@ export default function TestKickPage() {
       'kayak',
       'keep',
       'keen',
+      
+      // PHASE 2 TEST CASES - Zero-Width Characters
+      '--- PHASE 2 TESTS ---',
+      
+      // Zero-width space (U+200B)
+      'k\u200Bi\u200Bck',
+      'k\u200B\u200Bi\u200B\u200Bck',
+      
+      // Zero-width non-joiner (U+200C)
+      'k\u200Ci\u200Cck',
+      
+      // Zero-width joiner (U+200D)
+      'k\u200Di\u200Dck',
+      
+      // Soft hyphen (U+00AD)
+      'k\u00ADi\u00ADck',
+      
+      // Zero-width no-break space (U+FEFF)
+      'k\uFEFFi\uFEFFck',
+      
+      // Word joiner (U+2060)
+      'k\u2060i\u2060ck',
+      
+      // Mixed zero-width characters
+      'k\u200B\u00ADi\u200D\u200Cck',
+      
+      // Zero-width + character substitution
+      'k\u200B1\u200Bck',
+      'k\u00AD!\u00ADck',
+      
+      // Zero-width + visible separators
+      'k\u200B.\u200Bi\u200B.\u200Bck',
+      'k_\u200Bi\u200B_k',
+      
+      // Zero-width + parentheses
+      'k(\u200Bi\u200B)k',
+      'k\u200B(i)\u200Bk',
+      
+      // Zero-width + phonetic variations
+      'k\u200Be\u200Be\u200Bk',
+      'k\u00ADy\u00ADck',
+      
+      // Complex zero-width patterns
+      'Find me on k\u200Bi\u200Bck for updates',
+      'k\u200B\u200C\u200D\u00AD\uFEFF\u2060i\u200B\u200C\u200D\u00AD\uFEFF\u2060ck',
     ];
 
     const testResults = phase1TestCases.map(testCase => {
       const result = detectKickVariations(testCase);
+      
+      // Check if input contains zero-width characters
+      const hasZeroWidth = result.techniques.includes('zero_width');
+      const normalizedInput = hasZeroWidth ? 
+        testCase.replace(/[\u200B\u200C\u200D\u00AD\uFEFF\u2060]/g, '') : 
+        undefined;
+      
       return {
         input: testCase,
         detected: result.detected,
         confidence: result.confidence,
         techniques: result.techniques,
-        matches: result.matches
+        matches: result.matches,
+        hasZeroWidth,
+        normalizedInput
       };
     });
 
@@ -169,41 +225,54 @@ export default function TestKickPage() {
   }).length;
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Phase 1 Kick Detection Test Results</h1>
-      
-      <div className="mb-6 p-4 bg-gray-100 rounded">
-        <h2 className="text-lg font-semibold">Summary: {detectedCount}/{results.length} tests passed</h2>
-      </div>
+    <div className="min-h-screen bg-gray-950 text-gray-100">
+      <div className="p-8 max-w-4xl mx-auto">
+        <h1 className="text-3xl font-bold mb-6 text-white">Kick Detection Test Results (Phase 1 & 2)</h1>
+        
+        <div className="mb-6 p-4 bg-gray-900 border border-gray-800 rounded-lg">
+          <h2 className="text-lg font-semibold text-gray-100">Summary: {detectedCount}/{results.length} tests passed</h2>
+        </div>
 
-      <div className="space-y-4">
-        {results.map((result, idx) => (
-          <div 
-            key={idx} 
-            className={`p-4 border rounded ${
-              result.detected ? 'border-red-500 bg-red-50' : 'border-green-500 bg-green-50'
-            }`}
-          >
+        <div className="space-y-4">
+          {results.map((result, idx) => (
+            <div 
+              key={idx} 
+              className={`p-4 border rounded-lg ${
+                result.detected ? 'border-red-500/50 bg-red-950/20' : 'border-green-500/50 bg-green-950/20'
+              }`}
+            >
             <div className="flex justify-between items-start">
               <div className="flex-1">
-                <div className="font-mono text-sm mb-2">&quot;{result.input}&quot;</div>
+                <div className="font-mono text-sm mb-2 text-gray-200">
+                  &quot;{result.input}&quot;
+                  {result.hasZeroWidth && (
+                    <span className="ml-2 text-xs text-purple-400 font-semibold">
+                      [Contains Zero-Width Characters]
+                    </span>
+                  )}
+                </div>
+                {result.normalizedInput && (
+                  <div className="font-mono text-xs text-gray-400 mb-1">
+                    Normalized: &quot;{result.normalizedInput}&quot;
+                  </div>
+                )}
                 <div className="text-sm">
-                  Status: <span className={`font-semibold ${result.detected ? 'text-red-600' : 'text-green-600'}`}>
+                  Status: <span className={`font-semibold ${result.detected ? 'text-red-400' : 'text-green-400'}`}>
                     {result.detected ? 'DETECTED' : 'NOT DETECTED'}
                   </span>
                   {result.detected && (
-                    <span className="ml-2">
+                    <span className="ml-2 text-gray-300">
                       (Confidence: {result.confidence}%)
                     </span>
                   )}
                 </div>
                 {result.detected && result.techniques.length > 0 && (
-                  <div className="text-xs text-gray-600 mt-1">
+                  <div className="text-xs text-gray-400 mt-1">
                     Techniques: {result.techniques.join(', ')}
                   </div>
                 )}
                 {result.detected && result.matches.length > 0 && (
-                  <div className="text-xs text-gray-600">
+                  <div className="text-xs text-gray-400">
                     Matches: {result.matches.join(', ')}
                   </div>
                 )}
@@ -211,6 +280,7 @@ export default function TestKickPage() {
             </div>
           </div>
         ))}
+        </div>
       </div>
     </div>
   );

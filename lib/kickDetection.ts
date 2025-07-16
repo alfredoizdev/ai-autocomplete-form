@@ -18,6 +18,9 @@ const kickVariationPatterns = [
   // Patterns with separators (dots, underscores, dashes)
   /\bk[._\-]{1,3}[i1l!|][._\-]{0,3}[kc]\b/gi,
   
+  // Pattern specifically for k.i.ck format (separator before AND after i)
+  /\bk[._\-]{1,3}[i1l!|][._\-]{1,3}ck\b/gi,
+  
   // Repeated characters
   /\bk[i1l!|]{2,4}[kc]\b/gi,
   
@@ -76,8 +79,8 @@ const kickVariationPatterns = [
   // Common vowel patterns with separators (ee, ei, ie, ii)
   /\bk[^a-z]{1,5}[e3]{1,2}[i1e3]{0,2}[^a-z]{1,5}[kc]\b/gi,
   
-  // Flexible middle section (1-4 chars, any mix)
-  /\bk[^a-z]{0,5}[a-z0-9!|@#$%^&*()_+=\-]{1,4}[^a-z]{0,5}[kc]\b/gi,
+  // Flexible middle section (1-4 chars, must include special chars or numbers)
+  /\bk[^a-z]{0,5}[a-z0-9!|@#$%^&*()_+=\-]*[0-9!|@#$%^&*()_+=\-]+[a-z0-9!|@#$%^&*()_+=\-]*[^a-z]{0,5}[kc]\b/gi,
   
   // PHASE 1.6 ADDITIONS - Fix remaining bypasses:
   
@@ -126,6 +129,44 @@ const homoglyphs: Record<string, string[]> = {
   'i': ['і', 'í', 'ì', 'ï', 'ı', '1', 'l', '|', '!'],
   'c': ['с', 'ς', 'ċ', 'ĉ', 'ć', 'č'],
 };
+
+// Zero-width and invisible Unicode characters used for obfuscation
+const ZERO_WIDTH_CHARS = [
+  '\u200B', // Zero-width space
+  '\u200C', // Zero-width non-joiner
+  '\u200D', // Zero-width joiner
+  '\u00AD', // Soft hyphen
+  '\uFEFF', // Zero-width no-break space
+  '\u2060', // Word joiner
+];
+
+// Create regex pattern for zero-width characters
+const ZERO_WIDTH_PATTERN = new RegExp(`[${ZERO_WIDTH_CHARS.join('')}]`, 'g');
+
+// Normalize text by removing zero-width characters while preserving position mapping
+export function normalizeText(text: string): {
+  normalized: string;
+  hasZeroWidth: boolean;
+  positionMap: number[]; // Maps normalized position to original position
+} {
+  const normalized = text.replace(ZERO_WIDTH_PATTERN, '');
+  const hasZeroWidth = normalized.length !== text.length;
+  
+  // Build position map for accurate tracking
+  const positionMap: number[] = [];
+  let originalPos = 0;
+  
+  for (let i = 0; i < normalized.length; i++) {
+    // Skip zero-width characters in original text
+    while (originalPos < text.length && ZERO_WIDTH_CHARS.includes(text[originalPos])) {
+      originalPos++;
+    }
+    positionMap.push(originalPos);
+    originalPos++;
+  }
+  
+  return { normalized, hasZeroWidth, positionMap };
+}
 
 // Common legitimate phrases containing "kick"
 const KICK_WHITELIST_PHRASES = [
@@ -338,8 +379,16 @@ export function detectKickVariations(text: string): DetectionResult {
     hasLegitimateUsage: false
   };
   
+  // First, check for zero-width characters
+  const { normalized: zeroWidthNormalized, hasZeroWidth, positionMap } = normalizeText(text);
+  
+  // If zero-width characters were found, add to techniques
+  if (hasZeroWidth) {
+    results.techniques.push('zero_width');
+  }
+  
   // Normalize for analysis (but keep original for position tracking)
-  const normalizedText = text.toLowerCase();
+  const normalizedText = zeroWidthNormalized.toLowerCase();
   
   // Pattern matching with position tracking
   kickVariationPatterns.forEach((pattern, index) => {
@@ -352,9 +401,17 @@ export function detectKickVariations(text: string): DetectionResult {
       // Avoid duplicate matches
       if (!results.matches.includes(match[0])) {
         results.matches.push(match[0]);
+        
+        // Map positions back to original text if zero-width characters were present
+        const start = hasZeroWidth && match.index < positionMap.length ? 
+          positionMap[match.index] : match.index;
+        const endNormalizedPos = match.index + match[0].length - 1;
+        const end = hasZeroWidth && endNormalizedPos < positionMap.length ? 
+          positionMap[endNormalizedPos] + 1 : match.index + match[0].length;
+        
         results.positions.push({
-          start: match.index,
-          end: match.index + match[0].length
+          start,
+          end
         });
         
         // Identify technique used
@@ -363,73 +420,75 @@ export function detectKickVariations(text: string): DetectionResult {
         } else if (index === 1) {
           results.techniques.push('separators');
         } else if (index === 2) {
-          results.techniques.push('character_repetition');
+          results.techniques.push('double_separators');
         } else if (index === 3) {
-          results.techniques.push('alternative_spelling');
+          results.techniques.push('character_repetition');
         } else if (index === 4) {
-          results.techniques.push('parentheses');
+          results.techniques.push('alternative_spelling');
         } else if (index === 5) {
-          results.techniques.push('underscores');
+          results.techniques.push('parentheses');
         } else if (index === 6) {
-          results.techniques.push('advanced_pattern');
+          results.techniques.push('underscores');
         } else if (index === 7) {
-          results.techniques.push('brackets');
+          results.techniques.push('advanced_pattern');
         } else if (index === 8) {
-          results.techniques.push('missing_letter');
+          results.techniques.push('brackets');
         } else if (index === 9) {
-          results.techniques.push('spaces');
+          results.techniques.push('missing_letter');
         } else if (index === 10) {
-          results.techniques.push('general_obfuscation');
+          results.techniques.push('spaces');
         } else if (index === 11) {
-          results.techniques.push('extended_parentheses');
+          results.techniques.push('general_obfuscation');
         } else if (index === 12) {
-          results.techniques.push('multiple_dots');
+          results.techniques.push('extended_parentheses');
         } else if (index === 13) {
-          results.techniques.push('mixed_separators');
+          results.techniques.push('multiple_dots');
         } else if (index === 14) {
-          results.techniques.push('extended_gaps');
+          results.techniques.push('mixed_separators');
         } else if (index === 15) {
           results.techniques.push('extended_gaps');
         } else if (index === 16) {
-          results.techniques.push('parentheses');
+          results.techniques.push('extended_gaps');
         } else if (index === 17) {
-          results.techniques.push('multi_char_dots');
+          results.techniques.push('parentheses');
         } else if (index === 18) {
-          results.techniques.push('multi_char_separators');
+          results.techniques.push('multi_char_dots');
         } else if (index === 19) {
-          results.techniques.push('vowel_patterns');
+          results.techniques.push('multi_char_separators');
         } else if (index === 20) {
-          results.techniques.push('flexible_middle');
+          results.techniques.push('vowel_patterns');
         } else if (index === 21) {
-          results.techniques.push('parentheses_ck');
+          results.techniques.push('flexible_middle');
         } else if (index === 22) {
-          results.techniques.push('multiple_parentheses');
+          results.techniques.push('parentheses_ck');
         } else if (index === 23) {
-          results.techniques.push('single_dots');
+          results.techniques.push('multiple_parentheses');
         } else if (index === 24) {
-          results.techniques.push('flexible_dots');
+          results.techniques.push('single_dots');
         } else if (index === 25) {
-          results.techniques.push('enhanced_parentheses');
+          results.techniques.push('flexible_dots');
         } else if (index === 26) {
-          results.techniques.push('double_vowel');
+          results.techniques.push('enhanced_parentheses');
         } else if (index === 27) {
           results.techniques.push('double_vowel');
         } else if (index === 28) {
-          results.techniques.push('y_vowel');
+          results.techniques.push('double_vowel');
         } else if (index === 29) {
-          results.techniques.push('vowel_variation');
+          results.techniques.push('y_vowel');
         } else if (index === 30) {
-          results.techniques.push('short_variation');
+          results.techniques.push('vowel_variation');
         } else if (index === 31) {
+          results.techniques.push('short_variation');
+        } else if (index === 32) {
           results.techniques.push('mixed_vowel');
-        } else if (index >= 32) {
+        } else if (index >= 33) {
           results.techniques.push('domain_pattern');
         }
       }
     }
   });
   
-  // Check for homoglyphs
+  // Check for homoglyphs (on zero-width normalized text for consistency)
   const homoglyphResult = detectHomoglyphs(normalizedText);
   if (homoglyphResult.detected) {
     results.detected = true;
@@ -455,7 +514,7 @@ export function detectKickVariations(text: string): DetectionResult {
         // Additional check: ensure it's not a common English word
         const commonWords = ['tick', 'pick', 'lick', 'sick', 'wick', 'dick', 'nick', 'rick', 
                            'back', 'pack', 'lack', 'sack', 'rack', 'tack', 'hack',
-                           'peek', 'meek', 'seek', 'week', 'keep', 'keen'];
+                           'peek', 'meek', 'seek', 'week', 'keep', 'keen', 'kayak'];
         if (!commonWords.includes(cleaned)) {
           results.detected = true;
           results.matches.push(word);
