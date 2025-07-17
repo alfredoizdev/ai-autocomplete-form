@@ -238,6 +238,86 @@ export default function TestKickPage() {
       // Zero-width + "hk" endings
       'k\u200Bi\u200Bhk',
       'k\u200B.\u200Bi\u200B.\u200Bhk',
+      
+      // PHASE 4 TEST CASES - Advanced Obfuscation Patterns
+      '--- PHASE 4 TESTS ---',
+      
+      // Reversed patterns (should detect)
+      'ckik',
+      'ckic',
+      'ccik',
+      'kkic',
+      'cikk',
+      'c1kk',
+      'ck!k',
+      
+      // Scrambled patterns with special chars (should detect)
+      'k!kc',    // Scrambled with special char
+      'k1ck',    // Scrambled with number
+      'c!kk',    // Scrambled with special
+      'ki$k',    // With $ symbol
+      
+      // Nested brackets
+      'k((i))k',
+      'k(((i)))k',
+      'k[[i]]k',
+      'k[[[i]]]k',
+      'k{{i}}k',
+      'k{{{i}}}k',
+      'k<<i>>k',
+      'k<<<i>>>k',
+      
+      // Extreme gaps
+      'k------i------k',
+      'k__________i__________k',
+      'k............i............k',
+      'k~~~~~~i~~~~~~k',
+      
+      // FALSE POSITIVE TESTS - These should NOT be detected
+      '--- PHASE 4 FALSE POSITIVE TESTS ---',
+      
+      // Legitimate sentences
+      'Let\'s kick back and relax',
+      'Think quickly about this',
+      'The chicken tastes great',
+      'Use a stick for that',
+      'Click here to continue',
+      'That\'s a clever trick',
+      'Going on a picnic tomorrow',
+      'Cricket is a fun sport',
+      'The sauce is too thick',
+      'Quicken your pace',
+      'This is a sticky situation',
+      'Stop trying to trick me',
+      'I love fried chicken',
+      'The quick brown fox',
+      'Stick to the plan',
+      'Pick up the stick',
+      'Lick the ice cream',
+      'This music is sick',
+      'Light the wick',
+      'Choose your pick',
+      'Check the ticket',
+      'Build with bricks',
+      'Avoid the prick',
+      'The road is slick',
+      'Quick flick of the wrist',
+      
+      // Complex false positive scenarios
+      'I kick the ball quickly',
+      'She has a sidekick named Rick',
+      'The homesick kid wants chicken',
+      'Quick! Kick the soccer ball!',
+      'They trick or treat for candy',
+      
+      // Edge cases that should be detected
+      '--- PHASE 4 EDGE CASES ---',
+      
+      // Mixed techniques
+      'k((1))k',     // Nested with number
+      'k<<e>>k',     // Nested with vowel
+      'ck(i)k',      // Reversed with parentheses
+      'k\u200B!kc',  // Scrambled with zero-width
     ];
 
     const testResults = phase1TestCases.map(testCase => {
@@ -267,18 +347,32 @@ export default function TestKickPage() {
     // Skip the separator lines
     if (r.input.startsWith('--- PHASE')) return true;
     
-    // Legitimate text should NOT be detected
-    const legitimatePatterns = ['kick the', 'kickstart', 'kick off'];
-    const isLegitimate = legitimatePatterns.some(pattern => r.input.includes(pattern));
+    // Check if it's in the false positive test section
+    const inputIndex = results.findIndex(res => res.input === r.input);
+    const falsePositiveStartIndex = results.findIndex(res => res.input === '--- PHASE 4 FALSE POSITIVE TESTS ---');
+    const edgeCaseStartIndex = results.findIndex(res => res.input === '--- PHASE 4 EDGE CASES ---');
     
-    const shouldDetect = !isLegitimate;
+    let shouldDetect = true;
+    
+    // If it's in the false positive section, it should NOT be detected
+    if (falsePositiveStartIndex !== -1 && inputIndex > falsePositiveStartIndex && 
+        (edgeCaseStartIndex === -1 || inputIndex < edgeCaseStartIndex)) {
+      shouldDetect = false;
+    }
+    
+    // Additional check for known legitimate patterns
+    const legitimatePatterns = ['kick the', 'kickstart', 'kick off', 'kick back'];
+    if (legitimatePatterns.some(pattern => r.input.toLowerCase().includes(pattern))) {
+      shouldDetect = false;
+    }
+    
     return r.detected === shouldDetect;
   }).length;
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
       <div className="p-8 max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6 text-white">Kick Detection Test Results (Phase 1 & 2)</h1>
+        <h1 className="text-3xl font-bold mb-6 text-white">Kick Detection Test Results (Phase 1, 2, & 4)</h1>
         
         <div className="mb-6 p-4 bg-gray-900 border border-gray-800 rounded-lg">
           <h2 className="text-lg font-semibold text-gray-100">Summary: {detectedCount}/{results.length} tests passed</h2>

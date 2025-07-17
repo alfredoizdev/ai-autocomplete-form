@@ -141,6 +141,21 @@ const kickVariationPatterns = [
   /k[i1l!|._\-\s]{1,4}[kc]\s*[\.\,\·\•]\s*c[o0]m/gi,
   /k[i1l!|._\-\s]{1,4}[kc]\s+dot\s+c[o0]m/gi,
   /k[i1l!|._\-\s]{1,4}[kc]\[?\.\]?\s*c[o0]m/gi,
+  
+  // PHASE 4 ADDITIONS - Advanced Obfuscation Patterns
+  
+  // Reversed patterns (with strict boundaries)
+  /\b[ck][ck][i1!|][kc]\b/gi,        // ckik, ccik, kkic, kkik
+  /\b[ck][i1!|][ck][kc]\b/gi,        // cikk, cick, kick
+  
+  // Nested brackets (2-3 levels deep)
+  /\bk\({2,3}[i1!|l]\){2,3}[kc]\b/gi,     // k((i))k, k(((i)))k
+  /\bk\[{2,3}[i1!|l]\]{2,3}[kc]\b/gi,     // k[[i]]k, k[[[i]]]k
+  /\bk\{{2,3}[i1!|l]\}{2,3}[kc]\b/gi,     // k{{i}}k, k{{{i}}}k
+  /\bk<{2,3}[i1!|l]>{2,3}[kc]\b/gi,       // k<<i>>k, k<<<i>>>k
+  
+  // Extreme gaps with reasonable limits (6-12 chars)
+  /\bk[^a-z]{6,12}[i1!|l][^a-z]{6,12}[kc]\b/gi,  // k------i------k
 ];
 
 // Unicode confusables that look like 'kick' characters
@@ -276,6 +291,86 @@ function isLegitimateKickUsage(text: string, matchPosition: number): boolean {
   return false;
 }
 
+// PHASE 4 ADDITIONS - False Positive Prevention Infrastructure
+
+// Common words that contain k,i,c letters that should NOT be detected
+const PHASE4_FALSE_POSITIVE_WORDS = [
+  // Words containing k,i,c letters
+  'quick', 'quickly', 'quickest', 'quicken', 'quicksand', 'quickie',
+  'stick', 'sticker', 'sticky', 'sticks', 'drumstick', 'lipstick', 'chopstick',
+  'thick', 'thicker', 'thickest', 'thickness', 'thicken',
+  'trick', 'tricky', 'trickster', 'trickle', 'trickery',
+  'chicken', 'chick', 'chickpea', 'chicks',
+  'cricket', 'click', 'clicked', 'clicking', 'clicker', 'clickbait',
+  'tickle', 'pickle', 'nickle', 'fickle', 'trickle', 'prickle',
+  'picnic', 'hispanic', 'aspic',
+  'brick', 'prick', 'slick', 'flick', 'hickory', 'rickety',
+  'ticket', 'wicket', 'thicket', 'picket', 'rickshaw',
+  'sidekick', 'homesick', 'seasick', 'carsick', 'airsick',
+  // Additional safety words
+  'sticking', 'picking', 'kicking', 'licking', 'ticking',
+  'quicksilver', 'quicksort', 'quickfire', 'quickdraw'
+];
+
+// Helper interface for Phase 4 match results
+interface Phase4MatchResult {
+  text: string;
+  position: number;
+  technique: string;
+}
+
+// Enhanced context checking for Phase 4 patterns
+function isLegitimatePhase4Usage(text: string, match: string, position: number): boolean {
+  const contextRadius = 100; // Larger context window
+  const context = text.slice(
+    Math.max(0, position - contextRadius),
+    Math.min(text.length, position + match.length + contextRadius)
+  ).toLowerCase();
+  
+  // Check if part of a false positive word
+  for (const word of PHASE4_FALSE_POSITIVE_WORDS) {
+    const wordIndex = context.indexOf(word);
+    if (wordIndex !== -1) {
+      // Calculate if our match is within this word
+      const wordStartInText = position - contextRadius + wordIndex;
+      const wordEndInText = wordStartInText + word.length;
+      if (position >= wordStartInText && position < wordEndInText) {
+        return true; // It's part of a legitimate word
+      }
+    }
+  }
+  
+  // Check if it's part of any whitelisted phrase
+  for (const phrase of KICK_WHITELIST_PHRASES) {
+    if (context.includes(phrase)) {
+      return true;
+    }
+  }
+  
+  // Check for sentence structure (capital letter, punctuation)
+  const beforeMatch = text.slice(Math.max(0, position - 50), position);
+  const afterMatch = text.slice(position + match.length, Math.min(text.length, position + match.length + 50));
+  
+  // If it's at the start of a sentence or after punctuation, likely legitimate
+  if (/^[A-Z]/.test(text.slice(position)) || /[.!?]\s*$/.test(beforeMatch)) {
+    // But only if followed by normal words
+    if (/^[a-z\s]+[.!?,]?$/i.test(afterMatch.slice(0, 20))) {
+      return true;
+    }
+  }
+  
+  // Check if surrounded by alphabetic characters (likely part of a word)
+  if (position > 0 && position + match.length < text.length) {
+    const charBefore = text[position - 1];
+    const charAfter = text[position + match.length];
+    if (/[a-zA-Z]/.test(charBefore) || /[a-zA-Z]/.test(charAfter)) {
+      return true; // Part of a larger word
+    }
+  }
+  
+  return false;
+}
+
 // Calculate Levenshtein distance between two strings
 function levenshteinDistance(str1: string, str2: string): number {
   const matrix: number[][] = [];
@@ -389,6 +484,125 @@ function detectHomoglyphs(text: string): { detected: boolean; matches: string[] 
     detected: matches.length > 0,
     matches
   };
+}
+
+// PHASE 4 DETECTION FUNCTIONS
+
+// Ultra-conservative scrambled pattern detection
+function detectScrambledPatterns(text: string): Phase4MatchResult[] {
+  const results: Phase4MatchResult[] = [];
+  
+  // Only check 4-character sequences that are completely isolated
+  const words = text.split(/[^a-zA-Z0-9!@#$%^&*()_+=\-|\\]+/);
+  
+  for (const word of words) {
+    // Skip if too short or too long
+    if (word.length !== 4) continue;
+    
+    const wordLower = word.toLowerCase();
+    
+    // Must contain at least one special character or number (evidence of obfuscation)
+    if (!/[0-9!@#$%^&*()_+=\-|\\]/.test(word)) {
+      continue;
+    }
+    
+    // Check if it's a known false positive
+    if (PHASE4_FALSE_POSITIVE_WORDS.some(fp => fp.includes(wordLower))) {
+      continue;
+    }
+    
+    // Count character frequencies
+    const chars = wordLower.split('');
+    const hasK = chars.some(c => c === 'k' || c === 'c');
+    const hasI = chars.some(c => c === 'i' || c === '1' || c === '!' || c === '|' || c === 'l');
+    const hasC = chars.filter(c => c === 'k' || c === 'c').length >= 2; // Need 2 k/c chars
+    
+    // Must have the right characters but in wrong order
+    if (hasK && hasI && hasC) {
+      // Check if it's NOT already in correct order (kick)
+      if (!/k[i1!|l][ck]{2}/.test(wordLower) && !/[ck]{2}[i1!|l]k/.test(wordLower)) {
+        // Find position in original text
+        const position = text.indexOf(word);
+        if (position !== -1) {
+          // Final safety check
+          if (!isLegitimatePhase4Usage(text, word, position)) {
+            results.push({
+              text: word,
+              position: position,
+              technique: 'scrambled_pattern'
+            });
+          }
+        }
+      }
+    }
+  }
+  
+  return results;
+}
+
+// Extremely conservative sliding window detection
+function slidingWindowDetection(text: string): Phase4MatchResult[] {
+  // Only run on short texts to prevent performance issues
+  if (text.length > 500) return [];
+  
+  const results: Phase4MatchResult[] = [];
+  
+  for (let windowSize = 4; windowSize <= 6; windowSize++) {
+    for (let i = 0; i <= text.length - windowSize; i++) {
+      const window = text.slice(i, i + windowSize);
+      const windowLower = window.toLowerCase();
+      
+      // Skip if it's a normal word (all alphabetic)
+      if (/^[a-z]+$/.test(windowLower)) {
+        continue;
+      }
+      
+      // Must have special characters (evidence of obfuscation)
+      const specialChars = (window.match(/[^a-zA-Z]/g) || []).length;
+      if (specialChars === 0) {
+        continue;
+      }
+      
+      // Special char density check (between 20% and 60%)
+      const specialDensity = specialChars / window.length;
+      if (specialDensity < 0.2 || specialDensity > 0.6) {
+        continue;
+      }
+      
+      // Check for required characters
+      const hasK = /[kc]/i.test(window);
+      const hasI = /[i1!|l]/i.test(window);
+      const hasSecondK = (window.match(/[kc]/gi) || []).length >= 2;
+      
+      if (hasK && hasI && hasSecondK) {
+        // Check it's not a false positive word
+        let isFalsePositive = false;
+        for (const fpWord of PHASE4_FALSE_POSITIVE_WORDS) {
+          if (i > 0 && text[i-1].match(/[a-zA-Z]/)) {
+            // Check if we're in the middle of a word
+            const extendedWindow = text.slice(Math.max(0, i - 10), i + windowSize + 10);
+            if (extendedWindow.toLowerCase().includes(fpWord)) {
+              isFalsePositive = true;
+              break;
+            }
+          }
+        }
+        
+        if (!isFalsePositive && !isLegitimatePhase4Usage(text, window, i)) {
+          results.push({
+            text: window,
+            position: i,
+            technique: 'sliding_window'
+          });
+          
+          // Skip ahead to avoid overlapping detections
+          i += windowSize - 1;
+        }
+      }
+    }
+  }
+  
+  return results;
 }
 
 // Main detection function
@@ -516,8 +730,14 @@ export function detectKickVariations(text: string): DetectionResult {
           results.techniques.push('hk_ending');
         } else if (index === 38) {
           results.techniques.push('hk_ending');
-        } else if (index >= 39) {
+        } else if (index >= 39 && index <= 41) {
           results.techniques.push('domain_pattern');
+        } else if (index === 42 || index === 43) {
+          results.techniques.push('reversed_pattern');
+        } else if (index >= 44 && index <= 47) {
+          results.techniques.push('nested_brackets');
+        } else if (index === 48) {
+          results.techniques.push('extreme_gaps');
         }
       }
     }
@@ -567,6 +787,42 @@ export function detectKickVariations(text: string): DetectionResult {
       }
     }
   });
+  
+  // PHASE 4: Advanced obfuscation detection
+  // Only run if we haven't detected anything yet and text is reasonable length
+  if (!results.detected && text.length < 1000) {
+    // Try scrambled pattern detection
+    const scrambledMatches = detectScrambledPatterns(normalizedText);
+    for (const match of scrambledMatches) {
+      // Double-check it's not legitimate usage
+      if (!isLegitimatePhase4Usage(text, match.text, match.position)) {
+        results.detected = true;
+        results.matches.push(match.text);
+        results.techniques.push(match.technique);
+        results.positions.push({
+          start: match.position,
+          end: match.position + match.text.length
+        });
+      }
+    }
+    
+    // If still not detected, try sliding window (most expensive)
+    if (!results.detected) {
+      const slidingMatches = slidingWindowDetection(normalizedText);
+      for (const match of slidingMatches) {
+        // Final safety check
+        if (!isLegitimatePhase4Usage(text, match.text, match.position)) {
+          results.detected = true;
+          results.matches.push(match.text);
+          results.techniques.push(match.technique);
+          results.positions.push({
+            start: match.position,
+            end: match.position + match.text.length
+          });
+        }
+      }
+    }
+  }
   
   // Remove duplicate techniques
   results.techniques = [...new Set(results.techniques)];
@@ -647,9 +903,9 @@ export function cachedDetection(text: string): DetectionResult {
 // Progressive detection for performance optimization
 export function progressiveDetection(text: string): DetectionResult {
   // Level 1: Quick pattern check
-  // Updated pattern to catch phonetic variations like "keek", "kyck", etc. and "hk" endings
-  // Matches: k + (various middle patterns) + optional [kchq] or hk
-  const quickCheck = /k(?:[^a-z]{0,3}[i1l!|e3aeiouey][^a-z]{0,3}|[aeiouey0-9]{1,2}|\W{0,5}|i[cqk])(?:[kchq]{0,2}|hk)?/i;
+  // Updated pattern to catch phonetic variations like "keek", "kyck", etc., "hk" endings, and Phase 4 reversed patterns
+  // Matches: k + (various middle patterns) + optional [kchq] or hk, OR reversed patterns like ckik
+  const quickCheck = /k(?:[^a-z]{0,3}[i1l!|e3aeiouey][^a-z]{0,3}|[aeiouey0-9]{1,2}|\W{0,5}|i[cqk])(?:[kchq]{0,2}|hk)?|[ck]{2}[i1l!|][kc]|k\({2,}|k\[{2,}|k\{{2,}|k<{2,}|k[^a-z]{6,}/i;
   if (!quickCheck.test(text.toLowerCase())) {
     return { 
       detected: false, 
