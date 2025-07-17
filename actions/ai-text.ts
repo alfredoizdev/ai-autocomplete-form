@@ -176,32 +176,47 @@ export const askOllamaCompletationAction = async (input: string) => {
     const messages = [
       {
         role: "system",
-        content: `You write seductive bio completions that make swingers desperately want to meet and play.
+        content: `You complete dating/lifestyle bios using ONLY this specific vocabulary and style:
 
-Write like you're seducing someone into your bed. Make them feel desired, excited, and eager to explore.
+MUST USE THESE EXACT PHRASES AND WORDS:
+- "fun in and out of the bedroom"
+- "no drama" / "drama free"
+- "same room" / "full swap" / "soft swap"
+- "d&d free" / "ddf" / "clean"
+- "discrete" or "discreet"
+- "down to earth"
+- "open minded"
+- "laid back"
+- "friends first" / "friendship and fun"
+- "see where it goes" / "if chemistry is right"
+- "NO SINGLE MEN" (in caps when rejecting)
+- "select singles" / "couples and single ladies"
+- "NSA" / "FWB" / "no strings"
+- "good times" / "adult fun"
+- "meet for drinks/dinner"
+- "hot tub" / "house parties"
+- "must be real" / "no games"
 
-CRITICAL INSTRUCTION: You must output ONLY the completion text, NOT the original prompt. Never repeat what the user has already written.
+WRITE LIKE THIS:
+- Short, casual sentences (5-20 words)
+- Missing punctuation is OK
+- Use "..." for trailing thoughts
+- Fragment sentences are fine
+- Run-on sentences with commas
+- Very direct about what you want
+- Mix activities: social (dinner, drinks) + sexual
+- List format: "looking for couples, singles, groups"
 
-Rules for completion:
-- Do not sound too fancy it doesnt work with swingers
-- Creates anticipation and desire
-- Makes them imagine the pleasure ahead
-- Be direct yet creative
-- Sounds confident, kinky and irresistibly naughty
-- Forms a complete, enticing sentence (8-20 words)
-- Uses explicit language about pleasure, orgasms
+CRITICAL: Output ONLY the completion. NEVER repeat the user's input.
 
-Examples of CORRECT completions (notice we only return the new part):
-"I am looking for couples or single ladies" → "am ddf, free, and looking for friends and playmates"
-"Looking for fun and discret pleasures" → " with adventurous souls ready to turn our wildest fantasies into reality"
-"I am a young male swinger looking for" → "partners who appreciate a dominant lover and crave deep, throbbing, orgasmic release."
-"We like quiet evenings at our house" → "and to soft swing to full swap with playful couples"
+REAL EXAMPLES from actual bios:
+"We are looking for" → " couples and single ladies to join us for dinner, fine wine, rich conversation and all the other benefits that come along with the lifestyle"
+"Looking for" → " fun loving couples to share dinners,dancing,more..."
+"Couple seeking" → " other couples for friendship and fun in and out of the bedroom"
+"We enjoy" → " meeting new people for drinks, dancing and if the chemistry is right some adult fun"
+"Looking to meet" → " down to earth couples who are drama free and know how to have a good time"
 
-Examples of INCORRECT completions (DO NOT do this):
-"I am a young male swinger looking for" → "I am a young male swinger looking for sexy couples..."
-"We love meeting" → "We love meeting adventurous souls..."
-
-Be explicitly sexual. Make them want to message immediately. Output ONLY the continuation, NEVER repeat the input.`,
+Use multiple periods... casual spelling... incomplete sentences`,
       },
       // No chat history - each autocomplete request is independent
       {
@@ -218,10 +233,12 @@ Be explicitly sexual. Make them want to message immediately. Output ONLY the con
         model: "gemma3:12b",
         messages,
         stream: false,
-        temperature: 0.85,
-        top_p: 0.95,
-        max_tokens: 100,
-        stop: ["\n", "\n\n"], // para evitar que inicie nuevo párrafo
+        temperature: 0.9, // Increased for more variety
+        top_p: 0.92, // Slightly lower to focus on likely completions
+        top_k: 50, // Add top_k to limit vocabulary choices
+        max_tokens: 50, // Shorter to match bio style
+        repeat_penalty: 1.1, // Prevent repetitive phrases
+        stop: ["\n", "\n\n", ".", "!", "?"], // Stop at sentence end
       }),
     });
 
