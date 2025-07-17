@@ -77,6 +77,7 @@ Before you begin, ensure you have the following installed:
 - **npm** or **yarn**
 - **Ollama** (for running the Gemma 3 12B model locally)
 - **Git** (for cloning the repository)
+- **PyTorch** (for running fine-tuned models - optional)
 
 ## Ollama Setup
 
@@ -136,6 +137,10 @@ Before you begin, ensure you have the following installed:
    Create a `.env.local` file in the root directory:
    ```env
    OLLAMA_PATH_API=http://127.0.0.1:11434/api
+   # Optional: Enable fine-tuned model integration
+   NEXT_PUBLIC_USE_FINETUNED_MODEL=true
+   # Optional: OpenAI API key for fallback
+   NEXT_PUBLIC_OPENAI_API_KEY=your-key-here
    ```
 
 5. **Initialize the vector database**:
@@ -153,22 +158,38 @@ Before you begin, ensure you have the following installed:
 
 ## Running the Full Stack
 
-To run the complete application, you need to start three services:
+### Quick Start (All Services)
+```bash
+# Start all backend services with one command
+./start_all_servers.sh
 
-### 1. **Start Ollama** (Terminal 1):
+# Then in another terminal, start Next.js
+npm run dev
+```
+
+### Manual Start (Individual Services)
+
+#### 1. **Start Ollama** (Terminal 1):
 ```bash
 ollama serve
 ```
 
-### 2. **Start Python API Server** (Terminal 2):
+#### 2. **Start Python API Server** (Terminal 2):
 ```bash
-cd python
-source venv/bin/activate  # On Mac/Linux
-python api/api_server.py
+./start_api_server.sh
+# or manually:
+cd python && python api/api_server.py
 ```
 The API server will run on `http://localhost:8001`
 
-### 3. **Start Next.js Development Server** (Terminal 3):
+#### 3. **Start Trained Model Server** (Terminal 3 - Optional):
+```bash
+cd python
+python -m uvicorn api.trained_model_server:app --port 8002
+```
+The trained model server will run on `http://localhost:8002`
+
+#### 4. **Start Next.js Development Server** (Terminal 4):
 ```bash
 npm run dev
 # or
@@ -213,10 +234,15 @@ The application includes a FastAPI server that provides the hybrid autocomplete 
 
 ### API Endpoints
 
+#### Main API Server (Port 8001)
 - **GET /** - Health check endpoint
 - **POST /api/autocomplete** - Vector-only autocomplete suggestions
 - **POST /api/autocomplete/hybrid** - Hybrid autocomplete (vector + LLM)
 - **GET /api/stats** - Database statistics
+
+#### Trained Model Server (Port 8002 - Optional)
+- **GET /health** - Health check endpoint
+- **POST /api/autocomplete/trained** - Autocomplete using fine-tuned GPT-2 models
 
 ### Hybrid Approach
 
@@ -231,12 +257,17 @@ The hybrid autocomplete system combines:
 - **Optimized Mode** (`/optimized`): 50-100ms with streaming (60-80% improvement)
 - **Vector Search**: ~100ms for similarity matching
 - **LLM Generation**: 200-500ms (without optimization)
+- **Fine-tuned Model**: 80-120ms (faster than base LLM)
 - **Cache Hit Rate**: 90% reduction in API calls with smart caching
 - **Adaptive Debouncing**: 50-400ms based on typing speed
+- **Streaming Latency**: Character-by-character display for perceived speed
 
 ### API Documentation
 
-When the server is running, visit `http://localhost:8001/docs` for interactive API documentation.
+- **Main API Server**: `http://localhost:8001/docs`
+- **Trained Model Server**: `http://localhost:8002/docs` (when running)
+
+Both servers provide interactive Swagger/OpenAPI documentation.
 
 ## How It Works
 
@@ -353,7 +384,7 @@ The **Text Feature Coordinator** manages three text features:
 ai-train-llm/
 ├── actions/
 │   ├── ai-text.ts                    # Server actions for hybrid API integration
-│   ├── ai-text-streaming.ts          # Streaming responses with caching
+│   ├── ai-text-streaming.ts          # Streaming responses with smart caching
 │   └── ai-vision.ts                  # Image analysis actions
 ├── app/
 │   ├── layout.tsx                    # Root layout
@@ -388,16 +419,22 @@ ai-train-llm/
 │   └── bio.json                      # ~5000 bio examples for vector database
 ├── python/                           # Python backend
 │   ├── api/
-│   │   └── api_server.py            # FastAPI hybrid autocomplete server
+│   │   ├── api_server.py            # FastAPI hybrid autocomplete server
+│   │   └── trained_model_server.py  # FastAPI server for fine-tuned models
 │   ├── vector_db/
 │   │   ├── setup_chromadb.py        # Initialize vector database
 │   │   └── vector_search.py         # Vector search implementation
 │   ├── mlx_training/                # Model training scripts
-│   │   ├── train_bio_improved.py    # GPT-2 fine-tuning
-│   │   ├── bio_gpt2_improved/       # Trained model files
+│   │   ├── train_bio_improved.py    # GPT-2 fine-tuning with LoRA
+│   │   ├── train_distilgpt2.py      # DistilGPT2 fine-tuning
+│   │   ├── bio_gpt2_improved/       # Fine-tuned GPT-2 model
+│   │   ├── bio_distilgpt2_finetuned/# Fine-tuned DistilGPT2 model
+│   │   ├── bio_gpt2_finetuned/      # Standard GPT-2 fine-tuned
 │   │   └── bio_dataset/             # Training datasets
 │   ├── chroma_db/                   # ChromaDB persistent storage
-│   └── requirements.txt             # Python dependencies
+│   ├── requirements.txt             # Python dependencies
+│   ├── setup.sh                     # Environment setup script
+│   └── activate.sh                  # Virtual env activation helper
 ├── public/
 │   ├── dictionaries/
 │   │   └── en_US/                   # Hunspell dictionaries
@@ -405,19 +442,73 @@ ai-train-llm/
 │   │       └── en_US.dic           # Dictionary words
 │   └── images/                      # Static images
 ├── type/                            # TypeScript type definitions
-└── [Configuration Files]
-    ├── next.config.ts               # Next.js configuration
-    ├── tailwind.config.js           # Tailwind CSS v4 config
-    ├── docker-compose.yml           # Docker services (optional)
-    └── tsconfig.json                # TypeScript configuration
+├── [Configuration Files]
+│   ├── next.config.ts               # Next.js configuration
+│   ├── tailwind.config.js           # Tailwind CSS v4 config
+│   ├── docker-compose.yml           # Docker services (optional)
+│   └── tsconfig.json                # TypeScript configuration
+└── [Scripts]
+    ├── start_all_servers.sh         # Start all backend services
+    └── start_api_server.sh          # Start main API server only
 ```
 
 ## Available Scripts
 
+### Development Scripts
 - `npm run dev` - Start development server with Turbopack
 - `npm run build` - Build the application for production
 - `npm run start` - Start the production server
 - `npm run lint` - Run ESLint for code quality
+
+### Server Management Scripts
+- `./start_all_servers.sh` - Start all backend services (API + Trained Model)
+- `./start_api_server.sh` - Start only the main API server
+- `cd python && ./setup.sh` - Initial Python environment setup
+- `cd python && ./activate.sh` - Activate Python virtual environment
+
+## Server Management
+
+### Using Shell Scripts
+
+The project includes convenient shell scripts for managing backend services:
+
+#### `start_all_servers.sh`
+- Starts both API server (port 8001) and trained model server (port 8002)
+- Checks if Ollama is running and provides guidance if not
+- Prevents duplicate server instances
+- Creates log files for debugging (`python/api_server.log`, `python/trained_model_server.log`)
+- Shows status of all services with helpful URLs
+
+#### `start_api_server.sh`
+- Starts only the main API server on port 8001
+- Provides clear instructions for required services
+- Useful when you don't need the trained model server
+- Shows API documentation URL
+
+### Managing Services
+
+#### Check Service Status
+```bash
+# Check if services are running
+lsof -i :8001  # API Server
+lsof -i :8002  # Trained Model Server
+lsof -i :11434 # Ollama
+
+# View logs
+tail -f python/api_server.log
+tail -f python/trained_model_server.log
+```
+
+#### Stop Services
+```bash
+# Stop individual services
+lsof -ti:8001 | xargs kill  # API Server
+lsof -ti:8002 | xargs kill  # Trained Model Server
+
+# Stop all Python API processes
+pkill -f "python.*api_server"
+pkill -f "uvicorn.*trained_model"
+```
 
 ## Configuration
 
@@ -439,6 +530,26 @@ OLLAMA_API_URL = "http://localhost:11434/api"
 CHROMA_PERSIST_DIR = "../chroma_db"
 MAX_SUGGESTIONS = 3
 MIN_SUGGESTION_LENGTH = 8  # Minimum words per suggestion
+```
+
+### Fine-tuned Model Configuration
+
+The trained model server provides access to fine-tuned GPT-2 models:
+
+```python
+# In python/api/trained_model_server.py
+model_path = "mlx_training/bio_distilgpt2_finetuned"  # Default model
+device = "mps"  # macOS Metal Performance Shaders (or "cpu")
+```
+
+**Available Models:**
+- `bio_distilgpt2_finetuned` - Lightweight, fast inference (default)
+- `bio_gpt2_improved` - Larger model with LoRA fine-tuning
+- `bio_gpt2_finetuned` - Standard GPT-2 fine-tuning
+
+To enable fine-tuned model integration in the frontend:
+```env
+NEXT_PUBLIC_USE_FINETUNED_MODEL=true
 ```
 
 ### Vector Database Configuration
@@ -495,9 +606,11 @@ const temperature = 0.7;     // Control creativity
 ```
 
 **Performance Tuning:**
-- **Progressive debouncing**: Adapts timing based on text length
+- **Progressive debouncing**: Adapts timing based on text length (50-400ms)
 - **Context window**: Optimized for bio completion tasks
 - **Feature coordination**: Automatic AI pause during spell check operations
+- **Smart caching**: 5-minute TTL cache for repeated prompts
+- **Streaming optimization**: Character-by-character display in `/optimized` route
 
 ## Recent Updates (2025)
 
@@ -633,7 +746,12 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Model Training (Optional)
 
-The project includes scripts for training custom models on your bio data:
+The project includes comprehensive model training capabilities for custom bio generation:
+
+### Available Pre-trained Models
+- **bio_gpt2_improved** - Fine-tuned GPT-2 on bio data
+- **bio_distilgpt2_finetuned** - Lighter DistilGPT2 variant
+- **bio_gpt2_finetuned** - Standard GPT-2 fine-tuning
 
 ### Training Your Own Model
 
@@ -645,15 +763,21 @@ The project includes scripts for training custom models on your bio data:
 
 2. **Train the model**:
    ```bash
-   python train_bio_improved.py  # For GPT-2 fine-tuning
-   # or
-   python train_simple.py  # For quick testing
+   # GPT-2 fine-tuning with LoRA
+   python train_bio_improved.py
+   
+   # DistilGPT2 fine-tuning (faster, lighter)
+   python train_distilgpt2.py
+   
+   # Quick testing with smaller dataset
+   python train_simple.py
    ```
 
-3. **Use the trained model**:
-   - Models are saved in `bio_gpt2_improved/` directory
-   - Can be served via additional API endpoints
-   - See `how_to_use.md` for detailed instructions
+3. **Deploy the trained model**:
+   - Models are automatically saved in respective directories
+   - Start the trained model server on port 8002
+   - Enable via `NEXT_PUBLIC_USE_FINETUNED_MODEL=true`
+   - Access at `/api/autocomplete/trained` endpoint
 
 ## Additional Documentation
 

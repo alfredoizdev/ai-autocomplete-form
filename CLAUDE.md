@@ -14,16 +14,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Next.js 15 application with React 19 that provides AI-powered text autocomplete functionality for personal bio completion. The app integrates with Ollama (local AI model using Gemma 3 12B) and includes support for Weaviate vector database.
+This is a sophisticated Next.js 15 application with React 19 that provides AI-powered text autocomplete functionality for personal bio completion, specifically tailored for the swinger community. The app features a hybrid approach combining vector database search (ChromaDB) with LLM generation (Ollama Gemma 3 12B), advanced spell checking, kick.com link detection, and optional fine-tuned model support.
 
 ## Key Commands
 
 ### Development
 
 - `npm run dev` - Start development server with Turbopack (runs on http://localhost:3000)
-- `npm run build` - Build for production
+- `npm run build` - Build for production (zero errors)
 - `npm run start` - Start production server
 - `npm run lint` - Run ESLint checks
+
+### Quick Start
+
+```bash
+# Start all backend services
+./start_all_servers.sh
+
+# Then start Next.js
+npm run dev
+```
 
 ### External Services
 
@@ -31,42 +41,55 @@ This is a Next.js 15 application with React 19 that provides AI-powered text aut
   - Start: `ollama serve`
   - Pull model: `ollama pull gemma3:12b`
   - Verify: `ollama list`
+- **Python API Server**: Port 8001 (hybrid autocomplete)
+  - Start: `./start_api_server.sh`
+- **Trained Model Server**: Port 8002 (fine-tuned models, optional)
+  - Start: `cd python && python -m uvicorn api.trained_model_server:app --port 8002`
 - **Docker services** (optional): `docker-compose up -d` (Weaviate + transformers)
 
 ## Architecture Overview
 
 ### Core Technologies
 
-- **Next.js 15.3.3** with App Router
-- **React 19** with TypeScript
-- **Tailwind CSS v4** for styling
-- **React Hook Form** for form management
-- **Server Actions** for AI integration
+- **Next.js 15.3.3** with App Router and Server Actions
+- **React 19** with TypeScript and advanced hooks
+- **Tailwind CSS v4** with PostCSS
+- **React Hook Form 7.58.0** for form management
+- **typo-js 1.2.5** for spell checking
+- **FastAPI** for Python backend services
+- **ChromaDB 0.4.24** for vector search
+- **Transformers/PyTorch** for model training
 
 ### Key Files and Patterns
 
-**AI Integration** (`actions/ai-text.ts`):
+**AI Integration:**
 
-- Server actions communicate with Ollama API
-- `askOllamaCompletationAction` - Main AI completion function
-- Uses streaming responses for real-time suggestions
+- `actions/ai-text.ts` - Hybrid API integration (Python server + Ollama fallback)
+- `actions/ai-text-streaming.ts` - Streaming responses with smart caching
+- `actions/ai-vision.ts` - Image analysis capabilities
 
-**Form Management** (`components/Form.tsx`):
+**Form Components:**
 
-- Main form component using React Hook Form
-- Integrates with custom autocomplete hook
-- Handles user input and displays AI suggestions
+- `components/Form.tsx` - Main form with all features
+- `components/FormOptimized.tsx` - Performance-optimized with streaming
+- `components/SpellCheckPopup.tsx` & `SpellCheckOverlay.tsx` - Spell checking UI
+- `components/KickDetectionWarning.tsx` - Content filtering warnings
 
-**Custom Hook** (`hooks/useFormAutocomplete.tsx`):
+**Hook Architecture (5-hook system):**
 
-- Debounced autocomplete functionality
-- Prevents excessive API calls
-- Manages suggestion state
+- `hooks/useFormAutocomplete.tsx` - Core autocomplete logic
+- `hooks/useFormAutocompleteOptimized.tsx` - Optimized with adaptive debouncing
+- `hooks/useSpellCheck.tsx` - Spell checking with contractions
+- `hooks/useDebouncedSpellCheck.tsx` - Performance wrapper
+- `hooks/useTextFeatureCoordinator.tsx` - Feature conflict prevention
+- `hooks/useKickDetection.tsx` - Pattern matching for prohibited content
 
-**Type Definitions** (`type/`):
+**Backend Services:**
 
-- Contains TypeScript interfaces and types
-- Ensures type safety across the application
+- `python/api/api_server.py` - Main API server (port 8001)
+- `python/api/trained_model_server.py` - Fine-tuned models (port 8002)
+- `python/vector_db/` - ChromaDB vector search implementation
+- `python/mlx_training/` - Model training scripts
 
 ### Environment Configuration
 
@@ -74,24 +97,137 @@ The app requires `.env.local` with:
 
 ```
 OLLAMA_PATH_API=http://127.0.0.1:11434/api
+# Optional: Enable fine-tuned model integration
+NEXT_PUBLIC_USE_FINETUNED_MODEL=true
+# Optional: OpenAI API key for fallback
+NEXT_PUBLIC_OPENAI_API_KEY=your-key-here
 ```
 
 ### Project Structure
 
 ```
 actions/        # Server actions for AI integration
+├── ai-text.ts              # Hybrid API integration
+├── ai-text-streaming.ts    # Streaming with caching
+└── ai-vision.ts            # Image analysis
+
 app/           # Next.js app router pages and layouts
+├── page.tsx                # Main bio autocomplete
+├── optimized/              # Performance demo route
+├── ai-image/               # Image analysis feature
+├── test-kick/              # Kick detection testing
+└── api/                    # API routes
+
 components/    # React components
-data/          # Static data files (bios)
-hooks/         # Custom React hooks
-lib/           # Utility functions and configurations
-type/          # TypeScript type definitions
+├── Form.tsx                # Full-featured form
+├── FormOptimized.tsx       # Streaming version
+├── SpellCheckPopup.tsx     # Spell suggestions
+└── KickDetectionWarning.tsx # Safety warnings
+
+hooks/         # Sophisticated 5-hook architecture
+├── useFormAutocomplete.tsx # Main autocomplete
+├── useSpellCheck.tsx       # Spell checking
+└── useTextFeatureCoordinator.tsx # Conflict prevention
+
+lib/           # Core utilities
+├── kickDetection.ts        # 40+ pattern matching
+├── customDictionary.ts     # Persistent dictionary
+└── utils.ts                # Helper functions
+
+python/        # Backend services
+├── api/                    # FastAPI servers
+├── vector_db/              # ChromaDB setup
+└── mlx_training/           # Model training
+
+data/          # Training data
+└── bio.json                # 5000+ bio examples
 ```
 
 ## Important Notes
 
-- No test framework is configured - consider adding tests before major changes
-- ESLint is configured with Next.js recommended rules
-- The app uses the new Tailwind CSS v4 with PostCSS
-- Weaviate integration exists but appears optional (via Docker)
-- Main functionality depends on Ollama running locally
+- No test framework configured - recommend Jest/React Testing Library
+- ESLint configured with Next.js recommended rules
+- Tailwind CSS v4 with PostCSS (latest version)
+- ChromaDB replaces Weaviate for vector search
+- Hybrid approach: Python API server preferred, Ollama fallback
+- Production build passes with zero TypeScript errors
+- Mobile-optimized with 16px fonts and responsive design
+
+## Key Features
+
+### 1. Hybrid AI Autocomplete
+- Vector search (ChromaDB) + LLM generation (Ollama)
+- 100-150ms response times (60-80% faster with streaming)
+- Smart caching with 5-minute TTL
+- Adaptive debouncing (50-400ms)
+- 3-4 word trigger threshold
+
+### 2. Advanced Spell Checking
+- typo-js with Hunspell dictionaries
+- 80+ contraction handling
+- Custom dictionary with persistence
+- Click-to-correct interface
+- Performance optimized (800ms debounce)
+
+### 3. Kick.com Detection v2
+- 40+ obfuscation patterns
+- Phonetic variation detection
+- Zero-width character support
+- Multi-layer detection approach
+- Sub-5ms performance
+
+### 4. Text Feature Coordination
+- Prevents conflicts between features
+- Adaptive locking system
+- Memory management
+- Seamless multi-feature operation
+
+### 5. Fine-tuned Models (Optional)
+- GPT-2 and DistilGPT2 variants
+- Trained on 5000+ bio examples
+- Separate server on port 8002
+- 80-120ms inference time
+
+## Performance Metrics
+
+- Standard mode: 100-150ms
+- Optimized mode: 50-100ms
+- Vector search: ~100ms
+- LLM generation: 200-500ms
+- Fine-tuned models: 80-120ms
+- Cache hit rate: 90%
+- Kick detection: <5ms
+
+## Standard Commands to Run
+
+When making code changes, always run these commands to ensure quality:
+
+```bash
+# Lint check
+npm run lint
+
+# Build check (catches TypeScript errors)
+npm run build
+
+# Development server
+npm run dev
+```
+
+## Recent Architecture Updates
+
+The codebase has undergone significant improvements:
+
+1. **Hybrid API Approach**: Python API server is tried first, with Ollama fallback
+2. **Streaming Support**: Real-time character-by-character display in optimized route
+3. **Smart Caching**: 5-minute TTL cache reduces API calls by 90%
+4. **5-Hook Architecture**: Sophisticated system for feature coordination
+5. **40+ Kick Patterns**: Enhanced detection with phonetic and zero-width support
+6. **Fine-tuned Models**: Optional GPT-2 variants for faster, specialized inference
+
+## Important Workflow Notes
+
+- Always check `tasks/todo.md` for recent changes and architecture updates
+- The Python API server (port 8001) is the preferred autocomplete source
+- Fine-tuned model server (port 8002) is optional but provides faster inference
+- Use `./start_all_servers.sh` for quick backend setup
+- The `/optimized` route showcases all performance features
