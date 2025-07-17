@@ -7,14 +7,40 @@ from pathlib import Path
 import httpx
 import os
 from typing import List, Optional
+from contextlib import asynccontextmanager
 
 # Add parent directory to path to import vector_db module
 sys.path.append(str(Path(__file__).parent.parent))
 
 from vector_db.vector_search import BioVectorSearch
 
-# Initialize FastAPI app
-app = FastAPI(title="Bio Autocomplete API", version="1.0.0")
+# Initialize vector search (will be done on startup)
+vector_search = None
+
+# Ollama configuration
+OLLAMA_API_URL = os.getenv("OLLAMA_PATH_API", "http://127.0.0.1:11434/api")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage application lifecycle - startup and shutdown"""
+    # Startup
+    global vector_search
+    try:
+        print("Initializing vector search...")
+        vector_search = BioVectorSearch()
+        print("Vector search initialized successfully")
+    except Exception as e:
+        print(f"Failed to initialize vector search: {e}")
+        # Don't exit - allow server to start even if vector search fails
+    
+    yield
+    
+    # Shutdown
+    print("Application shutting down...")
+    # Add any cleanup code here if needed
+
+# Initialize FastAPI app with lifespan
+app = FastAPI(title="Bio Autocomplete API", version="1.0.0", lifespan=lifespan)
 
 # Configure CORS for Next.js integration
 app.add_middleware(
@@ -24,12 +50,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Initialize vector search (will be done on startup)
-vector_search = None
-
-# Ollama configuration
-OLLAMA_API_URL = os.getenv("OLLAMA_PATH_API", "http://127.0.0.1:11434/api")
 
 # Request/Response models
 class AutocompleteRequest(BaseModel):
@@ -48,17 +68,6 @@ class HybridAutocompleteResponse(BaseModel):
     elapsed_ms: float
     context_used: bool
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize vector search on startup"""
-    global vector_search
-    try:
-        print("Initializing vector search...")
-        vector_search = BioVectorSearch()
-        print("Vector search initialized successfully")
-    except Exception as e:
-        print(f"Failed to initialize vector search: {e}")
-        # Don't exit - allow server to start even if vector search fails
 
 @app.get("/")
 async def root():
