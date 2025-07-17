@@ -318,9 +318,104 @@ export default function TestKickPage() {
       'k<<e>>k',     // Nested with vowel
       'ck(i)k',      // Reversed with parentheses
       'k\u200B!kc',  // Scrambled with zero-width
+      
+      // PHASE 5 TEST CASES - Parentheses-wrapped K patterns
+      '--- PHASE 5 TESTS ---',
+      
+      // The reported edge case
+      '(k)I..___________k',
+      
+      // Basic parentheses-wrapped K at beginning
+      '(k)ick',
+      '(k)i k',
+      '(k)..i..k',
+      '(k)___i___k',
+      '(k)...i...k',
+      '(c)ick',
+      
+      // Basic parentheses-wrapped K at end
+      'kick(k)',
+      'ki (k)',
+      'k..i..(k)',
+      'k___i___(k)',
+      'k...i...(k)',
+      'kic(c)',
+      
+      // Both wrapped
+      '(k)i(k)',
+      '(k)..i..(k)',
+      '(k)___i___(k)',
+      '(c)..i..(c)',
+      
+      // Mixed dots and underscores
+      '(k)..__i__.._k',
+      '(k)_._i_._k',
+      '(k)..___..i..___..k',
+      
+      // Extreme separators
+      'k_____________i_____________k',
+      'k.............i.............k',
+      'k-------------i-------------k',
+      'k~~~~~~~~~~~~~i~~~~~~~~~~~~~k',
+      
+      // Complex combinations
+      '(k)._._._.i._._._.k',
+      '(k)____....i....____k',
+      '(k)~^~^~i~^~^~k',
+      '(k)!@#$%i%$#@!k',
+      
+      // With numbers and special chars
+      '(k)1..___________k',
+      '(k)|..___________k',
+      '(k)!..___________k',
+      
+      // Capital letters
+      '(K)I..___________K',
+      '(K)...I...K',
+      
+      // Zero-width with parentheses
+      '(k)\u200Bi\u200Bk',
+      '(k)\u200B..i..\u200Bk',
     ];
 
-    const testResults = phase1TestCases.map(testCase => {
+    // Phase 6 test cases - Multiple distributed parentheses
+    const phase6TestCases = [
+      // The reported edge case
+      '(k__(I..__(h)k',
+      'find me on (k__(I..__(h)k',
+      
+      // Variations
+      '(k)__(I)..__(h)k',
+      '(k__(i..__(h)k',
+      '(k)__(i)..__(h)k',
+      'k__(I)..__(h)k',
+      '(k)__I..__(h)k',
+      '(k)__(I)..__(h)(k)',
+      '(k)_(I)_(h)k',
+      '(k)(I)(h)k',
+      '(k)...(I)...(h)k',
+      'k(I)hk',
+      'k__(h)k',
+      '(h)k',
+      
+      // More complex variations
+      '(k)...(I)...(h)...k',
+      '(k)___(i)___(h)___k',
+      '(k)..(1)..(h)..k',
+      '(k)__(e)__(h)k',
+      'k(i)(c)(h)k',
+      '(k)(i)(c)(k)',
+      
+      // Mixed with other techniques
+      '(k)​__(I)​..​__(h)​k', // With zero-width spaces
+      '(K)__(I)..__(H)K',    // Capital letters
+      '(k)__(!)..__(h)k',    // Special chars in middle
+    ];
+
+    // Combine all test cases
+    const allTestCases = [...phase1TestCases, ...phase6TestCases];
+    
+    const testResults = allTestCases.map(testCase => {
       const result = detectKickVariations(testCase);
       
       // Check if input contains zero-width characters
@@ -372,7 +467,7 @@ export default function TestKickPage() {
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
       <div className="p-8 max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6 text-white">Kick Detection Test Results (Phase 1, 2, & 4)</h1>
+        <h1 className="text-3xl font-bold mb-6 text-white">Kick Detection Test Results (Phase 1, 2, 4, 5 & 6)</h1>
         
         <div className="mb-6 p-4 bg-gray-900 border border-gray-800 rounded-lg">
           <h2 className="text-lg font-semibold text-gray-100">Summary: {detectedCount}/{results.length} tests passed</h2>

@@ -49,5 +49,23 @@ legitimateText.forEach(example => {
   console.log(`"${example}" - Detected: ${result.detected ? '✓' : '✗'} | Confidence: ${result.confidence}%`);
 });
 
+// Test Phase 5 edge cases
+console.log('\n\nTesting Phase 5 Edge Cases (parentheses-wrapped K):');
+const phase5Examples = [
+  '(k)I..___________k',
+  '(k)i..___________k',
+  '(K)I..___________K',
+  'fine me on (k)I..___________k',
+  '(k)ick',
+  'kick(k)',
+  '(k)i(k)',
+  '(k)..__i__.._k'
+];
+
+phase5Examples.forEach(example => {
+  const result = detectKickVariations(example);
+  console.log(`"${example}" - Detected: ${result.detected ? '✓' : '✗'} | Confidence: ${result.confidence}%`);
+});
+
 console.log('\n' + '=' .repeat(50));
 console.log('Test complete!');

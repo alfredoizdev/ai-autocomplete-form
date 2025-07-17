@@ -156,6 +156,45 @@ const kickVariationPatterns = [
   
   // Extreme gaps with reasonable limits (6-12 chars)
   /\bk[^a-z]{6,12}[i1!|l][^a-z]{6,12}[kc]\b/gi,  // k------i------k
+  
+  // PHASE 5 ADDITIONS - Parentheses-wrapped K patterns
+  
+  // K wrapped in parentheses at the beginning
+  /\([kc]\)[^a-z]{0,20}[i1l!|e3][^a-z]{0,20}[kc]\b/gi,      // (k)...i...k
+  
+  // K wrapped in parentheses at the end
+  /\b[kc][^a-z]{0,20}[i1l!|e3][^a-z]{0,20}\([kc]\)/gi,      // k...i...(k)
+  
+  // Both K's wrapped in parentheses
+  /\([kc]\)[^a-z]{0,20}[i1l!|e3][^a-z]{0,20}\([kc]\)/gi,    // (k)...i...(k)
+  
+  // Mixed dots and underscores with parentheses-wrapped K
+  /\([kc]\)[._]{2,}[^a-z]*[i1l!|e3][^a-z]*[._]{2,}[kc]\b/gi, // (k)..___i___..k
+  
+  // Extreme separator patterns (up to 20 chars)
+  /\bk[^a-z]{13,20}[i1l!|e3][^a-z]{13,20}[kc]\b/gi,         // k-----(many)-----i-----(many)-----k
+  
+  // Parentheses + any separators pattern
+  /\([kc]\)[^a-z]*[i1l!|e3][^a-z]*[kc]\b/gi,                // (k)[anything]i[anything]k
+  /\b[kc][^a-z]*[i1l!|e3][^a-z]*\([kc]\)/gi,                // k[anything]i[anything](k)
+  
+  // PHASE 6 ADDITIONS - Multiple distributed parentheses patterns
+  
+  // Middle vowel/character wrapped in parentheses
+  /\([kc]\)[^a-z]*\([i1l!|e3aeiouey]\)[^a-z]*[kc]\b/gi,     // (k)...(i)...k
+  /\b[kc][^a-z]*\([i1l!|e3aeiouey]\)[^a-z]*\([kc]\)/gi,     // k...(i)...(k)
+  /\([kc]\)[^a-z]*\([i1l!|e3aeiouey]\)[^a-z]*\([kc]\)/gi,   // (k)...(i)...(k)
+  
+  // H-wrapped endings (like (h)k or (h)c)
+  /\b[kc][^a-z]*\([i1l!|e3aeiouey]\)[^a-z]*\(h\)[kc]/gi,    // k...(i)...(h)k
+  /\([kc]\)[^a-z]*\([i1l!|e3aeiouey]\)[^a-z]*\(h\)[kc]/gi,  // (k)...(i)...(h)k
+  
+  // Multiple separate parentheses groups (2-3 groups)
+  /\([kc]\)[^a-z]*\([^)]+\)[^a-z]*\([^)]+\)[^a-z]*[kc]/gi,  // (k)...(any)...(any)...k
+  /\b[kc][^a-z]*\([^)]+\)[^a-z]*\([^)]+\)[^a-z]*[kc]\b/gi,  // k...(any)...(any)...k
+  
+  // Specific pattern for (k)__(I)..__(h)k style
+  /\([kc]\)[_\.]{2,}\([i1l!|e3aeiouey]\)[_\.]{2,}\(h\)[kc]/gi,  // (k)__..(I).._.(h)k
 ];
 
 // Unicode confusables that look like 'kick' characters
@@ -756,6 +795,22 @@ export function detectKickVariations(text: string): DetectionResult {
           results.techniques.push('nested_brackets');
         } else if (index === 48) {
           results.techniques.push('extreme_gaps');
+        } else if (index >= 49 && index <= 51) {
+          results.techniques.push('parentheses_wrapped_k');
+        } else if (index === 52) {
+          results.techniques.push('mixed_dots_underscores');
+        } else if (index === 53) {
+          results.techniques.push('extreme_separators');
+        } else if (index >= 54 && index <= 55) {
+          results.techniques.push('parentheses_any_separators');
+        } else if (index >= 56 && index <= 58) {
+          results.techniques.push('middle_vowel_wrapped');
+        } else if (index >= 59 && index <= 60) {
+          results.techniques.push('h_wrapped_ending');
+        } else if (index >= 61 && index <= 62) {
+          results.techniques.push('multiple_parentheses_groups');
+        } else if (index === 63) {
+          results.techniques.push('distributed_parentheses');
         }
       }
     }
@@ -921,9 +976,9 @@ export function cachedDetection(text: string): DetectionResult {
 // Progressive detection for performance optimization
 export function progressiveDetection(text: string): DetectionResult {
   // Level 1: Quick pattern check
-  // Updated pattern to catch phonetic variations like "keek", "kyck", etc., "hk" endings, and Phase 4 reversed patterns
-  // Matches: k + (various middle patterns) + optional [kchq] or hk, OR reversed patterns like ckik
-  const quickCheck = /k(?:[^a-z]{0,3}[i1l!|e3aeiouey][^a-z]{0,3}|[aeiouey0-9]{1,2}|\W{0,5}|i[cqk])(?:[kchq]{0,2}|hk)?|[ck]{2}[i1l!|][kc]|k\({2,}|k\[{2,}|k\{{2,}|k<{2,}|k[^a-z]{6,}/i;
+  // Updated pattern to catch phonetic variations like "keek", "kyck", etc., "hk" endings, Phase 4 reversed patterns, and Phase 5 parentheses-wrapped K
+  // Matches: k + (various middle patterns) + optional [kchq] or hk, OR reversed patterns like ckik, OR (k) patterns
+  const quickCheck = /k(?:[^a-z]{0,3}[i1l!|e3aeiouey][^a-z]{0,3}|[aeiouey0-9]{1,2}|\W{0,5}|i[cqk])(?:[kchq]{0,2}|hk)?|[ck]{2}[i1l!|][kc]|k\({2,}|k\[{2,}|k\{{2,}|k<{2,}|k[^a-z]{6,}|\([kc]\)[^a-z]*[i1l!|e3]|\([kc]\)[^a-z]*\([i1l!|e3aeiouey]\)|\([i1l!|e3aeiouey]\)[^a-z]*[kc]|\(h\)[kc]/i;
   if (!quickCheck.test(text.toLowerCase())) {
     return { 
       detected: false, 
