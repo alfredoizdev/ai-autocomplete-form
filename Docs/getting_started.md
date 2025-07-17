@@ -15,59 +15,96 @@ Welcome! This guide will help you understand and use the AI Bio Generator app, w
 
 ## What is this app?
 
-The AI Bio Generator is a smart text completion tool designed specifically for the adult lifestyle community. It helps you write compelling personal bios by:
+The AI Bio Autocomplete is a sophisticated text completion system designed for the swinger community. It helps you write compelling personal bios by:
 
-- 🤖 **Suggesting completions** as you type
-- ✨ **Understanding context** from the lifestyle community
-- 🚫 **Detecting inappropriate content** (like promotional links)
-- ✏️ **Checking spelling** in real-time
-- 🔒 **Keeping everything private** on your local machine
+- 🤖 **AI-powered suggestions** using hybrid vector search + LLM generation
+- ⚡ **Lightning-fast responses** (100-150ms) with smart caching
+- ✏️ **Advanced spell checking** with 80+ contraction support
+- 🚫 **Kick.com detection** with 70+ obfuscation patterns
+- 🧠 **5-hook architecture** for seamless feature coordination
+- 🔒 **Complete privacy** - everything runs locally
 
-Think of it as an intelligent writing assistant that understands the nuances of lifestyle community language and helps you express yourself authentically.
+The system combines ChromaDB vector search with Ollama's Gemma 3 12B model for contextually relevant, high-quality suggestions.
 
 ## Quick Start (5 minutes)
 
 ### What You'll Need
-- A Mac or PC with at least 16GB RAM
-- Basic comfort with Terminal/Command Prompt
-- About 10GB free disk space
+- Mac, Linux, or Windows with 16GB+ RAM
+- Node.js 18+ and Python 3.8+
+- Ollama installed (https://ollama.ai)
+- About 15GB free disk space (for models)
+- Basic terminal/command line experience
 
-### Step 1: Get the Code
+### Step 1: Clone and Setup
 ```bash
 # Clone the repository
-git clone https://github.com/your-repo/ai-train-llm.git
+git clone <repository-url>
 cd ai-train-llm
 
-# Install dependencies
+# Install Node dependencies
 npm install
+
+# Setup Python environment
+cd python
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+cd ..
+
+# Setup environment variables
+cp .env.example .env.local
+# Edit .env.local and set:
+# OLLAMA_PATH_API=http://127.0.0.1:11434/api
 ```
 
-### Step 2: Start the AI Services
-Open **three separate terminal windows**:
-
-**Terminal 1 - Start Ollama (AI Engine):**
+### Step 2: Prepare AI Models
 ```bash
-# If you haven't installed Ollama yet:
-# Mac: brew install ollama
-# Windows/Linux: See https://ollama.ai
+# Pull the Gemma 3 model (12GB download)
+ollama pull gemma3:12b
 
+# Initialize vector database
+cd python/vector_db
+python setup_chromadb.py
+cd ../..
+```
+
+### Step 3: Start All Services
+
+**Easy Method (Recommended):**
+```bash
+# Start all backend services with one command
+./start_all_servers.sh
+
+# In another terminal, start the web app
+npm run dev
+```
+
+**Manual Method (if script fails):**
+
+Open 3 terminals:
+
+**Terminal 1 - Ollama:**
+```bash
 ollama serve
 ```
 
-**Terminal 2 - Start Python API:**
+**Terminal 2 - Python API:**
 ```bash
-./start_api_server.sh
+cd python && python api/api_server.py
 ```
 
-**Terminal 3 - Start the Web App:**
+**Terminal 3 - Web App:**
 ```bash
 npm run dev
 ```
 
-### Step 3: Open Your Browser
-Navigate to: **http://localhost:3000**
+### Step 4: Verify Everything is Running
 
-That's it! You should see the bio generator interface. 🎉
+1. Open **http://localhost:3000** - You should see the bio form
+2. Check **http://localhost:8001/docs** - API documentation
+3. Type 5+ words in the bio field and wait 1.5 seconds for suggestions
+
+If you see AI suggestions appearing, everything is working! 🎉
 
 ## How Does It Work?
 
@@ -75,28 +112,30 @@ That's it! You should see the bio generator interface. 🎉
 
 When you type in the text box, three smart systems work together:
 
-1. **Memory Bank** 🧠
-   - Stores thousands of example bios
-   - Finds similar phrases to what you're typing
-   - Like having a friend who remembers every good bio they've seen
+1. **Vector Search (ChromaDB)** 🧠
+   - Indexes 5000+ real bio examples
+   - Finds semantically similar contexts
+   - Provides exact and partial matches
 
-2. **AI Writer** ✍️
-   - Takes inspiration from the memory bank
-   - Generates new, creative suggestions
-   - Understands lifestyle community language and tone
+2. **LLM Generation (Ollama)** ✍️
+   - Uses Gemma 3 12B model locally
+   - Generates contextually relevant completions
+   - Filters for quality (8+ word suggestions)
 
-3. **Safety Guard** 🛡️
-   - Checks for spam and promotional content
-   - Ensures suggestions are appropriate
-   - Keeps the community safe from bad actors
+3. **Smart Features** 🛡️
+   - Spell checking with typo-js and Hunspell
+   - Kick.com detection (70+ patterns)
+   - Text feature coordinator prevents conflicts
 
-### The Technical Stack (for the curious)
+### The Technical Stack
 
-- **Frontend**: Next.js 15 with React 19 (modern web framework)
-- **AI Engine**: Ollama running Gemma 3 12B model (local AI, no cloud)
-- **Python Backend**: FastAPI server handling AI orchestration
-- **Vector Database**: ChromaDB for intelligent text matching
-- **Custom Models**: Fine-tuned GPT-2 for lifestyle-specific suggestions
+- **Frontend**: Next.js 15.3.3 + React 19 + TypeScript
+- **Styling**: Tailwind CSS v4 with PostCSS
+- **AI Engine**: Ollama (Gemma 3 12B) for local inference
+- **Python Backend**: FastAPI servers on ports 8001 & 8002
+- **Vector Database**: ChromaDB with persistent storage
+- **Hook Architecture**: 5 sophisticated React hooks for features
+- **Performance**: 100-150ms responses with smart caching
 
 ## Using the App
 
@@ -154,22 +193,23 @@ The AI learns from examples. To add your own:
 
 1. **Locate the bio data file:**
    ```
-   data/Bios.ts
+   data/bio.json
    ```
 
-2. **Add new examples to the array:**
-   ```typescript
-   export const Bios = [
-     // Existing bios...
+2. **Add new examples to the JSON array:**
+   ```json
+   [
+     "Existing bio example...",
      "Your new bio example here",
-     "Another example with different style",
-   ];
+     "Another example with different style"
+   ]
    ```
 
-3. **Update the vector database:**
+3. **Rebuild the vector database:**
    ```bash
    cd python/vector_db
-   python setup_chromadb.py --reset
+   python setup_chromadb.py
+   cd ../..
    ```
 
 4. **Restart the API server** for changes to take effect
@@ -336,4 +376,4 @@ Remember: This tool is designed to help you express yourself authentically while
 
 ---
 
-*Built with ❤️ for the lifestyle community by Swing.com*
+*Built with advanced AI technology for the swinger community*

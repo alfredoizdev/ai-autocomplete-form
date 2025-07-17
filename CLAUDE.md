@@ -215,7 +215,7 @@ npm run dev
 The codebase has undergone significant improvements:
 
 1. **Hybrid API Approach**: Python API server is tried first, with Ollama fallback
-2. **Streaming Support**: Real-time character-by-character display in optimized route
+2. **Streaming Support**: Real-time character-by-character display
 3. **Smart Caching**: 5-minute TTL cache reduces API calls by 90%
 4. **5-Hook Architecture**: Sophisticated system for feature coordination
 5. **40+ Kick Patterns**: Enhanced detection with phonetic and zero-width support
