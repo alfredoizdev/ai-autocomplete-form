@@ -6,7 +6,6 @@ A sophisticated AI-powered bio autocomplete system built with Next.js 15, React 
 
 ### Latest Features (2025)
 - **🛡️ Kick.com Link Detection v2** - Enhanced detection with 40+ patterns including phonetic variations and zero-width character support
-- **⚡ Optimized Autocomplete** - New `/optimized` route with 60-80% reduced latency via streaming
 - **🔧 Enhanced ChromaDB** - Now indexes all 5000 bios for better vector search results
 - **✨ Phonetic Pattern Detection** - Catches sound-alike variations (keek, kyck, keak)
 - **🐛 Build Fixes** - Zero errors in production build with full TypeScript compliance
@@ -22,14 +21,6 @@ A sophisticated AI-powered bio autocomplete system built with Next.js 15, React 
 - **Smart pattern recognition** - Spaces, dots, parentheses, special chars, leetspeak
 - **False positive prevention** - Excludes legitimate words (kayak, peek, etc.)
 - **Performance optimized** - Sub-5ms detection with intelligent caching
-
-### ⚡ Optimized Autocomplete (/optimized route)
-- **True streaming responses** - 60-80% reduced latency (50-100ms)
-- **Adaptive debouncing** - 50-400ms based on typing speed
-- **Smart caching layer** - 90% reduction in API calls
-- **React 19 optimizations** - useTransition and useDeferredValue
-- **Reduced trigger threshold** - Activates after 3-4 words (vs 5)
-- **Progressive enhancement** - Graceful fallback for slower connections
 
 ### 🤖 Hybrid AI Autocomplete System
 - **Dual approach** - Combines ChromaDB vector search with Ollama LLM generation
@@ -66,7 +57,6 @@ A sophisticated AI-powered bio autocomplete system built with Next.js 15, React 
 - **Mobile-optimized UX** with 16px fonts to prevent zoom
 - **Dynamic textarea resizing** with smooth 300ms transitions
 - **Performance optimized** with progressive debouncing and memoization
-- **Optimized route** - `/optimized` showcases streaming and adaptive features
 
 ## Prerequisites
 
@@ -200,11 +190,6 @@ The web app will run on `http://localhost:3000`
 ## Available Routes
 
 - **`/` (Main Application)** - Full-featured bio autocomplete with all capabilities
-- **`/optimized`** - Performance-optimized demo featuring:
-  - True streaming responses (60-80% faster)
-  - Adaptive debouncing based on typing speed
-  - Smart caching with 90% API call reduction
-  - React 19 performance features
 - **`/ai-image`** - Image analysis feature for bio photos
 - **`/test-kick`** - Visual test page for kick detection patterns (dev only)
 
@@ -226,7 +211,6 @@ The web app will run on `http://localhost:3000`
    - **Right-click** words to add them to your custom dictionary
    - **Type naturally** - the Text Feature Coordinator prevents interference
    - **Mobile-friendly** - all features work seamlessly on touch devices
-   - **Streaming mode** - Watch suggestions appear character-by-character in `/optimized`
 
 ## Python API Server
 
@@ -254,7 +238,6 @@ The hybrid autocomplete system combines:
 ### Performance Metrics
 
 - **Standard Mode** (`/`): 100-150ms response time
-- **Optimized Mode** (`/optimized`): 50-100ms with streaming (60-80% improvement)
 - **Vector Search**: ~100ms for similarity matching
 - **LLM Generation**: 200-500ms (without optimization)
 - **Fine-tuned Model**: 80-120ms (faster than base LLM)
@@ -389,23 +372,19 @@ ai-train-llm/
 ├── app/
 │   ├── layout.tsx                    # Root layout
 │   ├── page.tsx                      # Main page component
-│   ├── optimized/                    # Performance-optimized demo route
-│   │   └── page.tsx                  # Streaming autocomplete showcase
 │   ├── api/
 │   │   └── kick-detection-logs/      # Logging endpoint for pattern learning
 │   ├── ai-image/                     # Image analysis feature
 │   └── globals.css                   # Global styles with Tailwind v4
 ├── components/
 │   ├── Form.tsx                      # Main form with layered textarea
-│   ├── FormOptimized.tsx             # Optimized form with streaming
 │   ├── FormImage.tsx                 # Image upload form
 │   ├── SpellCheckPopup.tsx           # Interactive spell suggestion popup
 │   ├── SpellCheckOverlay.tsx         # Spell check visual overlay
 │   ├── KickDetectionWarning.tsx      # Warning UI for kick.com detection
 │   └── Navbar.tsx                    # Navigation component
-├── hooks/                            # Sophisticated 5-hook architecture
+├── hooks/                            # Sophisticated hook architecture
 │   ├── useFormAutocomplete.tsx       # Main form logic with AI integration
-│   ├── useFormAutocompleteOptimized.tsx # Optimized with streaming & adaptive debounce
 │   ├── useSpellCheck.tsx             # Core spell check with contractions
 │   ├── useDebouncedSpellCheck.tsx    # Performance-optimized wrapper
 │   ├── useTextFeatureCoordinator.tsx # Feature conflict prevention
@@ -610,7 +589,6 @@ const temperature = 0.7;     // Control creativity
 - **Context window**: Optimized for bio completion tasks
 - **Feature coordination**: Automatic AI pause during spell check operations
 - **Smart caching**: 5-minute TTL cache for repeated prompts
-- **Streaming optimization**: Character-by-character display in `/optimized` route
 
 ## Recent Updates (2025)
 
@@ -627,7 +605,6 @@ const temperature = 0.7;     // Control creativity
 - **Adaptive Debouncing**: Dynamic 50-400ms delays based on typing speed
 - **Smart Caching**: 90% reduction in redundant API calls
 - **React 19 Features**: Non-blocking updates with useTransition and useDeferredValue
-- **Optimized Route**: New `/optimized` demo showcasing all performance features
 
 ### ✨ Enhanced User Experience
 - Reduced autocomplete trigger from 5 to 3-4 words

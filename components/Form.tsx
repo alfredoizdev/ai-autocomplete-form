@@ -455,7 +455,7 @@ const Form = () => {
             className="hide-scrollbar border border-gray-200 rounded-[8px] focus:border-black active:border-black focus:outline-none transition-all duration-300 ease-out"
           />
           
-          {/* Spell check overlay - now a separate optimized component */}
+          {/* Spell check overlay */}
           <SpellCheckOverlay
             promptValue={promptValue}
             misspelledWords={misspelledWords}

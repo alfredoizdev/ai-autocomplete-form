@@ -71,14 +71,12 @@ npm run dev
 **Form Components:**
 
 - `components/Form.tsx` - Main form with all features
-- `components/FormOptimized.tsx` - Performance-optimized with streaming
 - `components/SpellCheckPopup.tsx` & `SpellCheckOverlay.tsx` - Spell checking UI
 - `components/KickDetectionWarning.tsx` - Content filtering warnings
 
 **Hook Architecture (5-hook system):**
 
 - `hooks/useFormAutocomplete.tsx` - Core autocomplete logic
-- `hooks/useFormAutocompleteOptimized.tsx` - Optimized with adaptive debouncing
 - `hooks/useSpellCheck.tsx` - Spell checking with contractions
 - `hooks/useDebouncedSpellCheck.tsx` - Performance wrapper
 - `hooks/useTextFeatureCoordinator.tsx` - Feature conflict prevention
@@ -120,7 +118,6 @@ app/           # Next.js app router pages and layouts
 
 components/    # React components
 ├── Form.tsx                # Full-featured form
-├── FormOptimized.tsx       # Streaming version
 ├── SpellCheckPopup.tsx     # Spell suggestions
 └── KickDetectionWarning.tsx # Safety warnings
 
@@ -230,4 +227,3 @@ The codebase has undergone significant improvements:
 - The Python API server (port 8001) is the preferred autocomplete source
 - Fine-tuned model server (port 8002) is optional but provides faster inference
 - Use `./start_all_servers.sh` for quick backend setup
-- The `/optimized` route showcases all performance features
