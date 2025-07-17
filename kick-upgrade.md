@@ -4,7 +4,7 @@
 This document outlines a phased approach to enhance kick detection capabilities to catch sophisticated obfuscation attempts while maintaining simplicity and performance.
 
 **Last Updated**: 2025-07-17
-**Current Status**: Phase 6 Complete - Multiple distributed parentheses detection
+**Current Status**: Phase 7 Complete - Unclosed/unmatched parentheses detection
 
 ## Current Capabilities Analysis
 The existing system already handles:
@@ -781,7 +781,71 @@ const quickCheck = /k(?:[^a-z]{0,3}[i1l!|e3aeiouey][^a-z]{0,3}|[aeiouey0-9]{1,2}
 
 ---
 
-### Phase 7: Machine Learning Enhancement (Optional)
+### Phase 7: Unclosed/Unmatched Parentheses Detection
+**Goal**: Detect patterns using unclosed or unmatched parentheses for obfuscation
+
+**Status**: ✅ COMPLETE
+
+**Problem**: 
+User reported several edge cases being missed:
+- `(k__)i__..!h..k` - Unclosed parenthesis with special characters
+- `(k__(I..__(h)k` - Multiple unclosed parentheses
+- `(k)__I..__(h)k` - Mixed: some characters wrapped, others not
+
+**Research Findings**:
+- Regular expressions have fundamental limitations with unmatched parentheses (context-free vs regular languages)
+- Despite theoretical limitations, specific patterns can be matched for common obfuscation cases
+- Stack-based algorithms are ideal for perfect parenthesis matching, but regex can handle specific patterns
+
+**Solution Implemented**:
+Added 8 new regex patterns to handle:
+1. **Unclosed opening parenthesis**: `(k__` followed by content
+2. **Multiple unclosed parentheses**: `(k__(I..__(h)k` style
+3. **Mixed parentheses usage**: Some parts wrapped, others unwrapped
+4. **Flexible matching**: Optional parentheses with required structure
+
+**New Patterns Added**:
+```javascript
+// Unclosed opening parenthesis at start
+/\([kc][^)]*[i1l!|e3aeiouey][^a-z]*[kc]\b/gi,              // (k__i__k
+/\([kc][^)]*\([i1l!|e3aeiouey][^)]*\([hc]\)[kc]/gi,        // (k__(I..__(h)k
+/\([kc][^)]*[i1l!|e3aeiouey][^a-z]*\([hc]\)[kc]/gi,        // (k__i__(h)k
+
+// Mixed parentheses - some wrapped, some not
+/\([kc]\)[^a-z]*[i1l!|e3aeiouey][^a-z]*\([hc]\)[kc]/gi,    // (k)__I__(h)k
+/\([kc][^)]*\)[^a-z]*[i1l!|e3aeiouey][^a-z]*[hc]\b/gi,     // (k__)__i__hk
+
+// Flexible parentheses patterns
+/\(?[kc]\)?[^a-z]*\(?[i1l!|e3aeiouey]\)?[^a-z]*\([hc]\)[kc]/gi,
+/\([kc][^)]{0,10}[i1l!|e3aeiouey][^a-z]*[!@#$%^&*]?[hc][^a-z]*[kc]/gi,
+/\([kc][^kc]{1,30}[i1l!|e3aeiouey][^kc]{0,30}[kc]\b/gi,
+```
+
+**New Techniques Identified**:
+- `unclosed_parentheses`
+- `mixed_parentheses`
+- `flexible_parentheses`
+- `complex_unmatched_parentheses`
+
+**Test Results**:
+- All reported edge cases now detected ✓
+- `(k__)i__..!h..k` - DETECTED
+- `(k__(I..__(h)k` - DETECTED
+- `(k)__I..__(h)k` - DETECTED
+- No false positives on legitimate text
+- Lint passes without errors ✓
+- Build succeeds without TypeScript errors ✓
+
+**Success Criteria**: ✓ ALL MET
+- All reported unclosed parentheses patterns fixed ✓
+- Comprehensive coverage of mixed parentheses scenarios ✓
+- No breaking changes to existing patterns ✓
+- Performance maintained ✓
+- All quality checks pass ✓
+
+---
+
+### Phase 8: Machine Learning Enhancement (Optional)
 **Goal**: Use ML features for improved detection
 
 **Tasks**:

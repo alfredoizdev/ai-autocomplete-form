@@ -195,6 +195,24 @@ const kickVariationPatterns = [
   
   // Specific pattern for (k)__(I)..__(h)k style
   /\([kc]\)[_\.]{2,}\([i1l!|e3aeiouey]\)[_\.]{2,}\(h\)[kc]/gi,  // (k)__..(I).._.(h)k
+  
+  // PHASE 7 ADDITIONS - Unclosed/unmatched parentheses patterns
+  
+  // Unclosed opening parenthesis at start
+  /\([kc][^)]*[i1l!|e3aeiouey][^a-z]*[kc]\b/gi,              // (k__i__k (no closing paren after k)
+  /\([kc][^)]*\([i1l!|e3aeiouey][^)]*\([hc]\)[kc]/gi,        // (k__(I..__(h)k (multiple unclosed)
+  /\([kc][^)]*[i1l!|e3aeiouey][^a-z]*\([hc]\)[kc]/gi,        // (k__i__(h)k
+  
+  // Mixed parentheses - some wrapped, some not
+  /\([kc]\)[^a-z]*[i1l!|e3aeiouey][^a-z]*\([hc]\)[kc]/gi,    // (k)__I__(h)k (middle char unwrapped)
+  /\([kc][^)]*\)[^a-z]*[i1l!|e3aeiouey][^a-z]*[hc]\b/gi,     // (k__)__i__hk
+  
+  // Flexible parentheses patterns - handle various combinations
+  /\(?[kc]\)?[^a-z]*\(?[i1l!|e3aeiouey]\)?[^a-z]*\([hc]\)[kc]/gi,  // Optional parens, but (h)k required
+  /\([kc][^)]{0,10}[i1l!|e3aeiouey][^a-z]*[!@#$%^&*]?[hc][^a-z]*[kc]/gi,  // (k__)i__..!h..k pattern
+  
+  // Catch-all for complex unmatched parentheses with k-vowel-k structure
+  /\([kc][^kc]{1,30}[i1l!|e3aeiouey][^kc]{0,30}[kc]\b/gi,    // Very flexible unclosed parenthesis pattern
 ];
 
 // Unicode confusables that look like 'kick' characters
@@ -811,6 +829,14 @@ export function detectKickVariations(text: string): DetectionResult {
           results.techniques.push('multiple_parentheses_groups');
         } else if (index === 63) {
           results.techniques.push('distributed_parentheses');
+        } else if (index >= 64 && index <= 66) {
+          results.techniques.push('unclosed_parentheses');
+        } else if (index >= 67 && index <= 68) {
+          results.techniques.push('mixed_parentheses');
+        } else if (index >= 69 && index <= 70) {
+          results.techniques.push('flexible_parentheses');
+        } else if (index === 71) {
+          results.techniques.push('complex_unmatched_parentheses');
         }
       }
     }
@@ -976,9 +1002,9 @@ export function cachedDetection(text: string): DetectionResult {
 // Progressive detection for performance optimization
 export function progressiveDetection(text: string): DetectionResult {
   // Level 1: Quick pattern check
-  // Updated pattern to catch phonetic variations like "keek", "kyck", etc., "hk" endings, Phase 4 reversed patterns, and Phase 5 parentheses-wrapped K
-  // Matches: k + (various middle patterns) + optional [kchq] or hk, OR reversed patterns like ckik, OR (k) patterns
-  const quickCheck = /k(?:[^a-z]{0,3}[i1l!|e3aeiouey][^a-z]{0,3}|[aeiouey0-9]{1,2}|\W{0,5}|i[cqk])(?:[kchq]{0,2}|hk)?|[ck]{2}[i1l!|][kc]|k\({2,}|k\[{2,}|k\{{2,}|k<{2,}|k[^a-z]{6,}|\([kc]\)[^a-z]*[i1l!|e3]|\([kc]\)[^a-z]*\([i1l!|e3aeiouey]\)|\([i1l!|e3aeiouey]\)[^a-z]*[kc]|\(h\)[kc]/i;
+  // Updated pattern to catch phonetic variations like "keek", "kyck", etc., "hk" endings, Phase 4 reversed patterns, Phase 5 parentheses-wrapped K, and Phase 7 unclosed parentheses
+  // Matches: k + (various middle patterns) + optional [kchq] or hk, OR reversed patterns like ckik, OR (k) patterns, OR unclosed parentheses
+  const quickCheck = /k(?:[^a-z]{0,3}[i1l!|e3aeiouey][^a-z]{0,3}|[aeiouey0-9]{1,2}|\W{0,5}|i[cqk])(?:[kchq]{0,2}|hk)?|[ck]{2}[i1l!|][kc]|k\({2,}|k\[{2,}|k\{{2,}|k<{2,}|k[^a-z]{6,}|\([kc]\)[^a-z]*[i1l!|e3]|\([kc]\)[^a-z]*\([i1l!|e3aeiouey]\)|\([i1l!|e3aeiouey]\)[^a-z]*[kc]|\(h\)[kc]|\([kc][^)]*[i1l!|e3aeiouey]/i;
   if (!quickCheck.test(text.toLowerCase())) {
     return { 
       detected: false, 

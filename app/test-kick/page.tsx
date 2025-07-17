@@ -412,8 +412,62 @@ export default function TestKickPage() {
       '(k)__(!)..__(h)k',    // Special chars in middle
     ];
 
+    // Phase 7 test cases - Unclosed/unmatched parentheses
+    const phase7TestCases = [
+      '--- PHASE 7 TESTS ---',
+      
+      // The new reported edge cases
+      '(k__)i__..!h..k',
+      '(k__(I..__(h)k',
+      'find me on (k__(I..__(h)k',
+      '(k__(i..__(h)k',
+      '(k)__I..__(h)k',
+      
+      // More unclosed parentheses variations
+      '(k__i__k',
+      '(k___i___k',
+      '(k..i..k',
+      '(k i k',
+      '(ki k',
+      '(k ick',
+      
+      // Multiple unclosed parentheses
+      '(k__(i__(h)k',
+      '(k__(I__(h)k',
+      '(k(i(h)k',
+      '(k_(i_(h)k',
+      
+      // Mixed closed and unclosed
+      '(k)__i__(h)k',
+      '(k__i__(h)k',
+      '(k)__(i__(h)k',
+      
+      // With special characters
+      '(k__!i__k',
+      '(k__1__(h)k',
+      '(k__|__(h)k',
+      '(k__i__!h__k',
+      
+      // Complex patterns
+      '(k__)__i__..!h..k',
+      '(k__))i((__(h)k',
+      '(k__]i[__(h)k',
+      '(k__)i)__(h)k',
+      
+      // Edge cases with no vowel parentheses
+      '(k)i(h)k',
+      '(k)__i__(h)k',
+      '(k)..i..(h)k',
+      '(k)___i___(h)k',
+      
+      // Very complex unmatched
+      '((k__i__(h))k',
+      '(((k__i__k',
+      '(k__(((i__(h)k',
+    ];
+
     // Combine all test cases
-    const allTestCases = [...phase1TestCases, ...phase6TestCases];
+    const allTestCases = [...phase1TestCases, ...phase6TestCases, ...phase7TestCases];
     
     const testResults = allTestCases.map(testCase => {
       const result = detectKickVariations(testCase);
@@ -467,7 +521,7 @@ export default function TestKickPage() {
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
       <div className="p-8 max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6 text-white">Kick Detection Test Results (Phase 1, 2, 4, 5 & 6)</h1>
+        <h1 className="text-3xl font-bold mb-6 text-white">Kick Detection Test Results (Phase 1, 2, 4, 5, 6 & 7)</h1>
         
         <div className="mb-6 p-4 bg-gray-900 border border-gray-800 rounded-lg">
           <h2 className="text-lg font-semibold text-gray-100">Summary: {detectedCount}/{results.length} tests passed</h2>
