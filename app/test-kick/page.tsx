@@ -466,8 +466,231 @@ export default function TestKickPage() {
       '(k__(((i__(h)k',
     ];
 
+    // Phase 8 test cases - Ultra-complex mixed separator obfuscation
+    const phase8TestCases = [
+      '--- PHASE 8 TESTS ---',
+      
+      // The original reported case
+      'k..!()..<h>k',
+      'find me on k..!()..<h>k',
+      
+      // Angle bracket wrapped characters
+      'k<i>k',
+      'k<h>k',
+      'k<c>k',
+      'k...<i>...k',
+      'k___<h>___k',
+      'k--<e>--k',
+      'k<.>k',
+      'k<..>k',
+      'k<...>k',
+      
+      // Angle bracket wrapped endings
+      'ki<h>k',
+      'ke<c>k',
+      'k..i..<h>k',
+      'k___i___<c>k',
+      'k--e--<h>',
+      'ki<hk>',
+      'ke<ck>',
+      
+      // Complex mixed separator patterns
+      'k..!()..<h>k',
+      'k._@()..<i>k',
+      'k#$%<e>^&*k',
+      'k..!()<>i<>!..k',
+      'k()!..<>e<>.!()k',
+      
+      // Ultra-complex obfuscation
+      'k!@#$%^&*()i!@#$%^&*()k',
+      'k._._._._.i._._._._.k',
+      'k()()()()i()()()()k',
+      'k<><><><>i<><><><>k',
+      
+      // Nested angle brackets
+      'k<<i>>k',
+      'k<<<h>>>k',
+      'k<<<<e>>>>k',
+      'k<<>>k',
+      'k<<<>>>k',
+      
+      // Mixed bracket types with angle brackets
+      'k(<i>)k',
+      'k[<h>]k',
+      'k{<c>}k',
+      'k(<.>)k',
+      'k[<..>]k',
+      'k{<...>}k',
+      'k((<i>))k',
+      'k[[<h>]]k',
+      
+      // Extreme mixed separators
+      'k!@#$%^&*()!@#$%^&*()i!@#$%^&*()!@#$%^&*()k',
+      'k..........i..........k',
+      'k__________i__________k',
+      'k----------i----------k',
+      'k~~~~~~~~~~i~~~~~~~~~~k',
+      
+      // Variations of the original case
+      'k..!()..<c>k',
+      'k..!()..<i>k',
+      'k..@()..<h>k',
+      'k..#()..<h>k',
+      'k..![].<h>k',
+      'k..!{}..<h>k',
+      'k()!..<h>k',
+      'k..!(}<h>k',
+      
+      // Mixed with zero-width characters
+      'k\u200B..!()..<h>\u200Bk',
+      'k\u200B<i>\u200Bk',
+      'k..!\u200B()..<h>k',
+      
+      // Capital letter variations
+      'K..!()..<H>K',
+      'K<I>K',
+      'K<<<H>>>K',
+      
+      // Should NOT detect (false positive tests)
+      'I like <HTML> tags',
+      'Use k<something>k format',
+      'The key<value> pair',
+      'Pick <option> from list',
+      'Click <button> here',
+      'Check <input> field',
+    ];
+
+    // Phase 9 test cases - Truncated/Incomplete obfuscation patterns
+    const phase9TestCases = [
+      '--- PHASE 9 TESTS ---',
+      
+      // The original reported case and variations
+      'k<..eek',
+      'find me on k<..eek',
+      'k<..ick',
+      'k<..ook',
+      'k<...eek',
+      'k<....ick',
+      
+      // Unclosed angle brackets with phonetic endings
+      'k<eek',
+      'k<ick',
+      'k<ook',
+      'k<..eak',
+      'k<...oak',
+      'k<--eek',
+      'k<__ick',
+      'k<##ook',
+      'k<@@eek',
+      
+      // Variations with different separators
+      'k<.-eek',
+      'k<_.ick',
+      'k<!.ook',
+      'k<@#eek',
+      'k<$%ick',
+      'k<^&ook',
+      
+      // Unclosed brackets with single chars
+      'k<i',
+      'k<e',
+      'k<o',
+      'k<1',
+      'k<!',
+      'k<.',
+      'k<_',
+      'k<-',
+      
+      // Reversed/malformed angle brackets
+      'k>..eek',
+      'k>..ick',
+      'k>..ook',
+      '>k..eek',
+      '>k..ick',
+      '>c..ook',
+      'k>eek',
+      'k>ick',
+      '>keek',
+      '>kick',
+      
+      // Single angle bracket with minimal content
+      'k<..',
+      'k>..',
+      'k<.',
+      'k>.',
+      'k<-',
+      'k>-',
+      'k<_',
+      'k>_',
+      'k<!',
+      'k>!',
+      'k<@',
+      'k>#',
+      
+      // Truncated mixed patterns
+      'k<..i..',
+      'k>..1..',
+      'k<..!..',
+      'k>..e..',
+      'k<.i.e',
+      'k>.1.o',
+      'k<#i#',
+      'k>$1$',
+      
+      // Phonetic variations after unclosed brackets
+      'k<..keek',
+      'k>..qeek',
+      'k<..yck',
+      'k>..yk',
+      'k<kyck',
+      'k>qeek',
+      
+      // Missing closing bracket with obvious intent
+      'k<i..',
+      'k<e..',
+      'k<o..',
+      'k<1..',
+      'k<!..',
+      'k<...',
+      'k<____',
+      'k<----',
+      
+      // Complex truncated variations
+      'k<..!i',
+      'k>..@e',
+      'k<#$%eek',
+      'k>^&*ick',
+      'k<()ook',
+      'k>[]eek',
+      'k<{}ick',
+      
+      // Capital letter variations
+      'K<..EEK',
+      'K<..ICK',
+      'K>..OOK',
+      'K<EEK',
+      'K>ICK',
+      
+      // Zero-width with truncated patterns
+      'k\u200B<..eek',
+      'k<..\u200Beek',
+      'k<\u200B..eek',
+      
+      // Should NOT detect (false positive tests for Phase 9)
+      'I use k<div> tags in HTML',
+      'The k>value comparison',
+      'Check k<script>alert()',
+      'Use k<input> field',
+      'The k>0 condition',
+      'In k<style> sheets',
+      'For k<body> content',
+      'With k<head> section',
+      'The k<meta> tag',
+      'A k<link> element',
+    ];
+
     // Combine all test cases
-    const allTestCases = [...phase1TestCases, ...phase6TestCases, ...phase7TestCases];
+    const allTestCases = [...phase1TestCases, ...phase6TestCases, ...phase7TestCases, ...phase8TestCases, ...phase9TestCases];
     
     const testResults = allTestCases.map(testCase => {
       const result = detectKickVariations(testCase);
@@ -521,7 +744,7 @@ export default function TestKickPage() {
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
       <div className="p-8 max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6 text-white">Kick Detection Test Results (Phase 1, 2, 4, 5, 6 & 7)</h1>
+        <h1 className="text-3xl font-bold mb-6 text-white">Kick Detection Test Results (Phase 1, 2, 4, 5, 6, 7, 8 & 9)</h1>
         
         <div className="mb-6 p-4 bg-gray-900 border border-gray-800 rounded-lg">
           <h2 className="text-lg font-semibold text-gray-100">Summary: {detectedCount}/{results.length} tests passed</h2>

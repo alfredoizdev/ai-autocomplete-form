@@ -213,6 +213,67 @@ const kickVariationPatterns = [
   
   // Catch-all for complex unmatched parentheses with k-vowel-k structure
   /\([kc][^kc]{1,30}[i1l!|e3aeiouey][^kc]{0,30}[kc]\b/gi,    // Very flexible unclosed parenthesis pattern
+
+  // PHASE 8 ADDITIONS - Ultra-complex mixed separator obfuscation
+  
+  // Angle bracket wrapped characters - k<char>k, k...<char>...k
+  /\bk[^a-z]*<[i1l!|e3aeioueyh]>[^a-z]*[kc]\b/gi,           // k<i>k, k...<h>...k
+  /\bk<[^>]{0,3}>[^a-z]*[kc]\b/gi,                          // k<i>k, k<..>k
+  /\bk[^a-z]*<[^>]{0,3}>[kc]\b/gi,                          // k...<i>k, k<.>k
+  
+  // Angle bracket wrapped endings - k...<h>k, k<c>k, k<ch>k
+  /\bk[^a-z]{0,10}[i1l!|e3aeiouey][^a-z]{0,10}<[hckc]>[kc]?/gi,  // k..i..<h>k, k<c>k
+  /\bk[^a-z]{0,10}[i1l!|e3aeiouey][^a-z]{0,10}<[hc][kc]>/gi,     // k..i..<hk>, k<ck>
+  
+  // Complex mixed separator patterns (dots + exclamation + parentheses + angle brackets)
+  /\bk[.\-_!@#$%^&*()]*[i1l!|e3aeiouey][.\-_!@#$%^&*()]*<[^>]*>[kc]*/gi,  // k..!()..<h>k
+  /\bk[.\-_!@#$%^&*()<>]*[i1l!|e3aeiouey][.\-_!@#$%^&*()<>]*[kc]\b/gi,    // k..!()<>i<>!..k
+  
+  // Ultra-complex obfuscation - any combination of special chars with angle brackets
+  /\bk[^a-z]{1,15}[i1l!|e3aeiouey][^a-z]{1,15}[kc]\b/gi,       // k(ultra-complex)i(ultra-complex)k
+  
+  // Specific pattern for the reported case: k..!()..<h>k
+  /\bk[.\-_!@#$%^&*()]{2,10}<[hckci1l!|e3aeiouey]>[kc]*/gi,     // k..!()..<h>k style
+  
+  // Nested angle brackets - k<<i>>k, k<<<h>>>k
+  /\bk<{2,4}[i1l!|e3aeioueyh]>{2,4}[kc]\b/gi,                  // k<<i>>k, k<<<h>>>k
+  
+  // Mixed bracket types with angle brackets - k(<i>)k, k[<h>]k, k{<c>}k
+  /\bk[(\[{][^)\]}]*<[^>]*>[^)\]}]*[)\]}][kc]\b/gi,             // k(<i>)k, k[<h>]k
+  
+  // Extreme mixed separators (10+ character combinations)
+  /\bk[^a-z]{10,20}[i1l!|e3aeiouey][^a-z]{10,20}[kc]\b/gi,     // k(many chars)i(many chars)k
+
+  // PHASE 9 ADDITIONS - Truncated/Incomplete obfuscation patterns
+  
+  // Unclosed angle brackets with phonetic endings - k<..eek, k<..ick, k<..ook (excluding HTML tags)
+  /\bk<(?!(?:div|span|body|head|meta|link|input|script|style|html|form|table|button|img|a|p|h[1-6]|br|hr|ul|ol|li|td|tr|th|nav|main|section|article|aside|header|footer|address|blockquote|pre|code|em|strong|small|mark|del|ins|sub|sup|i|b|u|s|q|cite|abbr|dfn|time|data|var|samp|kbd|output|progress|meter|details|summary|fieldset|legend|label|select|optgroup|option|textarea|keygen|datalist|ruby|rt|rp|bdi|bdo|wbr)\b)[^>]{0,10}[eioauy]{2,4}[kc]*\b/gi,  // k<..eek, k<..ick, k<..ook
+  /\bk<(?!(?:div|span|body|head|meta|link|input|script|style|html|form|table|button|img|a|p|h[1-6]|br|hr|ul|ol|li|td|tr|th|nav|main|section|article|aside|header|footer|address|blockquote|pre|code|em|strong|small|mark|del|ins|sub|sup|i|b|u|s|q|cite|abbr|dfn|time|data|var|samp|kbd|output|progress|meter|details|summary|fieldset|legend|label|select|optgroup|option|textarea|keygen|datalist|ruby|rt|rp|bdi|bdo|wbr)\b)[^>]{1,10}[i1l!|][kc]{1,2}\b/gi,  // k<..ick, k<..ic
+  
+  // Unclosed angle brackets with any suspicious content (excluding common HTML tags)
+  /\bk<(?!(?:div|span|body|head|meta|link|input|script|style|html|form|table|button|img|a|p|h[1-6]|br|hr|ul|ol|li|td|tr|th|nav|main|section|article|aside|header|footer|address|blockquote|pre|code|em|strong|small|mark|del|ins|sub|sup|i|b|u|s|q|cite|abbr|dfn|time|data|var|samp|kbd|output|progress|meter|details|summary|fieldset|legend|label|select|optgroup|option|textarea|keygen|datalist|ruby|rt|rp|bdi|bdo|wbr)\b)[^>]{2,8}[eioauy]+\b/gi,  // k<..ee, k<..oo, k<..ea
+  /\bk<(?!(?:div|span|body|head|meta|link|input|script|style|html|form|table|button|img|a|p|h[1-6]|br|hr|ul|ol|li|td|tr|th|nav|main|section|article|aside|header|footer|address|blockquote|pre|code|em|strong|small|mark|del|ins|sub|sup|i|b|u|s|q|cite|abbr|dfn|time|data|var|samp|kbd|output|progress|meter|details|summary|fieldset|legend|label|select|optgroup|option|textarea|keygen|datalist|ruby|rt|rp|bdi|bdo|wbr)\b)[^>]*[i1l!|e3][^>]*[eioauy]*\b/gi,  // k<..i..e, k<1..o (excluding HTML tags)
+  
+  // Reversed/malformed angle brackets - k>..something, >k..something  
+  /\bk>[^<]{1,8}[eioauy]{2,4}[kc]*\b/gi,                       // k>..eek, k>..ick
+  /\b>[kc][^<]{1,8}[eioauy]{2,4}\b/gi,                         // >k..eek, >c..ick
+  
+  // Single angle bracket with minimal content - k<.., k>.., k<., k>.
+  /\bk[<>][.\-_!@#$%^&*()]{1,5}[eioauy]{1,3}[kc]*\b/gi,       // k<..e, k>..o, k<.ea
+  /\bk[<>][.\-_!@#$%^&*()]{2,8}\b/gi,                          // k<.., k>.., k<...
+  
+  // Truncated mixed patterns - combinations that got cut off
+  /\bk[<>][^<>a-z]{1,6}[i1l!|e3][^<>a-z]{0,6}[eioauy]*[kc]*\b/gi,  // k<..i..e, k>..1..o
+  
+  // Ultra-specific for the reported case and variations
+  /\bk<[.\-_!@#$%^&*()]{2,6}[eioauy]{2,4}\b/gi,                // k<..eek, k<...ook, k<..ick
+  
+  // Phonetic variations after unclosed brackets
+  /\bk[<>][^<>a-z]*[kq][eioauy]{1,3}[kc]*\b/gi,                // k<..keek, k>..qeek
+  /\bk[<>][^<>a-z]*[y][kc]{1,2}\b/gi,                          // k<..yck, k>..yk
+  
+  // Missing closing bracket with obvious intent - k<i.., k<e.., k<o.. (excluding HTML tags)
+  /\bk<(?!(?:div|span|body|head|meta|link|input|script|style|html|form|table|button|img|a|p|h[1-6]|br|hr|ul|ol|li|td|tr|th|nav|main|section|article|aside|header|footer|address|blockquote|pre|code|em|strong|small|mark|del|ins|sub|sup|i|b|u|s|q|cite|abbr|dfn|time|data|var|samp|kbd|output|progress|meter|details|summary|fieldset|legend|label|select|optgroup|option|textarea|keygen|datalist|ruby|rt|rp|bdi|bdo|wbr)\b)[i1l!|e3aeiouey][^>]{1,8}\b/gi,  // k<i.., k<e.., k<1..
 ];
 
 // Unicode confusables that look like 'kick' characters
@@ -837,6 +898,38 @@ export function detectKickVariations(text: string): DetectionResult {
           results.techniques.push('flexible_parentheses');
         } else if (index === 71) {
           results.techniques.push('complex_unmatched_parentheses');
+        } else if (index >= 72 && index <= 74) {
+          results.techniques.push('angle_bracket_wrapped');
+        } else if (index >= 75 && index <= 76) {
+          results.techniques.push('angle_bracket_ending');
+        } else if (index >= 77 && index <= 78) {
+          results.techniques.push('complex_mixed_separators');
+        } else if (index === 79) {
+          results.techniques.push('ultra_complex_obfuscation');
+        } else if (index === 80) {
+          results.techniques.push('specific_mixed_pattern');
+        } else if (index === 81) {
+          results.techniques.push('nested_angle_brackets');
+        } else if (index === 82) {
+          results.techniques.push('mixed_bracket_types');
+        } else if (index === 83) {
+          results.techniques.push('extreme_mixed_separators');
+        } else if (index >= 84 && index <= 85) {
+          results.techniques.push('unclosed_angle_bracket_phonetic');
+        } else if (index >= 86 && index <= 87) {
+          results.techniques.push('unclosed_angle_bracket_suspicious');
+        } else if (index >= 88 && index <= 89) {
+          results.techniques.push('reversed_malformed_angle_bracket');
+        } else if (index >= 90 && index <= 91) {
+          results.techniques.push('single_angle_bracket_minimal');
+        } else if (index === 92) {
+          results.techniques.push('truncated_mixed_patterns');
+        } else if (index === 93) {
+          results.techniques.push('ultra_specific_truncated');
+        } else if (index >= 94 && index <= 95) {
+          results.techniques.push('phonetic_after_unclosed_bracket');
+        } else if (index === 96) {
+          results.techniques.push('missing_closing_bracket_obvious');
         }
       }
     }
