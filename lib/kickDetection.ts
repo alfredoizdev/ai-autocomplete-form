@@ -557,9 +557,15 @@ function slidingWindowDetection(text: string): Phase4MatchResult[] {
         continue;
       }
       
-      // Must have special characters (evidence of obfuscation)
-      const specialChars = (window.match(/[^a-zA-Z]/g) || []).length;
+      // Must have special characters OTHER THAN SPACES (evidence of obfuscation)
+      // Don't count spaces as they're normal in text
+      const specialChars = (window.match(/[^a-zA-Z\s]/g) || []).length;
       if (specialChars === 0) {
+        continue;
+      }
+      
+      // The window itself must contain obfuscation characters, not just be near spaces
+      if (!/[0-9!@#$%^&*()_+=\-|\\]/.test(window)) {
         continue;
       }
       
@@ -577,13 +583,25 @@ function slidingWindowDetection(text: string): Phase4MatchResult[] {
       if (hasK && hasI && hasSecondK) {
         // Check it's not a false positive word
         let isFalsePositive = false;
-        for (const fpWord of PHASE4_FALSE_POSITIVE_WORDS) {
-          if (i > 0 && text[i-1].match(/[a-zA-Z]/)) {
-            // Check if we're in the middle of a word
-            const extendedWindow = text.slice(Math.max(0, i - 10), i + windowSize + 10);
+        
+        // First check if the window itself is a common word
+        if (PHASE4_FALSE_POSITIVE_WORDS.includes(windowLower.replace(/[^a-z]/g, ''))) {
+          isFalsePositive = true;
+        }
+        
+        // Then check if we're part of a larger word
+        if (!isFalsePositive) {
+          const extendedWindow = text.slice(Math.max(0, i - 10), Math.min(text.length, i + windowSize + 10));
+          for (const fpWord of PHASE4_FALSE_POSITIVE_WORDS) {
             if (extendedWindow.toLowerCase().includes(fpWord)) {
-              isFalsePositive = true;
-              break;
+              // Check if our window is actually part of this word
+              const fpIndex = extendedWindow.toLowerCase().indexOf(fpWord);
+              const fpStart = Math.max(0, i - 10) + fpIndex;
+              const fpEnd = fpStart + fpWord.length;
+              if (i >= fpStart && i < fpEnd) {
+                isFalsePositive = true;
+                break;
+              }
             }
           }
         }
