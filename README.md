@@ -1,62 +1,15 @@
 # AI Bio Autocomplete with Hybrid Vector Search
 
-A sophisticated AI-powered bio autocomplete system built with Next.js 15, React 19, and Python FastAPI. Combines vector database search (ChromaDB) with LLM generation (Ollama Gemma 3 12B) for high-quality, contextually relevant bio completions. Features intelligent autocomplete, advanced spell checking, kick.com link detection, and a hybrid approach optimized for swinger community bios.
+A sophisticated AI-powered bio autocomplete system built with Next.js 15, React 19, and Python FastAPI. Combines vector database search (ChromaDB) with LLM generation (Ollama Gemma 3 12B) for high-quality, contextually relevant bio completions.
 
-## 🚀 Recent Updates
+## 🚀 Key Features
 
-### Latest Features (2025)
-- **🛡️ Kick.com Link Detection v2** - Enhanced detection with 40+ patterns including phonetic variations and zero-width character support
-- **🔧 Enhanced ChromaDB** - Now indexes all 5000 bios for better vector search results
-- **✨ Phonetic Pattern Detection** - Catches sound-alike variations (keek, kyck, keak)
-- **🐛 Build Fixes** - Zero errors in production build with full TypeScript compliance
-
-## Features
-
-### 🛡️ Kick.com Link Detection System v2
-- **Advanced URL detection** with 40+ obfuscation patterns (up from 28)
-- **Phonetic detection** - Catches sound-alike variations (keek, kyck, keak, kik)
-- **Zero-width character detection** - Identifies invisible Unicode obfuscation
-- **Multi-layer detection** - Pattern matching, fuzzy matching, homoglyph, and phonetic
-- **Real-time warnings** with confidence levels (Low/Medium/High)
-- **Smart pattern recognition** - Spaces, dots, parentheses, special chars, leetspeak
-- **False positive prevention** - Excludes legitimate words (kayak, peek, etc.)
-- **Performance optimized** - Sub-5ms detection with intelligent caching
-
-### 🤖 Hybrid AI Autocomplete System
-- **Dual approach** - Combines ChromaDB vector search with Ollama LLM generation
-- **Fast response times** - 100-150ms hybrid performance (vs 200-500ms LLM-only)
-- **Context-aware suggestions** using 5000 bio examples in vector database
-- **Smart triggering** - activates after 3-5 words with adaptive debouncing
-- **Inline suggestion display** with layered textarea approach
-- **Tab key acceptance** with intelligent spacing
-- **Quality filtering** - Minimum 8-word suggestions with complete thoughts
-- **Streaming responses** - Real-time character-by-character display (60-80% faster perceived latency)
-
-### ✍️ Professional Spell Checking
-- **typo-js integration** with English Hunspell dictionaries
-- **Custom dictionary system** with localStorage persistence
-- **Word mapping functionality** - learns user corrections
-- **Contraction handling** - automatically suggests 80+ common contractions
-- **Click-to-correct interface** with intelligent popup positioning
-- **Performance optimized** with 800ms debouncing and suggestion caching
-- **Auto-correction dictionary** - 80+ common misspellings with preserved capitalization
-
-- **Pattern learning** - Logs detection attempts for continuous improvement
-
-### 🎯 Intelligent Feature Coordination
-- **Text Feature Coordinator** prevents conflicts between autocomplete and spellcheck
-- **Adaptive timing system** with feature-specific lock durations
-- **Seamless multi-feature operation** - autocomplete and spellcheck work together
-- **Memory management** with proper cleanup and state handling
-- **Auto-capitalization** - Smart sentence and pronoun capitalization
-
-### 🚀 Modern Architecture
-- **Next.js 15** with App Router and Server Actions
-- **React 19** with advanced hooks and TypeScript
-- **Tailwind CSS v4** with responsive design
-- **Mobile-optimized UX** with 16px fonts to prevent zoom
-- **Dynamic textarea resizing** with smooth 300ms transitions
-- **Performance optimized** with progressive debouncing and memoization
+- **Hybrid AI Autocomplete** - Vector search + LLM generation for 100-150ms response times
+- **Advanced Spell Checking** - typo-js with Hunspell dictionaries, custom dictionary, and 80+ contraction support
+- **Kick.com Detection v2** - 40+ obfuscation patterns including phonetic and zero-width character detection
+- **Smart Feature Coordination** - Prevents conflicts between autocomplete, spell check, and other features
+- **Mobile-Optimized** - 16px fonts, responsive design, and touch-friendly interface
+- **Streaming Responses** - Character-by-character display for 60-80% faster perceived latency
 
 ## Prerequisites
 
@@ -96,55 +49,32 @@ Before you begin, ensure you have the following installed:
 
 ## Installation
 
-1. **Clone the repository**:
-
+1. **Clone and install dependencies**:
    ```bash
    git clone <your-repository-url>
    cd ai-train-llm
-   ```
-
-2. **Install Node.js dependencies**:
-
-   ```bash
    npm install
-   # or
-   yarn install
    ```
 
-3. **Set up Python environment**:
-
+2. **Set up Python environment**:
    ```bash
    cd python
    python3 -m venv venv
-   source venv/bin/activate  # On Mac/Linux
-   # or
-   venv\Scripts\activate  # On Windows
+   source venv/bin/activate  # Mac/Linux (or venv\Scripts\activate on Windows)
    pip install -r requirements.txt
    cd ..
    ```
 
-4. **Set up environment variables**:
-   Create a `.env.local` file in the root directory:
+3. **Configure environment** (`.env.local`):
    ```env
    OLLAMA_PATH_API=http://127.0.0.1:11434/api
-   # Optional: Enable fine-tuned model integration
-   NEXT_PUBLIC_USE_FINETUNED_MODEL=true
-   # Optional: OpenAI API key for fallback
-   NEXT_PUBLIC_OPENAI_API_KEY=your-key-here
+   NEXT_PUBLIC_USE_FINETUNED_MODEL=true  # Optional
    ```
 
-5. **Initialize the vector database**:
-
+4. **Initialize vector database**:
    ```bash
-   cd python/vector_db
-   python setup_chromadb.py
-   cd ../..
+   cd python/vector_db && python setup_chromadb.py && cd ../..
    ```
-
-6. **Set up spell check dictionaries**:
-   The application includes English dictionaries in the `public/dictionaries/en_US/` folder:
-   - `en_US.aff` - Affix rules file
-   - `en_US.dic` - Dictionary words file
 
 ## Running the Full Stack
 
@@ -195,22 +125,12 @@ The web app will run on `http://localhost:3000`
 
 ## Usage
 
-1. **Open your browser** and navigate to `http://localhost:3000`
+Navigate to `http://localhost:3000` and start typing in the bio field:
 
-2. **Start typing** in the bio description field to experience:
-   - **AI Autocomplete**: After 3-5 complete words, AI suggestions appear as gray inline text
-   - **Spell Check**: Misspelled words show red dotted underlines with click-to-correct
-   - **Contraction Help**: Type "dont" and see automatic "don't" suggestions
-   - **Custom Dictionary**: Add frequently used words to your personal dictionary
-   - **Auto-capitalization**: Smart sentence formatting applied in real-time
-   - **Kick.com Detection**: Real-time warnings for prohibited link variations
-
-3. **Advanced interactions**:
-   - Press **Tab** to accept AI suggestions with proper spacing
-   - **Click** misspelled words for instant popup with corrections
-   - **Right-click** words to add them to your custom dictionary
-   - **Type naturally** - the Text Feature Coordinator prevents interference
-   - **Mobile-friendly** - all features work seamlessly on touch devices
+- **AI suggestions** appear after 3-5 words (press Tab to accept)
+- **Click** misspelled words for corrections
+- **Kick.com detection** shows real-time warnings
+- All features work seamlessly together on desktop and mobile
 
 ## Python API Server
 
@@ -237,13 +157,12 @@ The hybrid autocomplete system combines:
 
 ### Performance Metrics
 
-- **Standard Mode** (`/`): 100-150ms response time
-- **Vector Search**: ~100ms for similarity matching
-- **LLM Generation**: 200-500ms (without optimization)
-- **Fine-tuned Model**: 80-120ms (faster than base LLM)
-- **Cache Hit Rate**: 90% reduction in API calls with smart caching
-- **Adaptive Debouncing**: 50-400ms based on typing speed
-- **Streaming Latency**: Character-by-character display for perceived speed
+- **Response Time**: 100-150ms (hybrid mode)
+- **Vector Search**: ~100ms
+- **LLM Generation**: 200-500ms
+- **Fine-tuned Model**: 80-120ms
+- **Kick Detection**: <5ms
+- **Cache Hit Rate**: 90%
 
 ### API Documentation
 
@@ -281,85 +200,21 @@ User Input → Next.js Form → Multiple Processing Layers
                              └──────────────────┘
 ```
 
-### Sophisticated Hook Architecture
-The application uses a **5-hook system** for optimal performance and feature coordination:
+### Technical Implementation
+
+The application uses a sophisticated 5-hook architecture for optimal performance:
 
 1. **`useFormAutocomplete`** - Main form logic with AI integration
-2. **`useSpellCheck`** - Core spell checking with typo-js and custom dictionaries
-3. **`useDebouncedSpellCheck`** - Performance-optimized wrapper with caching
-4. **`useTextFeatureCoordinator`** - Prevents conflicts between features
-5. **`useKickDetection`** - Real-time pattern matching for prohibited links
+2. **`useSpellCheck`** - Core spell checking with typo-js
+3. **`useDebouncedSpellCheck`** - Performance-optimized wrapper
+4. **`useTextFeatureCoordinator`** - Prevents feature conflicts
+5. **`useKickDetection`** - Real-time pattern matching
 
-### Text Feature Coordination System
-The **Text Feature Coordinator** manages three text features:
-- **AUTOCOMPLETE** - AI-powered text suggestions
-- **SPELLCHECK** - Real-time spell checking
-- **CAPITALIZATION** - Smart sentence formatting
-
-**Key Coordination Features:**
-- **Feature locking** with adaptive durations (200ms for autocomplete, configurable for others)
-- **Coexistence support** - autocomplete and spellcheck can run simultaneously
-- **Memory management** - automatic cleanup of timeouts and state
-- **Conflict prevention** - ensures features don't interfere with each other
-
-### AI Autocomplete System
-- **Layered textarea approach** for inline suggestion display
-- **Word completion detection** - waits for complete words before suggesting
-- **Progressive debouncing** - 50-400ms adaptive delay based on typing speed
-- **Vector database integration** with ChromaDB for fast similarity search
-- **Server Actions** communicate with Ollama Gemma 3 12B model
-- **Intelligent spacing** - proper handling of tab acceptance and word boundaries
-- **Streaming responses** - Character-by-character display in optimized mode
-- **Smart caching** - 90% reduction in redundant API calls with 5-minute TTL
-
-### Kick.com Link Detection System v2
-- **Pattern matching engine** - Detects 40+ real-world obfuscation patterns:
-  - Character spacing: `k i k`, `k.i.k`, `k-i-k`, `k....i....k`
-  - Character substitution: `k1k`, `k!k`, `klk` (l for i)
-  - Character insertion: `kiik`, `kiiik`, `killk`
-  - Phonetic variations: `keek`, `kyck`, `keak`, `kik`
-  - Special formatting: `k(i)k`, `k(__ei__)k`, `k(._i_.)k`
-  - Extended patterns: `k..ee..k`, `k._.-i-._.k`
-  - Zero-width characters: `k​i​c​k` (with invisible Unicode)
-- **Multi-layer detection approach**:
-  - Pattern matching with 40+ regex patterns
-  - Fuzzy matching with Levenshtein distance
-  - Homoglyph detection for Unicode look-alikes
-  - Phonetic matching for sound-alike variations
-  - Zero-width character normalization
-- **False positive prevention** - Excludes legitimate words (kayak, peek, etc.)
-- **Context analysis** - Increases confidence with streaming-related keywords
-- **Performance optimized** - Sub-5ms detection with progressive checking
-- **Non-intrusive warnings** - Color-coded by confidence (red/orange/yellow)
-- **Position tracking** - Accurate even with invisible characters
-- **Learning system** - Logs patterns for continuous improvement
-
-### Advanced Spell Check System
-- **typo-js integration** with English Hunspell dictionaries (`en_US.aff`, `en_US.dic`)
-- **Custom dictionary service** with localStorage persistence
-  - Add/remove custom words
-  - Word mapping system for learning corrections
-  - Persistent storage across browser sessions
-- **Contraction handling** - automatic suggestions for 80+ common contractions:
-  - `dont` → `don't`, `do not`
-  - `youre` → `you're`, `you are`
-  - `wont` → `won't`, `will not`
-  - And many more...
-- **Click-to-correct interface** with intelligent popup positioning
-- **Performance optimizations:**
-  - 800ms debounce delay
-  - Suggestion caching to prevent repeated lookups
-  - Memoization to prevent unnecessary re-renders
-  - Progressive debouncing based on text length
-
-### Smart Auto-Capitalization
-- **Sentence boundary detection** with proper punctuation handling
-- **Real-time processing** without disrupting typing flow
-- **Context-aware rules:**
-  - First letter of sentences
-  - After periods, exclamation marks, question marks
-  - Pronoun "I" capitalization
-- **Seamless integration** with autocomplete and spell check features
+**Text Feature Coordinator** manages three features (AUTOCOMPLETE, SPELLCHECK, CAPITALIZATION) with:
+- Feature locking with adaptive durations
+- Coexistence support for simultaneous operations
+- Automatic memory cleanup
+- Conflict prevention between features
 
 ## Project Structure
 
@@ -539,80 +394,20 @@ ChromaDB is configured to persist data locally:
 - **Embedding function**: Default (all-MiniLM-L6-v2)
 - **Bio count**: ~5000 entries from `data/bio.json`
 
-### Spell Check Configuration
+### Advanced Configuration
 
-Spell checking features advanced configuration options:
+**Spell Check Settings:**
+- 800ms debounce delay with suggestion caching
+- Custom dictionary with localStorage persistence
+- Word mapping for learning corrections
+- 80+ automatic contraction suggestions (dont → don't, youre → you're, etc.)
 
-**Core Settings:**
-- **Debounce delay**: 800ms for optimal performance
-- **Dictionary caching**: Suggestions cached to prevent repeated lookups
-- **Custom dictionary**: Persistent localStorage-based word storage
-- **Word mapping**: Learn and remember user corrections
+**AI Model Settings:**
+- Primary: `gemma3:12b` via Ollama
+- Vector DB: ChromaDB with ~5000 bios
+- Adaptive debouncing: 50-400ms
+- Smart caching: 5-minute TTL
 
-**Contraction Handling:**
-The system automatically handles 80+ common contractions:
-```javascript
-// Examples of automatic contraction suggestions
-dont     → don't, do not
-youre    → you're, you are
-wont     → won't, will not
-havent   → haven't, have not
-its      → it's, it is, it has
-hes      → he's, he is, he has
-shes     → she's, she is, she has
-mustnt   → mustn't, must not
-```
-
-**Custom Dictionary Features:**
-- **Add words**: Right-click misspelled words to add to dictionary
-- **Word mappings**: System learns your preferred corrections
-- **Persistent storage**: Dictionary survives browser restarts
-- **Import/Export**: Backup and restore custom words
-
-### AI Model Configuration
-
-**Default Setup:**
-- **Primary Model**: `gemma3:12b` via Ollama (local inference)
-- **Vector Database**: ChromaDB with ~5000 bio embeddings
-- **OpenAI Integration**: Available as fallback option
-
-**Configuration Options:**
-```javascript
-// In actions/ai-text.ts - modify model settings
-const model = "gemma3:12b";  // Change model here
-const maxTokens = 50;        // Adjust response length
-const temperature = 0.7;     // Control creativity
-```
-
-**Performance Tuning:**
-- **Progressive debouncing**: Adapts timing based on text length (50-400ms)
-- **Context window**: Optimized for bio completion tasks
-- **Feature coordination**: Automatic AI pause during spell check operations
-- **Smart caching**: 5-minute TTL cache for repeated prompts
-
-## Recent Updates (2025)
-
-### 🛡️ Kick.com Link Detection v2 (Phase 1-2 Complete)
-- Expanded pattern matching from 28 to 40+ obfuscation techniques
-- Added phonetic detection for sound-alike variations (keek, kyck, keak)
-- Implemented zero-width character detection for invisible Unicode obfuscation
-- Enhanced parentheses and extended character gap patterns
-- Fixed critical bypasses and improved false positive prevention
-- Maintained sub-5ms performance with intelligent caching
-
-### ⚡ Performance Optimizations
-- **Streaming Responses**: 60-80% faster perceived latency with character-by-character display
-- **Adaptive Debouncing**: Dynamic 50-400ms delays based on typing speed
-- **Smart Caching**: 90% reduction in redundant API calls
-- **React 19 Features**: Non-blocking updates with useTransition and useDeferredValue
-
-### ✨ Enhanced User Experience
-- Reduced autocomplete trigger from 5 to 3-4 words
-- Improved spell correction with 80+ common misspellings
-- Auto-capitalization for sentences and pronouns
-- Prevention of word repetition in suggestions
-- Mobile-optimized 16px fonts to prevent zoom
-- Swinger-specific language patterns for authentic suggestions
 
 ## Troubleshooting
 
@@ -687,39 +482,6 @@ const temperature = 0.7;     // Control creativity
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Key Features In Detail
-
-### Smart Spell Checking
-- **Professional-grade accuracy** using typo-js with Hunspell dictionaries
-- **Click-to-correct interface** - no right-click needed, just click misspelled words
-- **Custom dictionary system** with persistent localStorage storage
-- **Word mapping functionality** - learns and remembers your corrections
-- **35+ contraction suggestions** - automatic handling of missing apostrophes
-- **Performance optimized** with 800ms debouncing and intelligent caching
-- **Non-intrusive visual indicators** - dotted red underlines without typing disruption
-
-### AI-Powered Autocomplete  
-- **Context-aware suggestions** using Gemma 3 12B model for relevance
-- **Layered textarea approach** for seamless inline suggestion display
-- **Smart triggering system** - activates after 5+ complete words
-- **Vector database integration** with ChromaDB for enhanced understanding
-- **Intelligent spacing logic** - proper tab acceptance and word boundaries
-- **Progressive debouncing** - 500ms delay with adaptive timing
-
-### Text Feature Coordination
-- **Conflict prevention system** - prevents autocomplete and spellcheck interference
-- **Adaptive feature locking** with customizable durations per feature type
-- **Memory management** - automatic cleanup of timeouts and state
-- **Coexistence support** - allows multiple features to work simultaneously
-- **Performance monitoring** - tracks and optimizes feature interactions
-
-### Mobile-Optimized Experience
-- **16px font sizes** prevent unwanted mobile browser zoom
-- **Dynamic textarea resizing** with smooth 300ms transitions
-- **Touch-friendly interface** with properly sized click targets
-- **Responsive design** adapts to all screen sizes
-- **Optimized debouncing** for mobile keyboard behavior
-- **Battery-conscious processing** with intelligent feature management
 
 ## Model Training (Optional)
 
