@@ -689,8 +689,79 @@ export default function TestKickPage() {
       'A k<link> element',
     ];
 
+    // Phase 10 test cases - Asterisk-based obfuscation patterns
+    const phase10TestCases = [
+      '--- PHASE 10 TESTS ---',
+      
+      // The reported pattern that wasn't detected
+      'k*I*..__<hk',
+      'find me on k*I*..__<hk',
+      
+      // Basic asterisk-wrapped characters
+      'k*i*k',
+      'k*e*k',
+      'k*I*k',
+      'k*1*k',
+      'k*!*k',
+      'k*l*k',
+      
+      // Asterisk-wrapped with hk ending
+      'k*i*hk',
+      'k*I*hk',
+      'k*e*hk',
+      'k*i*..hk',
+      'k*I*__hk',
+      'k*i*..__hk',
+      
+      // Multiple asterisks
+      'k**i**k',
+      'k***e***k',
+      'k****I****k',
+      'k*****i*****k',
+      
+      // Mixed asterisks with other separators
+      'k*i*..__<k',
+      'k*e*..--k',
+      'k*I*____k',
+      'k*i*....k',
+      'k*..e..*k',
+      'k*.i.*k',
+      
+      // Complex asterisk patterns
+      'k*i*..__<>k',
+      'k*I*..!()k',
+      'k*e*#$%^k',
+      'k*i*@#$%hk',
+      
+      // Asterisk at various positions
+      '*k*i*k*',
+      'k*i*k*',
+      '*k*i*k',
+      'k*i*ck',
+      
+      // Capital letter variations
+      'K*I*K',
+      'K*E*HK',
+      'K*I*..__<HK',
+      
+      // Zero-width with asterisks
+      'k\u200B*i*\u200Bk',
+      'k*\u200Bi\u200B*k',
+      
+      // Edge cases
+      'k*eek',
+      'k*ick',
+      'k*ook',
+      'k*yck',
+      
+      // Should NOT detect (legitimate asterisk usage)
+      'I give this 5k* rating',
+      'The k* value is important',
+      'Check k*args in Python',
+    ];
+
     // Combine all test cases
-    const allTestCases = [...phase1TestCases, ...phase6TestCases, ...phase7TestCases, ...phase8TestCases, ...phase9TestCases];
+    const allTestCases = [...phase1TestCases, ...phase6TestCases, ...phase7TestCases, ...phase8TestCases, ...phase9TestCases, ...phase10TestCases];
     
     const testResults = allTestCases.map(testCase => {
       const result = detectKickVariations(testCase);

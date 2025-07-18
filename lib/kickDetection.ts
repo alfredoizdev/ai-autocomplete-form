@@ -125,8 +125,8 @@ const kickVariationPatterns = [
   // "hk" with separators (k..i..hk, k-i-hk, k_i_hk)
   /\bk[._\-]{1,3}[i1l!|][._\-]{0,3}hk\b/gi,
   
-  // General pattern with "hk" ending
-  /\bk[^a-z]{0,5}[i1l!|e3][^a-z]{0,5}hk\b/gi,
+  // General pattern with "hk" ending (increased character limit from 5 to 10)
+  /\bk[^a-z]{0,10}[i1l!|e3][^a-z]{0,10}hk\b/gi,
   
   // Phonetic variations with "hk" (keehk, kaihk, kyahk)
   /\bk[aeiouey]{1,2}hk\b/gi,
@@ -274,6 +274,34 @@ const kickVariationPatterns = [
   
   // Missing closing bracket with obvious intent - k<i.., k<e.., k<o.. (excluding HTML tags)
   /\bk<(?!(?:div|span|body|head|meta|link|input|script|style|html|form|table|button|img|a|p|h[1-6]|br|hr|ul|ol|li|td|tr|th|nav|main|section|article|aside|header|footer|address|blockquote|pre|code|em|strong|small|mark|del|ins|sub|sup|i|b|u|s|q|cite|abbr|dfn|time|data|var|samp|kbd|output|progress|meter|details|summary|fieldset|legend|label|select|optgroup|option|textarea|keygen|datalist|ruby|rt|rp|bdi|bdo|wbr)\b)[i1l!|e3aeiouey][^>]{1,8}\b/gi,  // k<i.., k<e.., k<1..
+  
+  // Additional comprehensive "hk" pattern with larger character limits (no word boundary at end for flexibility)
+  /\bk[^a-z]{0,15}[i1l!|e3aeiouey][^a-z]{0,15}hk/gi,
+  
+  // PHASE 10 ADDITIONS - Asterisk-based obfuscation patterns
+  
+  // Asterisk-wrapped characters - k*i*k, k*e*k, k*I*k
+  /\bk[^a-z]*\*[i1l!|e3aeiouey]\*[^a-z]*[kchq]/gi,
+  
+  // Asterisk-wrapped with "hk" ending - k*i*hk, k*I*...hk
+  /\bk[^a-z]*\*[i1l!|e3aeiouey]\*[^a-z]*hk/gi,
+  
+  // Multiple asterisks patterns - k**i**k, k***e***k
+  /\bk\*{1,5}[i1l!|e3aeiouey]\*{1,5}[kchq]/gi,
+  
+  // Mixed asterisks with other separators - k*i*..__<hk, k*..e..*k
+  /\bk\*[^*]*\*[^a-z]*[kchq]/gi,
+  /\bk\*[^*]*\*[^a-z]*hk/gi,
+  
+  // Flexible asterisk patterns with any content between
+  /\bk[^a-z]*\*[^*]{1,10}\*[^a-z]*[kchq]/gi,
+  
+  // Asterisk at various positions - *k*i*k*, k*i*k, etc.
+  /\*?k[^a-z]*\*?[i1l!|e3aeiouey]\*?[^a-z]*[kchq]\*?/gi,
+  
+  // Complex asterisk patterns with mixed separators and angle brackets
+  /\bk\*[^*]*\*[._\-<>!@#$%^&()]*[kchq]/gi,
+  /\bk\*[^*]*\*[._\-<>!@#$%^&()]*hk/gi,
 ];
 
 // Unicode confusables that look like 'kick' characters
@@ -930,6 +958,22 @@ export function detectKickVariations(text: string): DetectionResult {
           results.techniques.push('phonetic_after_unclosed_bracket');
         } else if (index === 96) {
           results.techniques.push('missing_closing_bracket_obvious');
+        } else if (index === 97) {
+          results.techniques.push('comprehensive_hk_pattern');
+        } else if (index === 98) {
+          results.techniques.push('asterisk_wrapped');
+        } else if (index === 99) {
+          results.techniques.push('asterisk_wrapped_hk');
+        } else if (index === 100) {
+          results.techniques.push('multiple_asterisks');
+        } else if (index === 101 || index === 102) {
+          results.techniques.push('mixed_asterisk_separators');
+        } else if (index === 103) {
+          results.techniques.push('flexible_asterisk_pattern');
+        } else if (index === 104) {
+          results.techniques.push('asterisk_various_positions');
+        } else if (index === 105 || index === 106) {
+          results.techniques.push('complex_asterisk_patterns');
         }
       }
     }
