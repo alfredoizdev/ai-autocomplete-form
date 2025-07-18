@@ -256,7 +256,12 @@ const kickVariationPatterns = [
   
   // Reversed/malformed angle brackets - k>..something, >k..something  
   /\bk>[^<]{1,8}[eioauy]{2,4}[kc]*\b/gi,                       // k>..eek, k>..ick
-  /\b>[kc][^<]{1,8}[eioauy]{2,4}\b/gi,                         // >k..eek, >c..ick
+  />[kc][^<]{1,8}[eioauy]{2,4}[kc]*\b/gi,                      // >k..eek, >c..ick (removed leading \b)
+  
+  // Additional reversed angle bracket patterns
+  />[kc][^<]{0,10}[i1l!|e3][^<]{0,10}[kc]/gi,                  // >k..i..k, >k___i___k
+  />[kc]\.[^<]{0,8}[eioauy]{2,4}[kc]*/gi,                      // >k...eek, >k....ick
+  />[kc][._\-]{1,8}[eioauy]{2,4}[kc]*/gi,                      // >k--eek, >k__ick
   
   // Single angle bracket with minimal content - k<.., k>.., k<., k>.
   /\bk[<>][.\-_!@#$%^&*()]{1,5}[eioauy]{1,3}[kc]*\b/gi,       // k<..e, k>..o, k<.ea
@@ -974,6 +979,8 @@ export function detectKickVariations(text: string): DetectionResult {
           results.techniques.push('asterisk_various_positions');
         } else if (index === 105 || index === 106) {
           results.techniques.push('complex_asterisk_patterns');
+        } else if (index === 107 || index === 108 || index === 109) {
+          results.techniques.push('reversed_angle_bracket_advanced');
         }
       }
     }
@@ -1140,8 +1147,8 @@ export function cachedDetection(text: string): DetectionResult {
 export function progressiveDetection(text: string): DetectionResult {
   // Level 1: Quick pattern check
   // Updated pattern to catch phonetic variations like "keek", "kyck", etc., "hk" endings, Phase 4 reversed patterns, Phase 5 parentheses-wrapped K, and Phase 7 unclosed parentheses
-  // Matches: k + (various middle patterns) + optional [kchq] or hk, OR reversed patterns like ckik, OR (k) patterns, OR unclosed parentheses
-  const quickCheck = /k(?:[^a-z]{0,3}[i1l!|e3aeiouey][^a-z]{0,3}|[aeiouey0-9]{1,2}|\W{0,5}|i[cqk])(?:[kchq]{0,2}|hk)?|[ck]{2}[i1l!|][kc]|k\({2,}|k\[{2,}|k\{{2,}|k<{2,}|k[^a-z]{6,}|\([kc]\)[^a-z]*[i1l!|e3]|\([kc]\)[^a-z]*\([i1l!|e3aeiouey]\)|\([i1l!|e3aeiouey]\)[^a-z]*[kc]|\(h\)[kc]|\([kc][^)]*[i1l!|e3aeiouey]/i;
+  // Matches: k + (various middle patterns) + optional [kchq] or hk, OR reversed patterns like ckik, OR (k) patterns, OR unclosed parentheses, OR >k patterns
+  const quickCheck = /k(?:[^a-z]{0,3}[i1l!|e3aeiouey][^a-z]{0,3}|[aeiouey0-9]{1,2}|\W{0,5}|i[cqk])(?:[kchq]{0,2}|hk)?|[ck]{2}[i1l!|][kc]|k\({2,}|k\[{2,}|k\{{2,}|k<{2,}|k[^a-z]{6,}|\([kc]\)[^a-z]*[i1l!|e3]|\([kc]\)[^a-z]*\([i1l!|e3aeiouey]\)|\([i1l!|e3aeiouey]\)[^a-z]*[kc]|\(h\)[kc]|\([kc][^)]*[i1l!|e3aeiouey]|>[kc]/i;
   if (!quickCheck.test(text.toLowerCase())) {
     return { 
       detected: false, 

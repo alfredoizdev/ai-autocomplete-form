@@ -760,8 +760,66 @@ export default function TestKickPage() {
       'Check k*args in Python',
     ];
 
+    // Phase 11 test cases - Reversed angle bracket patterns (>k patterns)
+    const phase11TestCases = [
+      '--- PHASE 11 TESTS ---',
+      
+      // The reported pattern that wasn't detected
+      '>k..eek',
+      'find me on >k..eek',
+      
+      // Basic reversed angle bracket patterns
+      '>k.eek',
+      '>keek',
+      '>k...ick',
+      '>k....ook',
+      '>c..eek',
+      '>c...ick',
+      
+      // With different separators
+      '>k--eek',
+      '>k__ick',
+      '>k~~ook',
+      '>k##eek',
+      '>k@@ick',
+      '>k$$ook',
+      
+      // With vowel variations
+      '>k..i..k',
+      '>k__e__k',
+      '>k--I--k',
+      '>k..1..k',
+      '>k__!__k',
+      
+      // Complex patterns
+      '>k....i....k',
+      '>k_._._i_._._k',
+      '>k--__--i--__--k',
+      
+      // Capital letter variations
+      '>K..EEK',
+      '>K__ICK',
+      '>K--OOK',
+      '>K..I..K',
+      
+      // Zero-width with reversed brackets
+      '>k\u200B..eek',
+      '>k..\u200Beek',
+      
+      // Edge cases
+      '>kik',
+      '>kick',
+      '>kic',
+      '>khk',
+      
+      // Should NOT detect (legitimate usage)
+      'The value >k is greater',
+      'Check if x >k in the equation',
+      'Use >key for sorting',
+    ];
+
     // Combine all test cases
-    const allTestCases = [...phase1TestCases, ...phase6TestCases, ...phase7TestCases, ...phase8TestCases, ...phase9TestCases, ...phase10TestCases];
+    const allTestCases = [...phase1TestCases, ...phase6TestCases, ...phase7TestCases, ...phase8TestCases, ...phase9TestCases, ...phase10TestCases, ...phase11TestCases];
     
     const testResults = allTestCases.map(testCase => {
       const result = detectKickVariations(testCase);
