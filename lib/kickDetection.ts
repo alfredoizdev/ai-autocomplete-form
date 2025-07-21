@@ -137,10 +137,10 @@ const kickVariationPatterns = [
   // Extended "hk" endings (khk, chk) - k..i..khk, k..i..chk
   /\bk[^a-z]{0,5}[i1l!|e3][^a-z]{0,5}[kc]hk\b/gi,
   
-  // Domain patterns (more flexible boundaries for URLs)
-  /k[i1l!|._\-\s]{1,4}[kc]\s*[\.\,\·\•]\s*c[o0]m/gi,
-  /k[i1l!|._\-\s]{1,4}[kc]\s+dot\s+c[o0]m/gi,
-  /k[i1l!|._\-\s]{1,4}[kc]\[?\.\]?\s*c[o0]m/gi,
+  // Domain patterns (with word boundaries to prevent false positives)
+  /\bk[i1l!|._\-\s]{1,4}[kc]\s*[\.\,\·\•]\s*c[o0]m/gi,
+  /\bk[i1l!|._\-\s]{1,4}[kc]\s+dot\s+c[o0]m/gi,
+  /\bk[i1l!|._\-\s]{1,4}[kc]\[?\.\]?\s*c[o0]m/gi,
   
   // PHASE 4 ADDITIONS - Advanced Obfuscation Patterns
   
@@ -302,7 +302,8 @@ const kickVariationPatterns = [
   /\bk[^a-z]*\*[^*]{1,10}\*[^a-z]*[kchq]/gi,
   
   // Asterisk at various positions - *k*i*k*, k*i*k, etc.
-  /\*?k[^a-z]*\*?[i1l!|e3aeiouey]\*?[^a-z]*[kchq]\*?/gi,
+  // Require at least one asterisk to be present to avoid false positives
+  /(?:\*k[^a-z]*[i1l!|e3aeiouey][^a-z]*[kchq]|k\*[^a-z]*[i1l!|e3aeiouey][^a-z]*[kchq]|k[^a-z]*\*[i1l!|e3aeiouey][^a-z]*[kchq]|k[^a-z]*[i1l!|e3aeiouey]\*[^a-z]*[kchq]|k[^a-z]*[i1l!|e3aeiouey][^a-z]*\*[kchq]|k[^a-z]*[i1l!|e3aeiouey][^a-z]*[kchq]\*)/gi,
   
   // Complex asterisk patterns with mixed separators and angle brackets
   /\bk\*[^*]*\*[._\-<>!@#$%^&()]*[kchq]/gi,
@@ -385,7 +386,8 @@ const KICK_WHITELIST_PHRASES = [
   'penalty kick',
   'karate kick',
   'soccer kick',
-  'football kick'
+  'football kick',
+  'take charge'  // Added to prevent false positive
 ];
 
 // Check if "kick" appears in a legitimate context
