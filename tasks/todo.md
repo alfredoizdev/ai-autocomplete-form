@@ -126,3 +126,60 @@ npm run start      # Production server
 This is a well-architected application that successfully combines modern web technologies with local AI capabilities. The codebase demonstrates good practices in React development, state management, and AI integration. While there are opportunities for improvement in testing and documentation, the core functionality is solid and production-ready.
 
 The hybrid approach to AI completion, combined with robust content filtering and user experience optimizations, makes this a comprehensive solution for AI-powered text suggestions in specialized domains.
+
+## MLX Training Data Preparation Review
+
+### Overview
+Prepared bio training data for MLX (Apple's machine learning framework) fine-tuning by converting raw bio data into prompt-completion format suitable for training language models.
+
+### Changes Made
+
+1. **Created `prepare_bio_prompt_completion.py`**:
+   - Analyzes bio patterns to extract meaningful prompts
+   - Converts 4,994 raw bios into prompt-completion pairs
+   - Filters entries exceeding 512 total words (removed 3 entries)
+   - Generates MLX-compatible JSONL format
+
+2. **Prompt Generation Strategy**:
+   - **Natural breaks** (6.3%): Extracts prompts from bios starting with "looking for"
+   - **Template-based** (50.2%): Creates prompts like "Write a bio for..."
+   - **Completion prompts** (29.6%): Uses "Complete this lifestyle bio..."
+   - **Other patterns** (14.0%): Context-specific prompts
+
+3. **Data Split**:
+   - Training: 3,992 entries (80%)
+   - Validation: 499 entries (10%)
+   - Test: 500 entries (10%)
+
+4. **Output Structure**:
+   ```
+   bio_mlx_prompt_completion/
+   ├── train.jsonl        # Training data
+   ├── valid.jsonl        # Validation data  
+   ├── test.jsonl         # Test data
+   ├── examples.txt       # Sample prompt-completion pairs
+   └── config.yaml        # MLX training configuration
+   ```
+
+5. **MLX Format Example**:
+   ```json
+   {
+     "text": "<|user|>\nWrite a bio for a couple seeking other couples<|end|>\n<|assistant|>\nWe are looking for Friends, threesomes mfm and fmf, and couples...<|end|>"
+   }
+   ```
+
+### Key Decisions
+
+- **512-word limit**: Ensures compatibility with most transformer models
+- **Diverse prompts**: Prevents overfitting to specific prompt patterns
+- **JSONL format**: Standard format for MLX fine-tuning
+- **LoRA configuration**: Included efficient fine-tuning parameters
+
+### Next Steps
+
+To train the model with MLX:
+```bash
+mlx_lm.lora --config bio_mlx_prompt_completion/config.yaml
+```
+
+The prepared data is now ready for fine-tuning on Apple Silicon devices using the MLX framework's efficient LoRA implementation.
