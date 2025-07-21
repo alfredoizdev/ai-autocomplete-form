@@ -183,3 +183,33 @@ mlx_lm.lora --config bio_mlx_prompt_completion/config.yaml
 ```
 
 The prepared data is now ready for fine-tuning on Apple Silicon devices using the MLX framework's efficient LoRA implementation.
+
+### Final MLX Data Preparation Update
+
+After user feedback, made significant improvements to the prompt-completion splits:
+
+1. **Better Splitting Algorithm**:
+   - Creates incomplete sentence prompts that naturally lead to completions
+   - Splits at conjunctions (and, but, or), relative pronouns (who, that, which)
+   - Splits after prepositions (looking for, interested in) + 1-2 words
+   - Avoids sentence boundaries to prevent complete sentence prompts
+   - No prompts end with punctuation
+
+2. **Data Quality**:
+   - Filtered out 29 bios with 5 words or less
+   - Created 4,059 high-quality prompt-completion pairs
+   - Average prompt length: 12.5 words (incomplete thoughts)
+   - Average completion length: 22.5 words
+   - 0% of prompts end with punctuation
+
+3. **Example Improvements**:
+   - Before: "I am looking for couples." → "I enjoy fun times."
+   - After: "I am looking for couples who" → "enjoy fun times and good conversation"
+
+4. **Final Output**:
+   - Training: 3,247 samples
+   - Validation: 405 samples  
+   - Test: 407 samples
+   - Location: `bio_mlx_partial/`
+
+The data now contains natural partial sentences as prompts that require completion, making it ideal for training a model to complete thoughts rather than generate disconnected sentences.
