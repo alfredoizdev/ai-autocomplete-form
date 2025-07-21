@@ -7,7 +7,7 @@ import SpellCheckPopup from "./SpellCheckPopup";
 import SpellCheckOverlay from "./SpellCheckOverlay";
 import { useState, useEffect, useCallback } from "react";
 import useTextFeatureCoordinator, { TextFeature } from "@/hooks/useTextFeatureCoordinator";
-import { useKickDetection } from "@/hooks/useKickDetection";
+import { useKickDetection } from "@/hooks/useKickDetectionImproved";
 import { InlineKickWarning } from "./KickDetectionWarning";
 
 const Form = () => {

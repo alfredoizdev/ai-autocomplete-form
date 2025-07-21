@@ -1,0 +1,26 @@
+adapter_path: /Users/simonlacey/Documents/GitHub/llms/ai-train-llm/python/mlx_training/adapters/bio_mistral_lora
+batch_size: 2
+data: /Users/simonlacey/Documents/GitHub/llms/ai-train-llm/python/mlx_training/bio_dataset
+eval_steps: 100
+gradient_accumulation_steps: 4
+gradient_checkpointing: true
+learning_rate: 0.0002
+lora_layers: 16
+lora_parameters:
+  rank: 8
+  alpha: 16
+  scale: 20.0
+  dropout: 0.05
+  target_modules:
+  - q_proj
+  - v_proj
+  - k_proj
+  - o_proj
+max_seq_length: 512
+model: mlx-community/Mistral-7B-Instruct-v0.2-4bit
+num_epochs: 1
+save_every: 250
+seed: 42
+test_every: 500
+train: true
+warmup_steps: 100

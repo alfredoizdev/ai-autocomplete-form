@@ -1,9 +1,4 @@
 "use server";
-// import { Bios } from "@/data/Bios";
-// import { Bio } from "@/type/Collection";
-
-// Removed global chat history - autocomplete should be stateless
-// Each request should be independent without carrying previous context
 
 // Cache for API server status
 let apiServerAvailable: boolean | null = null;
@@ -13,7 +8,7 @@ let lastMlxHealthCheck = 0;
 const HEALTH_CHECK_INTERVAL = 60000; // Check every 60 seconds
 
 // Configuration for which server to use
-const USE_MLX_SERVER = process.env.USE_MLX_MODEL === "true";
+const USE_MLX_SERVER = process.env.NEXT_PUBLIC_USE_MLX_MODEL === "true";
 const MLX_API_URL = "http://localhost:8003";
 const PYTHON_API_URL = "http://localhost:8001";
 
@@ -83,21 +78,6 @@ async function checkApiServerHealth(): Promise<boolean> {
   }
 }
 
-// This function is no longer used - vector search is handled by the Python API
-// export const setCollectionForVectorDB = async () => {
-//   const client = await weaviate.connectToLocal();
-//
-//   const collection = client.collections.use<Bio>("Bio2");
-//
-//   const entries = Bios.map((bio, index) => ({
-//     title: `Bio2 ${index + 1}`,
-//     body: bio,
-//   }));
-//
-//   await collection.data.insertMany(entries);
-//   console.log(`✅ Inserted ${entries.length} bios into Weaviate.`);
-// };
-
 // Helper function to remove the prompt from the beginning of the AI response
 const stripPromptFromResponse = (prompt: string, response: string): string => {
   if (!prompt || !response) return response;
@@ -158,8 +138,6 @@ const stripPromptFromResponse = (prompt: string, response: string): string => {
 };
 
 export const askOllamaCompletationAction = async (input: string) => {
-  // Autocomplete is now stateless - no history tracking
-  
   // First, try MLX server if enabled
   if (USE_MLX_SERVER) {
     const mlxAvailable = await checkMlxServerHealth();
@@ -175,7 +153,7 @@ export const askOllamaCompletationAction = async (input: string) => {
             },
             body: JSON.stringify({
               prompt: input,
-              max_tokens: 30,  // Reduced for shorter completions
+              max_tokens: 60,
             }),
           }
         );
@@ -184,7 +162,7 @@ export const askOllamaCompletationAction = async (input: string) => {
           const data = await mlxResponse.json();
 
           // Log performance metrics
-          console.log(`🚀 MLX autocomplete: ${data.elapsed_ms}ms`);
+          console.log(`MLX autocomplete: ${data.elapsed_ms}ms`);
           console.log(`Suggestions: ${data.combined_suggestions.length}`);
 
           // Return the first combined suggestion
@@ -205,8 +183,8 @@ export const askOllamaCompletationAction = async (input: string) => {
       console.log("⚠️ MLX API server not available, trying Python API server");
     }
   }
-  
-  // Check if API server is available
+
+  // Check if Python API server is available as fallback
   const serverAvailable = await checkApiServerHealth();
 
   if (serverAvailable) {
@@ -257,9 +235,9 @@ export const askOllamaCompletationAction = async (input: string) => {
     );
   }
 
-  // Fallback to direct Ollama method if vector search fails or returns no results
+  // Fallback to direct Ollama method if both servers fail
   try {
-    // 📜 Mensajes para Ollama (without Weaviate context)
+    // 📜 Messages for Ollama (without context)
     const messages = [
       {
         role: "system",
@@ -312,7 +290,7 @@ Use multiple periods... casual spelling... incomplete sentences`,
       },
     ];
 
-    // 🧠 Llamada a Ollama
+    // 🧠 Call to Ollama
     const response = await fetch(`${process.env.OLLAMA_PATH_API}/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -355,8 +333,6 @@ Use multiple periods... casual spelling... incomplete sentences`,
         output = output.charAt(0).toLowerCase() + output.slice(1);
       }
     }
-
-    // No longer storing chat history - each request is independent
 
     return output || "No answer found";
   } catch (fallbackError) {

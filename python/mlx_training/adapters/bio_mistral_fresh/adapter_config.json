@@ -1,0 +1,48 @@
+{
+    "adapter_path": "./adapters/bio_mistral_fresh",
+    "batch_size": 2,
+    "config": "training_config_fresh.yaml",
+    "data": "./bio_dataset",
+    "eval_steps": 200,
+    "fine_tune_type": "lora",
+    "grad_checkpoint": false,
+    "gradient_accumulation_steps": 4,
+    "gradient_checkpointing": true,
+    "iters": 700,
+    "learning_rate": 5e-05,
+    "lora_layers": 16,
+    "lora_parameters": {
+        "alpha": 32,
+        "dropout": 0.1,
+        "rank": 16,
+        "scale": 10.0,
+        "target_modules": [
+            "q_proj",
+            "v_proj",
+            "k_proj",
+            "o_proj"
+        ]
+    },
+    "lr_schedule": null,
+    "mask_prompt": false,
+    "max_seq_length": 512,
+    "model": "mlx-community/Mistral-7B-Instruct-v0.2-4bit",
+    "num_layers": 16,
+    "optimizer": "adam",
+    "optimizer_config": {
+        "adam": {},
+        "adamw": {}
+    },
+    "resume_adapter_file": "adapters/bio_mistral_fresh/0000300_adapters.safetensors",
+    "save_every": 50,
+    "seed": 42,
+    "steps_per_eval": 200,
+    "steps_per_report": 10,
+    "test": false,
+    "test_batches": 500,
+    "test_every": 1000,
+    "train": true,
+    "val_batches": 25,
+    "wandb": null,
+    "warmup_steps": 100
+}
