@@ -1,0 +1,54 @@
+# MLX LoRA Fine-tuning Configuration for Bio Autocomplete
+# Optimized for M1 Max with 32GB RAM
+
+# Model configuration
+model: "mlx-community/Phi-3-mini-4k-instruct-4bit"  # 4-bit quantized version for memory efficiency
+# Alternative models (if Phi-3 unavailable):
+# model: "mlx-community/Mistral-7B-Instruct-v0.3-4bit"
+# model: "mlx-community/Qwen2.5-3B-Instruct-4bit"
+
+# LoRA configuration (memory efficient)
+lora:
+  rank: 16                    # Lower rank for memory efficiency (default is often 64)
+  alpha: 32                   # Alpha = 2 * rank is a good rule of thumb
+  dropout: 0.05               # Small dropout for regularization
+  target_modules:             # Which layers to apply LoRA to
+    - "q_proj"
+    - "k_proj"
+    - "v_proj"
+    - "o_proj"
+    - "gate_proj"
+    - "up_proj"
+    - "down_proj"
+
+# Training configuration
+training:
+  batch_size: 2               # Small batch size for 32GB RAM
+  gradient_accumulation: 4    # Effective batch size = 2 * 4 = 8
+  num_epochs: 3               # 3 epochs to avoid overfitting
+  learning_rate: 5e-5         # Conservative learning rate
+  warmup_steps: 100           # Warmup for stable training
+  max_steps: 1000             # Limit total steps (can be adjusted)
+  
+# Data configuration
+data:
+  train_path: "data/train.jsonl"
+  valid_path: "data/valid.jsonl"
+  test_path: "data/test.jsonl"
+  max_seq_length: 256         # Shorter sequences for bio completions
+  
+# Memory optimization
+optimization:
+  gradient_checkpointing: true  # Save memory at cost of speed
+  mixed_precision: true         # Use fp16 where possible
+  
+# Evaluation
+evaluation:
+  eval_steps: 50                # Evaluate every 50 steps
+  save_steps: 100               # Save checkpoint every 100 steps
+  logging_steps: 10             # Log metrics every 10 steps
+  
+# Output
+output:
+  model_dir: "models/bio-phi3-lora"
+  resume_from_checkpoint: null  # Set to checkpoint path to resume training

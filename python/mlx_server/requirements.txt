@@ -1,0 +1,12 @@
+# MLX requirements for Apple Silicon
+mlx>=0.7.0
+mlx-lm>=0.7.0
+numpy>=1.24.0
+transformers>=4.36.0
+accelerate>=0.25.0
+sentencepiece>=0.1.99
+protobuf>=3.20.0
+fastapi>=0.104.0
+uvicorn>=0.24.0
+httpx>=0.25.0
+pydantic>=2.5.0

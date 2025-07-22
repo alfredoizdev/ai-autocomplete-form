@@ -44,9 +44,6 @@ cd python
 # Start API Server (port 8001)
 start_server "API Server" "python3 api/api_server.py" 8001 "api_server.log"
 
-# Start Trained Model Server (port 8002)
-start_server "Trained Model Server" "python3 -m uvicorn api.trained_model_server:app --port 8002" 8002 "trained_model_server.log"
-
 # Navigate back
 cd ..
 
@@ -56,13 +53,10 @@ echo ""
 echo "Services:"
 echo "  - Ollama: http://localhost:11434"
 echo "  - API Server: http://localhost:8001 (docs at /docs)"
-echo "  - Trained Model: http://localhost:8002 (docs at /docs)"
 echo "  - Next.js App: http://localhost:3000 (run 'npm run dev' to start)"
 echo ""
 echo "To stop servers:"
 echo "  - Kill API Server: lsof -ti:8001 | xargs kill"
-echo "  - Kill Trained Model: lsof -ti:8002 | xargs kill"
 echo ""
 echo "Check logs:"
 echo "  - API Server: tail -f python/api_server.log"
-echo "  - Trained Model: tail -f python/trained_model_server.log"

@@ -119,6 +119,44 @@ const stripPromptFromResponse = (prompt: string, response: string): string => {
 
 export const askOllamaCompletationAction = async (input: string) => {
   // Autocomplete is now stateless - no history tracking
+  
+  // Check if MLX model should be used
+  const useMLX = process.env.USE_MLX_MODEL === 'true';
+  
+  if (useMLX) {
+    try {
+      // Try MLX model first
+      const mlxResponse = await fetch(
+        "http://localhost:8003/api/autocomplete/mlx",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            prompt: input,
+            max_tokens: 50,
+            temperature: 0.7
+          }),
+        }
+      );
+
+      if (mlxResponse.ok) {
+        const data = await mlxResponse.json();
+        console.log(`MLX autocomplete: ${data.elapsed_ms}ms`);
+        console.log(`Model: ${data.model_name}`);
+        
+        // Return the completion after stripping the prompt
+        if (data.completion) {
+          return stripPromptFromResponse(input, data.completion);
+        }
+      }
+    } catch (error: any) {
+      console.error("MLX model error:", error);
+      console.log("Falling back to hybrid autocomplete...");
+    }
+  }
+  
   // Check if API server is available
   const serverAvailable = await checkApiServerHealth();
 

@@ -1,0 +1,35 @@
+{
+    "adapter_path": "models/bio-phi3-lora",
+    "batch_size": 2,
+    "config": null,
+    "data": "/Users/simonlacey/Documents/GitHub/llms/ai-train-llm/python/mlx_server/data",
+    "fine_tune_type": "lora",
+    "grad_checkpoint": false,
+    "iters": 1000,
+    "learning_rate": 5e-05,
+    "lora_parameters": {
+        "rank": 8,
+        "dropout": 0.0,
+        "scale": 20.0
+    },
+    "lr_schedule": null,
+    "mask_prompt": false,
+    "max_seq_length": 2048,
+    "model": "mlx-community/Phi-3-mini-4k-instruct-4bit",
+    "num_layers": 16,
+    "optimizer": "adam",
+    "optimizer_config": {
+        "adam": {},
+        "adamw": {}
+    },
+    "resume_adapter_file": null,
+    "save_every": 100,
+    "seed": 0,
+    "steps_per_eval": 200,
+    "steps_per_report": 10,
+    "test": true,
+    "test_batches": 500,
+    "train": true,
+    "val_batches": 25,
+    "wandb": null
+}
