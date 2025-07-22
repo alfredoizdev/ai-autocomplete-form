@@ -227,3 +227,22 @@ The codebase has undergone significant improvements:
 - The Python API server (port 8001) is the preferred autocomplete source
 - Fine-tuned model server (port 8002) is optional but provides faster inference
 - Use `./start_all_servers.sh` for quick backend setup
+
+## Documentation for Junior Developers
+
+Comprehensive documentation has been created to help junior developers understand and run this project:
+
+### Getting Started
+- **[Junior Developer Guide](./Docs/JUNIOR_DEVELOPER_GUIDE.md)** - Complete setup guide for beginners
+- **[Hybrid Mode Guide](./Docs/HYBRID_MODE_GUIDE.md)** - Understanding and operating hybrid mode
+- **[Local LLM Training Guide](./Docs/LOCAL_LLM_TRAINING_GUIDE.md)** - Step-by-step model training
+
+### Reference
+- **[Architecture Diagrams](./Docs/ARCHITECTURE_DIAGRAM.md)** - Visual system architecture
+- **[Troubleshooting Guide](./Docs/TROUBLESHOOTING_GUIDE.md)** - Common issues and solutions
+
+### Quick Links for Beginners
+1. Start here: [Junior Developer Guide](./Docs/JUNIOR_DEVELOPER_GUIDE.md)
+2. Run hybrid mode: [Hybrid Mode Guide](./Docs/HYBRID_MODE_GUIDE.md)
+3. Train your model: [Local LLM Training Guide](./Docs/LOCAL_LLM_TRAINING_GUIDE.md)
+4. Fix issues: [Troubleshooting Guide](./Docs/TROUBLESHOOTING_GUIDE.md)
