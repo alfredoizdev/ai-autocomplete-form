@@ -120,12 +120,12 @@ const stripPromptFromResponse = (prompt: string, response: string): string => {
 export const askOllamaCompletationAction = async (input: string) => {
   // Autocomplete is now stateless - no history tracking
   
-  // Check if MLX model should be used
-  const useMLX = process.env.USE_MLX_MODEL === 'true';
+  // Check which mode to use
+  const mode = process.env.AUTOCOMPLETE_MODE || 'hybrid';
   
-  if (useMLX) {
+  if (mode === 'trained') {
+    // Use trained MLX model
     try {
-      // Try MLX model first
       const mlxResponse = await fetch(
         "http://localhost:8003/api/autocomplete/mlx",
         {
@@ -144,8 +144,8 @@ export const askOllamaCompletationAction = async (input: string) => {
 
       if (mlxResponse.ok) {
         const data = await mlxResponse.json();
-        console.log(`MLX autocomplete: ${data.elapsed_ms}ms`);
-        console.log(`Model: ${data.model_name}`);
+        console.log(`Trained model autocomplete: ${data.elapsed_ms}ms`);
+        console.log(`Using: ${data.model_name}`);
         
         // Return the completion after stripping the prompt
         if (data.completion) {
@@ -153,60 +153,62 @@ export const askOllamaCompletationAction = async (input: string) => {
         }
       }
     } catch (error: any) {
-      console.error("MLX model error:", error);
-      console.log("Falling back to hybrid autocomplete...");
+      console.error("Trained model error:", error);
+      // Don't fall back to hybrid in trained mode - user explicitly chose this mode
+      console.error("Make sure MLX server is running: ./start_trained.sh");
+      return "Model not available - check server";
     }
-  }
-  
-  // Check if API server is available
-  const serverAvailable = await checkApiServerHealth();
+  } else if (mode === 'hybrid') {
+    // Use hybrid mode (vector search + AI)
+    const serverAvailable = await checkApiServerHealth();
 
-  if (serverAvailable) {
-    try {
-      // Use the new hybrid endpoint that combines vector search with LLM generation
-      const hybridResponse = await fetch(
-        "http://localhost:8001/api/autocomplete/hybrid",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            prompt: input,
-          }),
-        }
-      );
-
-      if (hybridResponse.ok) {
-        const data = await hybridResponse.json();
-
-        // Log performance metrics
-        console.log(`Hybrid autocomplete: ${data.elapsed_ms}ms`);
-        console.log(`Context used: ${data.context_used}`);
-        console.log(
-          `Suggestions: ${data.combined_suggestions.length} (${data.exact_matches.length} exact, ${data.llm_completions.length} generated)`
+    if (serverAvailable) {
+      try {
+        // Use the new hybrid endpoint that combines vector search with LLM generation
+        const hybridResponse = await fetch(
+          "http://localhost:8001/api/autocomplete/hybrid",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              prompt: input,
+            }),
+          }
         );
 
-        // Return the first combined suggestion after stripping the prompt
-        if (data.combined_suggestions && data.combined_suggestions.length > 0) {
-          const suggestion = data.combined_suggestions[0];
-          return stripPromptFromResponse(input, suggestion);
+        if (hybridResponse.ok) {
+          const data = await hybridResponse.json();
+
+          // Log performance metrics
+          console.log(`Hybrid autocomplete: ${data.elapsed_ms}ms`);
+          console.log(`Context used: ${data.context_used}`);
+          console.log(
+            `Suggestions: ${data.combined_suggestions.length} (${data.exact_matches.length} exact, ${data.llm_completions.length} generated)`
+          );
+
+          // Return the first combined suggestion after stripping the prompt
+          if (data.combined_suggestions && data.combined_suggestions.length > 0) {
+            const suggestion = data.combined_suggestions[0];
+            return stripPromptFromResponse(input, suggestion);
+          }
+        }
+      } catch (error: any) {
+        // Check if it's a connection error
+        if (error.cause?.code === "ECONNREFUSED") {
+          console.error("❌ API server is not running on port 8001");
+          console.error("To start hybrid mode, run: ./start_hybrid.sh");
+        } else {
+          console.error("Hybrid autocomplete API error:", error);
         }
       }
-    } catch (error: any) {
-      // Check if it's a connection error
-      if (error.cause?.code === "ECONNREFUSED") {
-        console.error("❌ Python API server is not running on port 8001");
-        console.error("To start the server, run: ./start_api_server.sh");
-        console.error("Or manually: cd python && python3 api/api_server.py");
-      } else {
-        console.error("Hybrid autocomplete API error:", error);
-      }
+    } else {
+      console.log(
+        "⚠️ API server not available. Make sure to run: ./start_hybrid.sh"
+      );
+      return "Hybrid mode not available - check server";
     }
-  } else {
-    console.log(
-      "⚠️ Python API server not available, using fallback Ollama method"
-    );
   }
 
   // Fallback to direct Ollama method if vector search fails or returns no results

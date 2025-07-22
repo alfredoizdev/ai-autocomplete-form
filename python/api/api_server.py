@@ -27,7 +27,8 @@ async def lifespan(app: FastAPI):
     global vector_search
     try:
         print("Initializing vector search...")
-        vector_search = BioVectorSearch()
+        # Use the correct path to the vector_db directory
+        vector_search = BioVectorSearch(chroma_path="../vector_db/chroma_db")
         print("Vector search initialized successfully")
     except Exception as e:
         print(f"Failed to initialize vector search: {e}")
