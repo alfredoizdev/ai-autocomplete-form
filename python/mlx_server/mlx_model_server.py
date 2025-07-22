@@ -103,9 +103,27 @@ def fix_grammar_issues(prompt: str, completion: str) -> str:
         else:
             completion = "someone " + completion
     
-    # Fix "looking for that is" pattern - should be "looking for something that is"
+    # Fix "looking for that" pattern - determine if we need "someone" or "something"
     if prompt_lower.endswith("looking for") and completion_lower.startswith("that "):
-        completion = "something " + completion
+        # Check if we're talking about people based on context
+        person_indicators = ['male', 'female', 'man', 'woman', 'couple', 'person', 'people', 
+                           'guy', 'girl', 'lady', 'gentleman', 'swinger', 'partner', 
+                           'lover', 'friend', 'mate', 'date', 'companion']
+        
+        # Check if the prompt or completion indicates we're talking about people
+        is_about_people = any(indicator in prompt_lower for indicator in person_indicators)
+        
+        # Also check the completion for person-related verbs/phrases
+        person_verbs = ['likes', 'loves', 'enjoys', 'wants', 'shares', 'understands', 
+                       'appreciates', 'knows', 'believes', 'thinks', 'feels']
+        if any(verb in completion_lower[:50] for verb in person_verbs):
+            is_about_people = True
+        
+        # Use "someone" for people, "something" for things
+        if is_about_people:
+            completion = "someone " + completion
+        else:
+            completion = "something " + completion
     
     # Fix "looking for who" pattern - should be "looking for someone who"
     if prompt_lower.endswith("looking for") and completion_lower.startswith("who "):
@@ -116,7 +134,15 @@ def fix_grammar_issues(prompt: str, completion: str) -> str:
         if completion.strip().startswith("to "):
             completion = "couples " + completion
         elif completion_lower.startswith("that "):
-            completion = "couples " + completion
+            # Check if it's already talking about people or needs "couples"
+            # Don't prepend if the completion already makes sense
+            person_verbs = ['likes', 'loves', 'enjoys', 'wants', 'shares', 'understands']
+            if any(verb in completion_lower[:50] for verb in person_verbs):
+                # It's describing people, use "someone" or "people"
+                completion = "people " + completion
+            else:
+                # It might be describing activities or things
+                completion = "couples " + completion
         elif completion_lower.startswith("who "):
             # For couples, use "people who" instead of "someone who"
             completion = "people " + completion

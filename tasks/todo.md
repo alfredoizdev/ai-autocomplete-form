@@ -282,3 +282,46 @@ The documentation now provides a complete learning path for junior developers wh
 4. Reference troubleshooting and architecture guides as needed
 
 All documentation is written in a clear, step-by-step manner with plenty of examples and explanations. The guides assume no prior knowledge and build up concepts gradually, making the sophisticated AI bio autocomplete system accessible to developers at all levels.
+
+## Grammar Fix for MLX Autocomplete - Completed
+
+### Plan
+- [x] Research autocomplete implementation to find grammar issue
+- [x] Check training data for grammar patterns  
+- [x] Examine text generation logic in API servers
+- [x] Implement grammar correction solution
+- [x] Test the fix with various prompts
+- [x] Create test script to verify the fix works correctly
+- [x] Write summary of changes
+
+### Problem
+The autocomplete was producing grammatically incorrect suggestions like "something that likes the same lifestyle as me" instead of "someone that likes the same lifestyle as me" when referring to people.
+
+### Root Cause
+In `/python/mlx_server/mlx_model_server.py`, the `fix_grammar_issues()` function had a hardcoded rule that always prepended "something" when a prompt ended with "looking for" and the completion started with "that", regardless of whether the context was about people or things.
+
+### Solution Implemented
+
+#### 1. Smart Context Detection (lines 106-126)
+- Added person indicators list: checks for words like 'male', 'female', 'swinger', 'couple', etc.
+- Added person verbs list: checks for verbs like 'likes', 'loves', 'enjoys' that indicate human actions
+- Now uses "someone" for people and "something" for things based on context
+
+#### 2. Improved Couple Handling (lines 136-145)
+- Fixed similar issue for "couple looking for" patterns
+- Now checks if the completion describes people before prepending "couples"
+- Uses "people" when describing human characteristics
+
+#### 3. Test Script Created
+- Created `test_grammar_fix.py` to verify the fix works correctly
+- Tests various prompts to ensure proper grammar
+- Includes manual testing mode for additional verification
+
+### Testing Instructions
+1. Restart the MLX server: `./start_trained_sh`
+2. Run the test script: `python test_grammar_fix.py`
+3. Try the specific prompt: "i am a young male swinger looking for"
+4. Should now get completions with "someone" instead of "something"
+
+### Review
+The grammar correction logic is now context-aware and will properly use "someone" when referring to people and "something" when referring to objects or concepts. This maintains grammatical correctness while preserving the model's intent.
