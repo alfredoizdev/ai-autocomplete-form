@@ -37,6 +37,7 @@ class AutocompleteRequest(BaseModel):
     max_tokens: Optional[int] = 50
     temperature: Optional[float] = 0.7
     top_p: Optional[float] = 0.9
+    stop: Optional[List[str]] = None
 
 class AutocompleteResponse(BaseModel):
     completion: str
@@ -44,7 +45,7 @@ class AutocompleteResponse(BaseModel):
     model_name: str
 
 def strip_prompt_from_response(prompt: str, response: str) -> str:
-    """Remove the prompt from the beginning of the response."""
+    """Remove the prompt from the beginning of the response and fix grammar."""
     if not prompt or not response:
         return response
     
@@ -67,7 +68,99 @@ def strip_prompt_from_response(prompt: str, response: str) -> str:
     # Remove any remaining special tokens
     response = response.replace("<unk>", "").strip()
     
+    # Fix common grammar issues
+    response = fix_grammar_issues(prompt, response)
+    
     return response
+
+def fix_grammar_issues(prompt: str, completion: str) -> str:
+    """Fix common grammar issues in completions."""
+    print(f"DEBUG fix_grammar_issues called with prompt='{prompt}', completion='{completion}'", flush=True)
+    if not prompt or not completion:
+        return completion
+    
+    prompt_lower = prompt.strip().lower()
+    completion_lower = completion.strip().lower()
+    
+    # Fix incomplete adjective phrases like "well hung" missing a noun
+    if prompt_lower.endswith("well hung"):
+        # Add appropriate noun if completion doesn't start with one
+        if not any(completion_lower.startswith(noun) for noun in ["man", "guy", "male", "person", "gentleman"]):
+            completion = "man " + completion
+    elif prompt_lower.endswith("gentle well hung"):
+        if not any(completion_lower.startswith(noun) for noun in ["man", "guy", "male", "person", "gentleman"]):
+            completion = "man " + completion
+    
+    # Fix "looking for to [verb]" pattern
+    if prompt_lower.endswith("looking for") and completion.strip().startswith("to "):
+        # Common patterns to insert
+        if "have" in completion[:20]:
+            completion = "people " + completion
+        elif "meet" in completion[:20]:
+            completion = "someone " + completion
+        elif "enjoy" in completion[:20]:
+            completion = "ways " + completion
+        else:
+            completion = "someone " + completion
+    
+    # Fix "looking for that is" pattern - should be "looking for something that is"
+    if prompt_lower.endswith("looking for") and completion_lower.startswith("that "):
+        completion = "something " + completion
+    
+    # Fix "looking for who" pattern - should be "looking for someone who"
+    if prompt_lower.endswith("looking for") and completion_lower.startswith("who "):
+        completion = "someone " + completion
+    
+    # Fix awkward "couple looking for" patterns
+    if "couple looking for" in prompt_lower:
+        if completion.strip().startswith("to "):
+            completion = "couples " + completion
+        elif completion_lower.startswith("that "):
+            completion = "couples " + completion
+        elif completion_lower.startswith("who "):
+            # For couples, use "people who" instead of "someone who"
+            completion = "people " + completion
+    
+    # Remove duplicate "someone" if it was added as guidance
+    if prompt_lower.endswith("looking for") and completion.startswith("someone someone"):
+        completion = completion[8:].strip()
+    
+    # Ensure sentences end properly
+    print(f"DEBUG: Before punctuation check, completion='{completion}'", flush=True)
+    if completion and not completion.rstrip().endswith((".", "!", "?", "...", "…")):
+        # Check if we have a complete thought
+        words = completion.split()
+        if len(words) >= 3:  # Lowered threshold for bio completions
+            # Add period if it seems like a complete thought
+            last_word = words[-1].lower().rstrip(",;:")
+            # Don't add period after certain words that suggest incompleteness
+            incomplete_endings = ["and", "or", "but", "with", "for", "to", "of", "in", "on", "at", "the", "a", "an"]
+            
+            # DEBUG
+            print(f"DEBUG: Checking completion: '{completion}'", flush=True)
+            print(f"DEBUG: Last word: '{last_word}'", flush=True)
+            print(f"DEBUG: In incomplete endings: {last_word in incomplete_endings}", flush=True)
+            
+            if last_word not in incomplete_endings:
+                # Check if the last few words form a complete phrase
+                if len(words) >= 2:
+                    last_two_words = " ".join(words[-2:]).lower()
+                    # Common complete phrase endings in bio context
+                    complete_phrases = ["have fun", "good time", "new friends", "and see", "is possible", 
+                                      "the bedroom", "and friendship", "new experiences", "our fantasy", 
+                                      "adult fun", "and play", "great time", "looking for", "interested in",
+                                      "more experience", "watch and see", "intimate experience", "and explore",
+                                      "new things", "and enjoy", "have some fun", "and chat", "and relax"]
+                    if any(last_two_words.endswith(phrase) for phrase in complete_phrases):
+                        completion += "."
+                    elif last_word not in incomplete_endings:
+                        # Add period for most other cases - bio completions should be complete thoughts
+                        completion += "."
+                elif last_word not in incomplete_endings:
+                    # Single or two word completions that seem complete
+                    completion += "."
+    
+    return completion
 
 @app.on_event("startup")
 async def load_model():
@@ -120,7 +213,13 @@ async def autocomplete(request: AutocompleteRequest):
         # Format the prompt for the model
         # For fine-tuned model, use the format it was trained on
         if adapter_path:
-            formatted_prompt = f"prompt: {request.prompt} completion:"
+            # Check if prompt ends with "looking for" and needs grammatical help
+            prompt_lower = request.prompt.strip().lower()
+            if prompt_lower.endswith("looking for"):
+                # Add guidance to avoid "to" immediately after "looking for"
+                formatted_prompt = f"prompt: {request.prompt} someone completion:"
+            else:
+                formatted_prompt = f"prompt: {request.prompt} completion:"
         else:
             # For base model, use instruction format
             formatted_prompt = f"Complete this text in a natural way: {request.prompt}"
@@ -132,6 +231,9 @@ async def autocomplete(request: AutocompleteRequest):
             top_p=request.top_p
         )
         
+        # Generate with stop tokens support
+        stop_tokens = request.stop if request.stop else [".", "!", "?", "\n", "<|end|>"]
+        
         response = generate(
             model=model,
             tokenizer=tokenizer,
@@ -141,13 +243,31 @@ async def autocomplete(request: AutocompleteRequest):
             verbose=False
         )
         
+        # Apply stop tokens manually since MLX doesn't support them directly
+        for stop_token in stop_tokens:
+            if stop_token in response:
+                # Keep the stop token if it's punctuation
+                if stop_token in [".", "!", "?"]:
+                    response = response.split(stop_token)[0] + stop_token
+                else:
+                    response = response.split(stop_token)[0]
+                break
+        
         # Clean up the response
+        print(f"DEBUG: Raw model response: '{response}'", flush=True)
         completion = strip_prompt_from_response(request.prompt, response)
+        print(f"DEBUG: After strip_prompt: '{completion}'", flush=True)
         
         # Additional cleanup for bio completions
         if completion:
-            # Remove any trailing ellipsis
-            completion = completion.rstrip("...").rstrip("…").strip()
+            # Remove any trailing ellipsis (but not single periods)
+            print(f"DEBUG: Before ellipsis removal: '{completion}'", flush=True)
+            # Only remove if it ends with multiple dots
+            if completion.endswith("..."):
+                completion = completion[:-3].strip()
+            elif completion.endswith("…"):
+                completion = completion[:-1].strip()
+            print(f"DEBUG: After ellipsis removal: '{completion}'", flush=True)
             
             # Ensure proper capitalization based on prompt ending
             if request.prompt.rstrip().endswith((",", ":")):
@@ -155,6 +275,7 @@ async def autocomplete(request: AutocompleteRequest):
         
         elapsed_ms = (time.time() - start_time) * 1000
         
+        print(f"DEBUG: Final completion being returned: '{completion}'", flush=True)
         return AutocompleteResponse(
             completion=completion,
             elapsed_ms=elapsed_ms,

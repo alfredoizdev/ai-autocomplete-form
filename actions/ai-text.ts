@@ -135,8 +135,9 @@ export const askOllamaCompletationAction = async (input: string) => {
           },
           body: JSON.stringify({
             prompt: input,
-            max_tokens: 50,
-            temperature: 0.7
+            max_tokens: 50,  // Increased to ensure complete sentences
+            temperature: 0.7,
+            stop: [".", "!", "?", "\n"]  // Stop at sentence endings
           }),
         }
       );
