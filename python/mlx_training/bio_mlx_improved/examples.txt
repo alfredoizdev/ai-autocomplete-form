@@ -1,0 +1,304 @@
+=== Improved Single-Sentence Prompt-Completion Examples ===
+
+All examples form exactly ONE complete sentence when combined.
+
+Example 1:
+PROMPT: Would like some friends
+COMPLETION: that we could share some naughty times with.
+FULL: Would like some friends that we could share some naughty times with.
+--------------------------------------------------------------------------------
+
+Example 2:
+PROMPT: With gifted hands and heart
+COMPLETION: that’s true, I might be just the vibe for you.
+FULL: With gifted hands and heart that’s true, I might be just the vibe for you.
+--------------------------------------------------------------------------------
+
+Example 3:
+PROMPT: We both feel
+COMPLETION: that having more friends in this life style is better than having strangers at a club.
+FULL: We both feel that having more friends in this life style is better than having strangers at a club.
+--------------------------------------------------------------------------------
+
+Example 4:
+PROMPT: Like minded people
+COMPLETION: that want to have fun, we consider ourselves a connection couple.
+FULL: Like minded people that want to have fun, we consider ourselves a connection couple.
+--------------------------------------------------------------------------------
+
+Example 5:
+PROMPT: Please make sure you have pics of both partners in order
+COMPLETION: for us to respond.
+FULL: Please make sure you have pics of both partners in order for us to respond.
+--------------------------------------------------------------------------------
+
+Example 6:
+PROMPT: No pressure and just see
+COMPLETION: where it goes from there.
+FULL: No pressure and just see where it goes from there.
+--------------------------------------------------------------------------------
+
+Example 7:
+PROMPT: Preferably a couple to have fun with in
+COMPLETION: and out of the private spaces.
+FULL: Preferably a couple to have fun with in and out of the private spaces.
+--------------------------------------------------------------------------------
+
+Example 8:
+PROMPT: Play always goes hand in hand
+COMPLETION: with plenty of flirty conversation and quite a bit of laughter, no matter the topic.
+FULL: Play always goes hand in hand with plenty of flirty conversation and quite a bit of laughter, no matter the topic.
+--------------------------------------------------------------------------------
+
+Example 9:
+PROMPT: We adore meeting people and if friends is all you wish,
+COMPLETION: that is fine too.
+FULL: We adore meeting people and if friends is all you wish, that is fine too.
+--------------------------------------------------------------------------------
+
+Example 10:
+PROMPT: Married, with genuine Bi-Sex wife interested in FF
+COMPLETION: or couples play.
+FULL: Married, with genuine Bi-Sex wife interested in FF or couples play.
+--------------------------------------------------------------------------------
+
+Example 11:
+PROMPT: We have found we like to meet
+COMPLETION: with out of town lifestyle couples as we act as liaisons to our wonderful town.
+FULL: We have found we like to meet with out of town lifestyle couples as we act as liaisons to our wonderful town.
+--------------------------------------------------------------------------------
+
+Example 12:
+PROMPT: We are a fun loving couple
+COMPLETION: who is into whatever the situation call for.
+FULL: We are a fun loving couple who is into whatever the situation call for.
+--------------------------------------------------------------------------------
+
+Example 13:
+PROMPT: We enjoy meeting new people and socializing and would like to enjoy
+COMPLETION: and xplore some more with others for safe, hot,fulfilling mutual satisfaction...
+FULL: We enjoy meeting new people and socializing and would like to enjoy and xplore some more with others for safe, hot,fulfilling mutual satisfaction...
+--------------------------------------------------------------------------------
+
+Example 14:
+PROMPT: Meet new and interesting people and
+COMPLETION: form new friendships.
+FULL: Meet new and interesting people and form new friendships.
+--------------------------------------------------------------------------------
+
+Example 15:
+PROMPT: Looking for my own solo play,
+COMPLETION: but maybe we could all group up at some point.
+FULL: Looking for my own solo play, but maybe we could all group up at some point.
+--------------------------------------------------------------------------------
+
+Example 16:
+PROMPT: We like to flirt, to tease,
+COMPLETION: to have the sexual tension build until we can't handle it anymore!
+FULL: We like to flirt, to tease, to have the sexual tension build until we can't handle it anymore!
+--------------------------------------------------------------------------------
+
+Example 17:
+PROMPT: As a result, we are a broad-minded, flexible couple,
+COMPLETION: and don't take things too seriously.
+FULL: As a result, we are a broad-minded, flexible couple, and don't take things too seriously.
+--------------------------------------------------------------------------------
+
+Example 18:
+PROMPT: It is important that any physical activities must be okay with both spouses (permission if you will),
+COMPLETION: We have shed a lot of societal standards that no longer fit who we are.
+FULL: It is important that any physical activities must be okay with both spouses (permission if you will), We have shed a lot of societal standards that no longer fit who we are.
+--------------------------------------------------------------------------------
+
+Example 19:
+PROMPT: **SEEKING FEMALES ONLY**
+COMPLETION: that loves to have fun in and out of the bedroom.
+FULL: **SEEKING FEMALES ONLY** that loves to have fun in and out of the bedroom.
+--------------------------------------------------------------------------------
+
+Example 20:
+PROMPT: We are looking for couples
+COMPLETION: with the possibility of a single gentleman (read to the end).
+FULL: We are looking for couples with the possibility of a single gentleman (read to the end).
+--------------------------------------------------------------------------------
+
+Example 21:
+PROMPT: I understand a chat is not an agreement to anything and
+COMPLETION: I try to be well versed so my ideas and intentions are clear.
+FULL: I understand a chat is not an agreement to anything and I try to be well versed so my ideas and intentions are clear.
+--------------------------------------------------------------------------------
+
+Example 22:
+PROMPT: I am looking for singles or couples
+COMPLETION: who like to have a good time and enjoy the company of others.
+FULL: I am looking for singles or couples who like to have a good time and enjoy the company of others.
+--------------------------------------------------------------------------------
+
+Example 23:
+PROMPT: I want someone
+COMPLETION: who knows how to use what he's been blessed with and not just puts it in and goes to town.
+FULL: I want someone who knows how to use what he's been blessed with and not just puts it in and goes to town.
+--------------------------------------------------------------------------------
+
+Example 24:
+PROMPT: I feel I need to add that I am looking for men
+COMPLETION: who use protection because nobody really knows anyone anymore.
+FULL: I feel I need to add that I am looking for men who use protection because nobody really knows anyone anymore.
+--------------------------------------------------------------------------------
+
+Example 25:
+PROMPT: We enjoy mixing a little safe, clean fun with females
+COMPLETION: with the same interest.
+FULL: We enjoy mixing a little safe, clean fun with females with the same interest.
+--------------------------------------------------------------------------------
+
+Example 26:
+PROMPT: I'd like to meet people
+COMPLETION: who are mature and discreet, fun to hang out with, honest and pleasant.
+FULL: I'd like to meet people who are mature and discreet, fun to hang out with, honest and pleasant.
+--------------------------------------------------------------------------------
+
+Example 27:
+PROMPT: I travel for work all over the country so when
+COMPLETION: I send you a message that means I'm in your town .
+FULL: I travel for work all over the country so when I send you a message that means I'm in your town .
+--------------------------------------------------------------------------------
+
+Example 28:
+PROMPT: I desire something safe and would love to meet
+COMPLETION: for drinks to start.
+FULL: I desire something safe and would love to meet for drinks to start.
+--------------------------------------------------------------------------------
+
+Example 29:
+PROMPT: we do not want people who just want to jump
+COMPLETION: in bed and do not hear from them for weeks.
+FULL: we do not want people who just want to jump in bed and do not hear from them for weeks.
+--------------------------------------------------------------------------------
+
+Example 30:
+PROMPT: Looking for couples or a female to be our 'friends with benefits'
+COMPLETION: NO SINGLE MEN It's not always about play time, we want actual friends...
+FULL: Looking for couples or a female to be our 'friends with benefits' NO SINGLE MEN It's not always about play time, we want actual friends...
+--------------------------------------------------------------------------------
+
+Example 31:
+PROMPT: We are looking for girls
+COMPLETION: that are bi.
+FULL: We are looking for girls that are bi.
+--------------------------------------------------------------------------------
+
+Example 32:
+PROMPT: But what she is interested in is to find a woman to perform
+COMPLETION: oral on her man while she watches and/or joins in.
+FULL: But what she is interested in is to find a woman to perform oral on her man while she watches and/or joins in.
+--------------------------------------------------------------------------------
+
+Example 33:
+PROMPT: Also looking for MFM/FMF
+COMPLETION: to have a good time with.
+FULL: Also looking for MFM/FMF to have a good time with.
+--------------------------------------------------------------------------------
+
+Example 34:
+PROMPT: I do not have the freedom to preplan
+COMPLETION: for a hotel.
+FULL: I do not have the freedom to preplan for a hotel.
+--------------------------------------------------------------------------------
+
+Example 35:
+PROMPT: We are both more so
+COMPLETION: into personality than looks, a sense of humor is a MUST.
+FULL: We are both more so into personality than looks, a sense of humor is a MUST.
+--------------------------------------------------------------------------------
+
+Example 36:
+PROMPT: If we email/message you we expect a response whether it be yes or no out of common courtesy,
+COMPLETION: and we'll do likewise.
+FULL: If we email/message you we expect a response whether it be yes or no out of common courtesy, and we'll do likewise.
+--------------------------------------------------------------------------------
+
+Example 37:
+PROMPT: Hoping to meet ppl
+COMPLETION: who enjoy meeting and having a great time.
+FULL: Hoping to meet ppl who enjoy meeting and having a great time.
+--------------------------------------------------------------------------------
+
+Example 38:
+PROMPT: We are an open couple
+COMPLETION: that practices safe sex and hygienic cleanliness.
+FULL: We are an open couple that practices safe sex and hygienic cleanliness.
+--------------------------------------------------------------------------------
+
+Example 39:
+PROMPT: We are a happily married couple
+COMPLETION: that has delved into the lifestyle, had some fun, but lately we have been taking a break.
+FULL: We are a happily married couple that has delved into the lifestyle, had some fun, but lately we have been taking a break.
+--------------------------------------------------------------------------------
+
+Example 40:
+PROMPT: We are moving to Oregon
+COMPLETION: and look forward to meeting new and sexy people for some fun.
+FULL: We are moving to Oregon and look forward to meeting new and sexy people for some fun.
+--------------------------------------------------------------------------------
+
+Example 41:
+PROMPT: Together as a couple, we love to explore
+COMPLETION: where a connection, attraction, excitement, passion and sexual energy with another couple, woman or possibly a man, may lead us.
+FULL: Together as a couple, we love to explore where a connection, attraction, excitement, passion and sexual energy with another couple, woman or possibly a man, may lead us.
+--------------------------------------------------------------------------------
+
+Example 42:
+PROMPT: We would love to be
+COMPLETION: invited to house parties and meet and greets!!
+FULL: We would love to be invited to house parties and meet and greets!!
+--------------------------------------------------------------------------------
+
+Example 43:
+PROMPT: I am looking for a close friend to help
+COMPLETION: with what Im not getting at home.
+FULL: I am looking for a close friend to help with what Im not getting at home.
+--------------------------------------------------------------------------------
+
+Example 44:
+PROMPT: I am honest, sincere,
+COMPLETION: and respectful; therefore, I expect the same.
+FULL: I am honest, sincere, and respectful; therefore, I expect the same.
+--------------------------------------------------------------------------------
+
+Example 45:
+PROMPT: Looking for love in all the wrong places yet
+COMPLETION: who’s on here looking for love?
+FULL: Looking for love in all the wrong places yet who’s on here looking for love?
+--------------------------------------------------------------------------------
+
+Example 46:
+PROMPT: looking for a good time open to anything
+COMPLETION: i like all Kinds of women love to talk chat around joke around msg me So we could see how can we click ??
+FULL: looking for a good time open to anything i like all Kinds of women love to talk chat around joke around msg me So we could see how can we click ??
+--------------------------------------------------------------------------------
+
+Example 47:
+PROMPT: Looking for males, females,
+COMPLETION: and couple's for fun.
+FULL: Looking for males, females, and couple's for fun.
+--------------------------------------------------------------------------------
+
+Example 48:
+PROMPT: I am looking to awaken my sexual life after
+COMPLETION: 10 years of a sexually dead marriage.
+FULL: I am looking to awaken my sexual life after 10 years of a sexually dead marriage.
+--------------------------------------------------------------------------------
+
+Example 49:
+PROMPT: We hope to meet other couples
+COMPLETION: that like to have fun.
+FULL: We hope to meet other couples that like to have fun.
+--------------------------------------------------------------------------------
+
+Example 50:
+PROMPT: I prefer to spend time with people
+COMPLETION: who are a little older then me seeing as I have always gotten along with them better.
+FULL: I prefer to spend time with people who are a little older then me seeing as I have always gotten along with them better.
+--------------------------------------------------------------------------------
+
