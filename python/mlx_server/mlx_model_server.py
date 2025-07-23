@@ -196,20 +196,37 @@ async def load_model():
     print("Loading MLX model...")
     
     # Check if we have a fine-tuned adapter
-    adapter_dir = Path(__file__).parent / "models" / "bio-phi3-lora"
+    # First check for the continued training Llama model
+    llama_continued_dir = Path(__file__).parent.parent.parent / "models" / "bio-sentence-llama3-lora-continued"
+    llama_adapter_dir = Path(__file__).parent.parent.parent / "models" / "bio-sentence-llama3-lora"
+    phi_adapter_dir = Path(__file__).parent / "models" / "bio-phi3-lora"
     
-    if adapter_dir.exists() and (adapter_dir / "adapters.safetensors").exists():
-        print(f"Loading fine-tuned model from {adapter_dir}")
-        adapter_path = str(adapter_dir)
-        # Load base model with adapter
+    if llama_continued_dir.exists() and (llama_continued_dir / "adapters.safetensors").exists():
+        print(f"Loading continued training Llama-3.2-3B model from {llama_continued_dir}")
+        adapter_path = str(llama_continued_dir)
+        # Load Llama base model with adapter
+        model, tokenizer = load("mlx-community/Llama-3.2-3B-Instruct-4bit", 
+                               adapter_path=adapter_path)
+        print("✅ Continued training Llama-3.2-3B model (1000 iterations) loaded successfully")
+    elif llama_adapter_dir.exists() and (llama_adapter_dir / "adapters.safetensors").exists():
+        print(f"Loading fine-tuned Llama-3.2-3B model from {llama_adapter_dir}")
+        adapter_path = str(llama_adapter_dir)
+        # Load Llama base model with adapter
+        model, tokenizer = load("mlx-community/Llama-3.2-3B-Instruct-4bit", 
+                               adapter_path=adapter_path)
+        print("✅ Fine-tuned Llama-3.2-3B model loaded successfully")
+    elif phi_adapter_dir.exists() and (phi_adapter_dir / "adapters.safetensors").exists():
+        print(f"Loading fine-tuned Phi-3 model from {phi_adapter_dir}")
+        adapter_path = str(phi_adapter_dir)
+        # Load Phi-3 base model with adapter
         model, tokenizer = load("mlx-community/Phi-3-mini-4k-instruct-4bit", 
                                adapter_path=adapter_path)
-        print("✅ Fine-tuned model loaded successfully")
+        print("✅ Fine-tuned Phi-3 model loaded successfully")
     else:
-        print("No fine-tuned model found, loading base model")
-        # Load base model without adapter
-        model, tokenizer = load("mlx-community/Phi-3-mini-4k-instruct-4bit")
-        print("✅ Base model loaded successfully")
+        print("No fine-tuned model found, loading base Llama model")
+        # Load base Llama model without adapter
+        model, tokenizer = load("mlx-community/Llama-3.2-3B-Instruct-4bit")
+        print("✅ Base Llama model loaded successfully")
 
 @app.get("/")
 async def root():
@@ -238,8 +255,11 @@ async def autocomplete(request: AutocompleteRequest):
     try:
         # Format the prompt for the model
         # For fine-tuned model, use the format it was trained on
-        if adapter_path:
-            # Check if prompt ends with "looking for" and needs grammatical help
+        if adapter_path and "llama3" in adapter_path:
+            # Use the Llama format from training data
+            formatted_prompt = f"<|user|>\n{request.prompt}<|end|>\n<|assistant|>\n"
+        elif adapter_path:
+            # Use Phi-3 format
             prompt_lower = request.prompt.strip().lower()
             if prompt_lower.endswith("looking for"):
                 # Add guidance to avoid "to" immediately after "looking for"
@@ -248,7 +268,7 @@ async def autocomplete(request: AutocompleteRequest):
                 formatted_prompt = f"prompt: {request.prompt} completion:"
         else:
             # For base model, use instruction format
-            formatted_prompt = f"Complete this text in a natural way: {request.prompt}"
+            formatted_prompt = f"<|user|>\nComplete this text naturally: {request.prompt}<|end|>\n<|assistant|>\n"
         
         # Generate completion
         # MLX doesn't accept temperature/top_p directly, use sampler
@@ -302,10 +322,19 @@ async def autocomplete(request: AutocompleteRequest):
         elapsed_ms = (time.time() - start_time) * 1000
         
         print(f"DEBUG: Final completion being returned: '{completion}'", flush=True)
+        # Determine model name based on what was loaded
+        if adapter_path:
+            if "llama3" in adapter_path:
+                model_name = "llama3.2-mlx-finetuned"
+            else:
+                model_name = "phi3-mlx-finetuned"
+        else:
+            model_name = "llama3.2-mlx-base"
+        
         return AutocompleteResponse(
             completion=completion,
             elapsed_ms=elapsed_ms,
-            model_name="phi3-mlx" + ("-finetuned" if adapter_path else "-base")
+            model_name=model_name
         )
         
     except Exception as e:
