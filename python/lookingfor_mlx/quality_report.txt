@@ -1,0 +1,15 @@
+=== LookingFor Dataset Quality Report ===
+
+Source file: LookingFor_20000.csv
+Total bios in CSV: 19656
+Bios with valid sentences: 8606
+Total prompt-completion pairs: 15529
+
+Quality metrics:
+  - 100.0% of samples pass all validation checks
+  - Each training example is exactly ONE sentence
+  - Multi-sentence bios split into separate examples
+  - All sentences are at least 8 words long
+  - All pairs are under 500 words total
+  - All prompts end without punctuation
+  - All completions end with proper punctuation

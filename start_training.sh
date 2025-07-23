@@ -9,8 +9,8 @@ echo ""
 
 # Configuration
 MODEL_NAME="mlx-community/Llama-3.2-1B-Instruct-4bit"
-TRAINING_DATA_DIR="python/mlx_training/bio_mlx_improved"
-OUTPUT_DIR="models/bio-llama3-lora-new"
+TRAINING_DATA_DIR="python/lookingfor_mlx"
+OUTPUT_DIR="models/lookingfor-llama3-lora"
 LEARNING_RATE=5e-5
 BATCH_SIZE=4
 NUM_ITERATIONS=1000
@@ -34,9 +34,7 @@ if [ ! -f "$TRAINING_DATA_DIR/train.jsonl" ]; then
     echo "❌ Training data not found at $TRAINING_DATA_DIR!"
     echo ""
     echo "To prepare training data, run:"
-    echo "  cd python"
-    echo "  source venv/bin/activate"
-    echo "  python mlx_training/prepare_bio_mlx_improved.py"
+    echo "  ./prepare_lookingfor_data.sh"
     exit 1
 fi
 

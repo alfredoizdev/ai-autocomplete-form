@@ -52,6 +52,61 @@ npm run dev
 ./start_training.sh
 ```
 
+### Training Data Format Requirements
+
+When preparing new training data for fine-tuning, follow these specific requirements:
+
+#### Data Format
+- **Input format**: CSV file with bio text in the first column
+- **Output format**: JSONL files with prompt-completion pairs
+- **Each training example must be exactly ONE complete sentence**
+- **Multi-sentence bios are split into separate training examples**
+
+#### Quality Requirements
+1. **Minimum length**: 8 words per sentence (shorter sentences are discarded)
+2. **Maximum length**: 500 words per prompt-completion pair
+3. **Sentence structure**: 
+   - Each prompt must NOT end with punctuation (.!?)
+   - Each completion MUST end with proper punctuation
+   - Combined prompt + completion forms one grammatically correct sentence
+
+#### Processing Steps
+1. **Load CSV data** - Handle quotes and encoding issues
+2. **Split into sentences** - Each bio is split into individual sentences
+3. **Create smart splits** - Find natural break points within each sentence:
+   - After conjunctions (and, but, or)
+   - Before relative pronouns (who, which, that)
+   - After key phrases ("looking for", "interested in", "seeking")
+   - At commas in appropriate positions
+4. **Validate quality** - Ensure all requirements are met
+5. **Create train/valid/test splits** - 80%/10%/10% ratio
+
+#### To Process New Training Data
+```bash
+# 1. Place your CSV file in data/ directory (e.g., data/new_data.csv)
+
+# 2. Create a new preparation script by copying the template:
+cp prepare_lookingfor_data.sh prepare_newdata.sh
+
+# 3. Edit the script to update:
+#    - SOURCE_FILE path
+#    - OUTPUT_DIR name
+#    - Any specific processing needs
+
+# 4. Run the preparation:
+./prepare_newdata.sh
+
+# 5. Update start_training.sh to use the new dataset directory
+```
+
+#### Example Training Data Format
+After processing, each JSONL line contains:
+```json
+{"text": "<|user|>\nComplete this bio: Looking for fun loving people<|end|>\n<|assistant|>\nthat we can have fun with in and out of the bedroom.<|end|>"}
+```
+
+This creates a natural sentence completion task where the model learns to complete partial bio sentences in a coherent way.
+
 ### External Services
 
 - **Ollama**: Must be running locally on port 11434
