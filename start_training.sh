@@ -58,16 +58,15 @@ echo "==================="
 echo ""
 
 # Run MLX LoRA training
-python -m mlx_lm.lora \
+python -m mlx_lm lora \
     --model $MODEL_NAME \
     --train \
     --data ../$TRAINING_DATA_DIR \
     --batch-size $BATCH_SIZE \
-    --lora-layers 16 \
+    --num-layers 16 \
     --iters $NUM_ITERATIONS \
     --val-batches 25 \
     --learning-rate $LEARNING_RATE \
-    --warmup 100 \
     --save-every $SAVE_EVERY \
     --adapter-path ../$OUTPUT_DIR
 

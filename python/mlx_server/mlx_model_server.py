@@ -199,9 +199,17 @@ async def load_model():
     # First check for the continued training Llama model
     llama_continued_dir = Path(__file__).parent.parent.parent / "models" / "bio-sentence-llama3-lora-continued"
     llama_adapter_dir = Path(__file__).parent.parent.parent / "models" / "bio-sentence-llama3-lora"
+    lookingfor_adapter_dir = Path(__file__).parent.parent.parent / "models" / "lookingfor-llama3-lora"
     phi_adapter_dir = Path(__file__).parent / "models" / "bio-phi3-lora"
     
-    if llama_continued_dir.exists() and (llama_continued_dir / "adapters.safetensors").exists():
+    if lookingfor_adapter_dir.exists() and (lookingfor_adapter_dir / "adapters.safetensors").exists():
+        print(f"Loading LookingFor Llama-3.2-1B model from {lookingfor_adapter_dir}")
+        adapter_path = str(lookingfor_adapter_dir)
+        # Load Llama base model with adapter
+        model, tokenizer = load("mlx-community/Llama-3.2-1B-Instruct-4bit", 
+                               adapter_path=adapter_path)
+        print("✅ LookingFor Llama-3.2-1B model loaded successfully")
+    elif llama_continued_dir.exists() and (llama_continued_dir / "adapters.safetensors").exists():
         print(f"Loading continued training Llama-3.2-3B model from {llama_continued_dir}")
         adapter_path = str(llama_continued_dir)
         # Load Llama base model with adapter
