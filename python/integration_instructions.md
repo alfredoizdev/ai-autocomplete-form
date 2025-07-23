@@ -1,12 +1,13 @@
 # Integration Instructions
 
-## 1. Start the Trained Model Server
+## 1. Start the MLX Model Server
 
 ```bash
-cd python
-source venv/bin/activate
-uvicorn api.trained_model_server:app --reload --port 8002
+cd python/mlx_server
+python mlx_model_server.py
 ```
+
+This starts the MLX model server on port 8003 with fine-tuned Llama models.
 
 ## 2. Update Your TypeScript Code
 
@@ -29,20 +30,20 @@ export async function getHybridAutocomplete(input: string): Promise<string[]> {
       ? (await vectorResponse.json()).suggestions 
       : [];
     
-    // Try trained model
-    const trainedResponse = await fetch('http://localhost:8002/api/autocomplete/trained', {
+    // Try MLX model
+    const mlxResponse = await fetch('http://localhost:8003/api/autocomplete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt: input, max_suggestions: 2 })
     });
     
-    const trainedSuggestions = trainedResponse.ok
-      ? (await trainedResponse.json()).suggestions
+    const mlxSuggestions = mlxResponse.ok
+      ? (await mlxResponse.json()).suggestions
       : [];
     
     // Combine suggestions
     const allSuggestions = [...vectorSuggestions];
-    trainedSuggestions.forEach(s => {
+    mlxSuggestions.forEach(s => {
       if (!allSuggestions.includes(s)) {
         allSuggestions.push(s);
       }
@@ -70,7 +71,7 @@ const suggestions = await getHybridAutocomplete(inputText);
 
 1. Make sure all services are running:
    - Vector search server on port 8001
-   - Trained model server on port 8002
+   - MLX model server on port 8003
    - Ollama on port 11434
    - Next.js app on port 3000
 
@@ -79,6 +80,6 @@ const suggestions = await getHybridAutocomplete(inputText);
 ## Benefits of this Approach:
 
 1. **Fast Response**: Vector search provides quick exact matches
-2. **Creative Completions**: Trained model adds novel suggestions
+2. **Creative Completions**: MLX fine-tuned models add novel suggestions
 3. **Fallback Support**: If one service fails, the other still works
 4. **Best of Both Worlds**: Combines accuracy with creativity

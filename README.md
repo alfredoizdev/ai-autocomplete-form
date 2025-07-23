@@ -159,10 +159,6 @@ The application includes a FastAPI server that provides the hybrid autocomplete 
 - **POST /api/autocomplete/hybrid** - Hybrid autocomplete (vector + LLM)
 - **GET /api/stats** - Database statistics
 
-#### Trained Model Server (Port 8002 - Optional)
-- **GET /health** - Health check endpoint
-- **POST /api/autocomplete/trained** - Autocomplete using fine-tuned GPT-2 models
-
 ### Hybrid Approach
 
 The hybrid autocomplete system combines:
@@ -175,14 +171,14 @@ The hybrid autocomplete system combines:
 - **Response Time**: 100-150ms (hybrid mode)
 - **Vector Search**: ~100ms
 - **LLM Generation**: 200-500ms
-- **Fine-tuned Model**: 80-120ms
+- **Fine-tuned Llama Model**: 50-150ms
 - **Kick Detection**: <5ms
 - **Cache Hit Rate**: 90%
 
 ### API Documentation
 
 - **Main API Server**: `http://localhost:8001/docs`
-- **Trained Model Server**: `http://localhost:8002/docs` (when running)
+- **MLX Model Server**: `http://localhost:8003/docs` (when running)
 
 Both servers provide interactive Swagger/OpenAPI documentation.
 
@@ -268,17 +264,11 @@ ai-train-llm/
 │   └── bio.json                      # ~5000 bio examples for vector database
 ├── python/                           # Python backend
 │   ├── api/
-│   │   ├── api_server.py            # FastAPI hybrid autocomplete server
-│   │   └── trained_model_server.py  # FastAPI server for fine-tuned models
+│   │   └── api_server.py            # FastAPI hybrid autocomplete server
 │   ├── vector_db/
 │   │   ├── setup_chromadb.py        # Initialize vector database
 │   │   └── vector_search.py         # Vector search implementation
 │   ├── mlx_training/                # Model training scripts
-│   │   ├── train_bio_improved.py    # GPT-2 fine-tuning with LoRA
-│   │   ├── train_distilgpt2.py      # DistilGPT2 fine-tuning
-│   │   ├── bio_gpt2_improved/       # Fine-tuned GPT-2 model
-│   │   ├── bio_distilgpt2_finetuned/# Fine-tuned DistilGPT2 model
-│   │   ├── bio_gpt2_finetuned/      # Standard GPT-2 fine-tuned
 │   │   └── bio_dataset/             # Training datasets
 │   ├── chroma_db/                   # ChromaDB persistent storage
 │   ├── requirements.txt             # Python dependencies
@@ -329,13 +319,12 @@ The project includes convenient shell scripts for managing backend services:
 - Starts both API server (port 8001) and trained model server (port 8002)
 - Checks if Ollama is running and provides guidance if not
 - Prevents duplicate server instances
-- Creates log files for debugging (`python/api_server.log`, `python/trained_model_server.log`)
+- Creates log files for debugging (`python/api_server.log`)
 - Shows status of all services with helpful URLs
 
 #### `start_api_server.sh`
 - Starts only the main API server on port 8001
 - Provides clear instructions for required services
-- Useful when you don't need the trained model server
 - Shows API documentation URL
 
 ### Managing Services
@@ -344,23 +333,22 @@ The project includes convenient shell scripts for managing backend services:
 ```bash
 # Check if services are running
 lsof -i :8001  # API Server
-lsof -i :8002  # Trained Model Server
 lsof -i :11434 # Ollama
+lsof -i :8003  # MLX Model Server
 
 # View logs
 tail -f python/api_server.log
-tail -f python/trained_model_server.log
 ```
 
 #### Stop Services
 ```bash
 # Stop individual services
 lsof -ti:8001 | xargs kill  # API Server
-lsof -ti:8002 | xargs kill  # Trained Model Server
+lsof -ti:8003 | xargs kill  # MLX Model Server
 
 # Stop all Python API processes
 pkill -f "python.*api_server"
-pkill -f "uvicorn.*trained_model"
+pkill -f "python.*mlx_model_server"
 ```
 
 ## Configuration
@@ -383,26 +371,6 @@ OLLAMA_API_URL = "http://localhost:11434/api"
 CHROMA_PERSIST_DIR = "../chroma_db"
 MAX_SUGGESTIONS = 3
 MIN_SUGGESTION_LENGTH = 8  # Minimum words per suggestion
-```
-
-### Fine-tuned Model Configuration
-
-The trained model server provides access to fine-tuned GPT-2 models:
-
-```python
-# In python/api/trained_model_server.py
-model_path = "mlx_training/bio_distilgpt2_finetuned"  # Default model
-device = "mps"  # macOS Metal Performance Shaders (or "cpu")
-```
-
-**Available Models:**
-- `bio_distilgpt2_finetuned` - Lightweight, fast inference (default)
-- `bio_gpt2_improved` - Larger model with LoRA fine-tuning
-- `bio_gpt2_finetuned` - Standard GPT-2 fine-tuning
-
-To enable fine-tuned model integration in the frontend:
-```env
-NEXT_PUBLIC_USE_FINETUNED_MODEL=true
 ```
 
 ### Vector Database Configuration
@@ -505,37 +473,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Model Training (Optional)
 
 The project includes comprehensive model training capabilities for custom bio generation:
-
-### Available Pre-trained Models
-- **bio_gpt2_improved** - Fine-tuned GPT-2 on bio data
-- **bio_distilgpt2_finetuned** - Lighter DistilGPT2 variant
-- **bio_gpt2_finetuned** - Standard GPT-2 fine-tuning
-
-### Training Your Own Model
-
-1. **Prepare training data**:
-   ```bash
-   cd python/mlx_training
-   python prepare_mlx_data.py
-   ```
-
-2. **Train the model**:
-   ```bash
-   # GPT-2 fine-tuning with LoRA
-   python train_bio_improved.py
-   
-   # DistilGPT2 fine-tuning (faster, lighter)
-   python train_distilgpt2.py
-   
-   # Quick testing with smaller dataset
-   python train_simple.py
-   ```
-
-3. **Deploy the trained model**:
-   - Models are automatically saved in respective directories
-   - Start the trained model server on port 8002
-   - Enable via `NEXT_PUBLIC_USE_FINETUNED_MODEL=true`
-   - Access at `/api/autocomplete/trained` endpoint
 
 ## Additional Documentation
 

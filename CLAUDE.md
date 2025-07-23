@@ -176,7 +176,6 @@ This creates a natural sentence completion task where the model learns to comple
 **Backend Services:**
 
 - `python/api/api_server.py` - Main API server (port 8001)
-- `python/api/trained_model_server.py` - Fine-tuned models (port 8002 - legacy)
 - `python/vector_db/` - ChromaDB vector search implementation
 - `python/mlx_training/` - Model training scripts
 - `python/mlx_server/mlx_model_server.py` - MLX server for Llama models (port 8003)
@@ -286,7 +285,6 @@ data/          # Training data
 - Trained on high-quality sentence-based bio data
 - MLX server on port 8003 (Apple Silicon optimized)
 - 100-150ms inference time (3B model) / 50-100ms (1B model)
-- Legacy GPT-2/DistilGPT2 models still available on port 8002
 
 ## Performance Metrics
 
@@ -336,7 +334,6 @@ The codebase has undergone significant improvements:
   - `./start_trained.sh` - Fastest speed with fine-tuned model
 - The Python API server (port 8001) handles hybrid mode
 - MLX model server (port 8003) handles trained mode with Llama models
-- Legacy fine-tuned server (port 8002) still available for GPT-2 models
 
 ## Documentation for Junior Developers
 
