@@ -92,18 +92,18 @@ When preparing new training data for fine-tuning, follow these specific requirem
 ```bash
 # 1. Place your CSV file in data/ directory (e.g., data/new_data.csv)
 
-# 2. Create a new preparation script by copying the template:
-cp prepare_lookingfor_data.sh prepare_newdata.sh
+# 2. Use the high-quality data preparation script:
+./prepare_hq_data_fast.sh
 
-# 3. Edit the script to update:
-#    - SOURCE_FILE path
-#    - OUTPUT_DIR name
-#    - Any specific processing needs
+# 3. This script will:
+#    - Load your CSV data
+#    - Apply grammar filtering
+#    - Create natural split points
+#    - Generate high-quality prompt-completion pairs
+#    - Output to python/mlx_training/lookingfor_hq/
 
-# 4. Run the preparation:
-./prepare_newdata.sh
-
-# 5. Update start_training.sh to use the new dataset directory
+# 4. Train the model:
+./start_training_mlx_community.sh
 ```
 
 #### Example Training Data Format
@@ -129,7 +129,8 @@ This creates a natural sentence completion task where the model learns to comple
 - **MLX Model Server**: Port 8003 (fine-tuned Llama models)
   - Start: `./start_trained.sh` (recommended) or manually
   - Models (in priority order):
-    - Llama-3.2-3B-Instruct fine-tuned on LookingFor dataset (default - best quality)
+    - HIGH-QUALITY Llama-3.2-3B-Instruct fine-tuned on grammar-filtered LookingFor dataset (default - best quality, 2000 iterations)
+    - Llama-3.2-3B-Instruct fine-tuned on LookingFor dataset (1500 iterations)
     - Llama-3.2-1B-Instruct fine-tuned on LookingFor dataset (faster alternative)
     - Llama-3.2-3B-Instruct fine-tuned on bio dataset
     - Legacy Phi-3 models
@@ -154,7 +155,6 @@ This creates a natural sentence completion task where the model learns to comple
 **AI Integration:**
 
 - `actions/ai-text.ts` - Hybrid API integration (Python server + Ollama fallback)
-- `actions/ai-text-streaming.ts` - Streaming responses with smart caching
 - `actions/ai-vision.ts` - Image analysis capabilities
 
 **Form Components:**
@@ -197,7 +197,6 @@ Note: The mode is automatically set by the startup scripts (`start_hybrid.sh` or
 ```
 actions/        # Server actions for AI integration
 ├── ai-text.ts              # Hybrid API integration
-├── ai-text-streaming.ts    # Streaming with caching
 └── ai-vision.ts            # Image analysis
 
 app/           # Next.js app router pages and layouts
@@ -247,7 +246,7 @@ data/          # Training data
 ### 1. Hybrid AI Autocomplete
 
 - Vector search (ChromaDB) + LLM generation (Ollama)
-- 100-150ms response times (60-80% faster with streaming)
+- 100-150ms response times
 - Smart caching with 5-minute TTL
 - Adaptive debouncing (50-400ms)
 - 3-4 word trigger threshold
@@ -277,10 +276,11 @@ data/          # Training data
 
 ### 5. Fine-tuned Models (Optional)
 
-- Llama-3.2-3B-Instruct with LoRA adapters (default - LookingFor dataset, 1500 iterations)
+- HIGH-QUALITY Llama-3.2-3B-Instruct with LoRA adapters (default - grammar-filtered LookingFor dataset, 2000 iterations)
+- Llama-3.2-3B-Instruct with LoRA adapters (LookingFor dataset, 1500 iterations)
 - Llama-3.2-1B-Instruct with LoRA adapters (LookingFor dataset, faster option)
 - Llama-3.2-3B-Instruct with LoRA adapters (bio dataset)
-- Trained on high-quality sentence-based bio data
+- Trained on high-quality sentence-based bio data with grammar validation
 - MLX server on port 8003 (Apple Silicon optimized)
 - 100-150ms inference time (3B model) / 50-100ms (1B model)
 
@@ -315,14 +315,15 @@ The codebase has undergone significant improvements:
 
 1. **Mode-based Architecture**: Switch between 'hybrid' and 'trained' modes via environment variable
 2. **MLX Training Support**: Train Llama-3.2 models locally on Apple Silicon
-3. **Improved Shell Scripts**: Easy mode switching with `start_hybrid.sh` and `start_trained.sh`
-4. **Sentence-based Training Data**: Higher quality bio completions with natural sentence structure
-5. **Smart Caching**: 5-minute TTL cache reduces API calls by 90%
-6. **5-Hook Architecture**: Sophisticated system for feature coordination
-7. **40+ Kick Patterns**: Enhanced detection with phonetic and zero-width support
-8. **LookingFor Dataset**: New 15k+ training examples from LookingFor_20000.csv
-9. **Multiple Model Support**: MLX server prioritizes models in order: 3B LookingFor → 1B LookingFor → 3B bio → Phi-3
-10. **Enhanced 3B Model**: Trained with 1500 iterations for superior quality
+3. **Grammar-Filtered Training**: New high-quality dataset with grammar validation (4.5k+ examples)
+4. **Improved Shell Scripts**: Only 4 essential scripts: `start_hybrid.sh`, `start_trained.sh`, `prepare_hq_data_fast.sh`, `start_training_mlx_community.sh`
+5. **Sentence-based Training Data**: Higher quality bio completions with natural sentence structure
+6. **Smart Caching**: 5-minute TTL cache reduces API calls by 90%
+7. **5-Hook Architecture**: Sophisticated system for feature coordination
+8. **40+ Kick Patterns**: Enhanced detection with phonetic and zero-width support
+9. **LookingFor Dataset**: Grammar-filtered training examples with natural split points
+10. **Multiple Model Support**: MLX server prioritizes models: HIGH-QUALITY 3B → Standard 3B → 1B → bio → Phi-3
+11. **Enhanced Training**: 2000 iterations with optimized learning rate (1e-5) for superior quality
 
 ## Important Workflow Notes
 
@@ -333,24 +334,52 @@ The codebase has undergone significant improvements:
 - The Python API server (port 8001) handles hybrid mode
 - MLX model server (port 8003) handles trained mode with Llama models
 
-## Documentation for Junior Developers
+## Documentation
 
-Comprehensive documentation has been created to help junior developers understand and run this project:
+Comprehensive documentation has been created to help developers understand and run this project:
 
-### Getting Started
+### Documentation Structure
 
-- **[Junior Developer Guide](./Docs/JUNIOR_DEVELOPER_GUIDE.md)** - Complete setup guide for beginners
-- **[Hybrid Mode Guide](./Docs/HYBRID_MODE_GUIDE.md)** - Understanding and operating hybrid mode
-- **[Local LLM Training Guide](./Docs/LOCAL_LLM_TRAINING_GUIDE.md)** - Step-by-step model training
+All documentation is located in the `Docs/` folder:
 
-### Reference
+- **[Getting Started](./Docs/GETTING_STARTED.md)** - Complete setup guide
+- **[Running the App](./Docs/RUNNING_THE_APP.md)** - Hybrid and trained modes explained
+- **[Training Guide](./Docs/TRAINING_GUIDE.md)** - Train your own HIGH-QUALITY model
+- **[API Reference](./Docs/API_REFERENCE.md)** - Backend API documentation
+- **[Architecture](./Docs/ARCHITECTURE.md)** - System design and data flow
+- **[Troubleshooting](./Docs/TROUBLESHOOTING.md)** - Common issues and solutions
 
-- **[Architecture Diagrams](./Docs/ARCHITECTURE_DIAGRAM.md)** - Visual system architecture
-- **[Troubleshooting Guide](./Docs/TROUBLESHOOTING_GUIDE.md)** - Common issues and solutions
+### Quick Links
 
-### Quick Links for Beginners
+1. First time? Start here: [Getting Started](./Docs/GETTING_STARTED.md)
+2. Want to train a model? See: [Training Guide](./Docs/TRAINING_GUIDE.md)
+3. Having issues? Check: [Troubleshooting](./Docs/TROUBLESHOOTING.md)
+4. Need API details? Read: [API Reference](./Docs/API_REFERENCE.md)
 
-1. Start here: [Junior Developer Guide](./Docs/JUNIOR_DEVELOPER_GUIDE.md)
-2. Run hybrid mode: [Hybrid Mode Guide](./Docs/HYBRID_MODE_GUIDE.md)
-3. Train your model: [Local LLM Training Guide](./Docs/LOCAL_LLM_TRAINING_GUIDE.md)
-4. Fix issues: [Troubleshooting Guide](./Docs/TROUBLESHOOTING_GUIDE.md)
+## Latest Updates (July 23, 2025)
+
+### Grammar-Filtered Training Data
+- Created `prepare_hq_data_fast.sh` for high-quality data preparation
+- Filters training data for grammatical correctness
+- Reduces dataset from 15k to 4.5k high-quality examples
+- Uses natural split points for better sentence completion
+
+### Optimized Training Process
+- `start_training_mlx_community.sh` with optimized parameters:
+  - Learning rate: 1e-5 (reduced from 5e-5)
+  - Iterations: 2000 (increased from 1500)
+  - Layers: 24 (increased from 16)
+  - Uses MLX community models (no authentication required)
+
+### Shell Script Cleanup
+- Removed 6 obsolete scripts
+- Kept only 4 essential scripts:
+  - `start_hybrid.sh` - Hybrid mode with vector search
+  - `start_trained.sh` - Trained model mode
+  - `prepare_hq_data_fast.sh` - Data preparation
+  - `start_training_mlx_community.sh` - Model training
+
+### Model Priority System
+- MLX server now prioritizes HIGH-QUALITY model first
+- Located at: `models/lookingfor-llama3-3b-hq-lora/`
+- Trained with grammar-filtered dataset for superior output quality

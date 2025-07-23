@@ -10,7 +10,7 @@ A sophisticated AI-powered bio autocomplete system built with Next.js 15, React 
 - **Smart Feature Coordination** - Prevents conflicts between autocomplete, spell check, and other features
 - **Mobile-Optimized** - 16px fonts, responsive design, and touch-friendly interface
 - **Streaming Responses** - Character-by-character display for 60-80% faster perceived latency
-- **Fine-tuned Models** - Optional Llama-3.2 models (3B/1B) trained on 15k+ bio examples
+- **Fine-tuned Models** - Optional Llama-3.2 models (3B/1B) with grammar-filtered training data
 
 ## Prerequisites
 
@@ -21,7 +21,7 @@ Before you begin, ensure you have the following installed:
 - **npm** or **yarn**
 - **Ollama** (for running the Gemma 3 12B model locally)
 - **Git** (for cloning the repository)
-- **PyTorch** (for running fine-tuned models - optional)
+- **PyTorch** and **MLX** (for running fine-tuned models on Apple Silicon - optional)
 
 ## Ollama Setup
 
@@ -69,7 +69,9 @@ Before you begin, ensure you have the following installed:
 3. **Configure environment** (`.env.local`):
    ```env
    OLLAMA_PATH_API=http://127.0.0.1:11434/api
-   NEXT_PUBLIC_USE_FINETUNED_MODEL=true  # Optional
+   AUTOCOMPLETE_MODE=hybrid  # or 'trained' for fine-tuned model
+   # Optional: OpenAI API key for fallback
+   NEXT_PUBLIC_OPENAI_API_KEY=your-key-here
    ```
 
 4. **Initialize vector database**:
@@ -95,11 +97,12 @@ npm run dev
 npm run dev
 ```
 
-#### Option C: Start All Services
+#### Option C: Train Your Own Model
 ```bash
-./start_all_servers.sh
-# Then in another terminal:
-npm run dev
+# Prepare high-quality training data
+./prepare_hq_data_fast.sh
+# Start training with optimized parameters
+./start_training_mlx_community.sh
 ```
 
 ### Manual Start (Individual Services)
@@ -111,9 +114,7 @@ ollama serve
 
 #### 2. **Start Python API Server** (Terminal 2):
 ```bash
-./start_api_server.sh
-# or manually:
-cd python && python api/api_server.py
+cd python && source venv/bin/activate && python api/api_server.py
 ```
 The API server will run on `http://localhost:8001`
 
@@ -122,7 +123,7 @@ The API server will run on `http://localhost:8001`
 cd python/mlx_server
 python mlx_model_server.py
 ```
-The MLX server will run on `http://localhost:8003` with Llama-3.2 models
+The MLX server will run on `http://localhost:8003` with HIGH-QUALITY Llama-3.2 models
 
 #### 4. **Start Next.js Development Server** (Terminal 4):
 ```bash
@@ -171,7 +172,7 @@ The hybrid autocomplete system combines:
 - **Response Time**: 100-150ms (hybrid mode)
 - **Vector Search**: ~100ms
 - **LLM Generation**: 200-500ms
-- **Fine-tuned Llama Model**: 50-150ms
+- **Fine-tuned Llama Model**: 50-150ms (1B) / 100-150ms (3B)
 - **Kick Detection**: <5ms
 - **Cache Hit Rate**: 90%
 
@@ -233,7 +234,6 @@ The application uses a sophisticated 5-hook architecture for optimal performance
 ai-train-llm/
 ├── actions/
 │   ├── ai-text.ts                    # Server actions for hybrid API integration
-│   ├── ai-text-streaming.ts          # Streaming responses with smart caching
 │   └── ai-vision.ts                  # Image analysis actions
 ├── app/
 │   ├── layout.tsx                    # Root layout
@@ -261,7 +261,8 @@ ai-train-llm/
 │   ├── openai.ts                     # OpenAI integration (unused)
 │   └── utils.ts                      # Utility functions
 ├── data/
-│   └── bio.json                      # ~5000 bio examples for vector database
+│   ├── bio.json                      # ~5000 bio examples for vector database
+│   └── LookingFor_20000.csv          # 19k+ bio examples for training
 ├── python/                           # Python backend
 │   ├── api/
 │   │   └── api_server.py            # FastAPI hybrid autocomplete server
@@ -269,7 +270,9 @@ ai-train-llm/
 │   │   ├── setup_chromadb.py        # Initialize vector database
 │   │   └── vector_search.py         # Vector search implementation
 │   ├── mlx_training/                # Model training scripts
-│   │   └── bio_dataset/             # Training datasets
+│   │   ├── grammar_filter.py        # Grammar quality filtering
+│   │   ├── prepare_lookingfor_mlx_fast.py # Fast data preparation
+│   │   └── lookingfor_hq/           # High-quality training data
 │   ├── chroma_db/                   # ChromaDB persistent storage
 │   ├── requirements.txt             # Python dependencies
 │   ├── setup.sh                     # Environment setup script
@@ -289,10 +292,8 @@ ai-train-llm/
 └── [Scripts]
     ├── start_hybrid.sh              # Start hybrid mode (vector + AI)
     ├── start_trained.sh             # Start trained model mode
-    ├── start_training.sh            # Train your own model
-    ├── prepare_training_data.sh     # Prepare bio data for training
-    ├── start_all_servers.sh         # Legacy: Start all services
-    └── start_api_server.sh          # Start API server only
+    ├── prepare_hq_data_fast.sh      # Prepare high-quality training data
+    └── start_training_mlx_community.sh # Train model with optimized parameters
 ```
 
 ## Available Scripts
@@ -304,28 +305,41 @@ ai-train-llm/
 - `npm run lint` - Run ESLint for code quality
 
 ### Server Management Scripts
-- `./start_all_servers.sh` - Start all backend services (API + Trained Model)
-- `./start_api_server.sh` - Start only the main API server
-- `cd python && ./setup.sh` - Initial Python environment setup
-- `cd python && ./activate.sh` - Activate Python virtual environment
+- `./start_hybrid.sh` - Start hybrid mode (vector search + AI generation)
+- `./start_trained.sh` - Start trained model mode (fine-tuned Llama)
+- `./prepare_hq_data_fast.sh` - Prepare high-quality training data
+- `./start_training_mlx_community.sh` - Train model with optimized parameters
 
 ## Server Management
 
 ### Using Shell Scripts
 
-The project includes convenient shell scripts for managing backend services:
+The project includes 4 essential shell scripts for managing the application:
 
-#### `start_all_servers.sh`
-- Starts both API server (port 8001) and trained model server (port 8002)
-- Checks if Ollama is running and provides guidance if not
-- Prevents duplicate server instances
-- Creates log files for debugging (`python/api_server.log`)
-- Shows status of all services with helpful URLs
+#### `start_hybrid.sh`
+- Starts hybrid mode with vector search + AI generation
+- Runs Python API server on port 8001
+- Automatically sets `AUTOCOMPLETE_MODE=hybrid` in `.env.local`
+- Best for high-quality, contextually relevant completions
 
-#### `start_api_server.sh`
-- Starts only the main API server on port 8001
-- Provides clear instructions for required services
-- Shows API documentation URL
+#### `start_trained.sh`
+- Starts trained model mode with fine-tuned Llama
+- Runs MLX model server on port 8003
+- Automatically sets `AUTOCOMPLETE_MODE=trained` in `.env.local`
+- Uses HIGH-QUALITY grammar-filtered model by default
+- Fastest response times (100-150ms)
+
+#### `prepare_hq_data_fast.sh`
+- Prepares high-quality training data from CSV files
+- Applies grammar filtering and validation
+- Creates natural sentence split points
+- Outputs to `python/mlx_training/lookingfor_hq/`
+
+#### `start_training_mlx_community.sh`
+- Trains Llama-3.2-3B model with optimized parameters
+- Uses MLX community models (no authentication required)
+- 2000 iterations with learning rate 1e-5
+- Saves to `models/lookingfor-llama3-3b-hq-lora/`
 
 ### Managing Services
 
@@ -450,6 +464,8 @@ ChromaDB is configured to persist data locally:
 - **Transformers** - Hugging Face library for model training
 - **PyTorch** - Deep learning framework for model fine-tuning
 - **Sentence Transformers** - For generating embeddings
+- **MLX** - Apple Silicon optimized framework for training and inference
+- **language_tool_python** - Grammar checking for data quality filtering
 
 ### Development Dependencies
 
@@ -472,7 +488,32 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Model Training (Optional)
 
-The project includes comprehensive model training capabilities for custom bio generation:
+The project includes comprehensive model training capabilities for custom bio generation using MLX on Apple Silicon:
+
+### Training Process
+
+1. **Data Preparation** - Grammar-filtered high-quality training data
+   ```bash
+   ./prepare_hq_data_fast.sh
+   ```
+   - Filters 19k+ examples down to ~4.5k high-quality ones
+   - Ensures grammatically correct completions
+   - Creates natural sentence split points
+
+2. **Model Training** - Optimized parameters for quality
+   ```bash
+   ./start_training_mlx_community.sh
+   ```
+   - Uses Llama-3.2-3B-Instruct as base model
+   - LoRA fine-tuning with rank 8
+   - Learning rate: 1e-5 (optimized)
+   - Iterations: 2000 for thorough training
+
+3. **Model Priority** - MLX server automatically loads the best model:
+   - HIGH-QUALITY Llama-3.2-3B (grammar-filtered, 2000 iterations)
+   - Standard Llama-3.2-3B (1500 iterations)
+   - Llama-3.2-1B (faster alternative)
+   - Legacy models
 
 ## Additional Documentation
 
@@ -488,6 +529,26 @@ The project includes comprehensive model training capabilities for custom bio ge
 - **[AUTOCOMPLETE_OPTIMIZATIONS.md](app_docs/AUTOCOMPLETE_OPTIMIZATIONS.md)** - Performance optimization details
 - **[simon_updates.md](app_docs/simon_updates.md)** - Detailed changelog of all updates
 
+## Latest Updates (July 2025)
+
+### Grammar-Filtered Training
+- New high-quality data preparation with `prepare_hq_data_fast.sh`
+- Filters 19k+ examples to ~4.5k grammatically correct ones
+- Natural sentence split points for better completions
+- Significant improvement in model output quality
+
+### Optimized Training Process
+- Learning rate reduced to 1e-5 for better convergence
+- Increased to 2000 iterations for thorough training
+- MLX community models - no authentication required
+- HIGH-QUALITY model now default in trained mode
+
+### Simplified Shell Scripts
+- Reduced from 10+ scripts to just 4 essential ones
+- Clear separation: hybrid mode vs trained mode
+- One-command data preparation and training
+- Automatic environment configuration
+
 ## Acknowledgments
 
 - [Ollama](https://ollama.ai) for providing local AI model hosting
@@ -497,3 +558,4 @@ The project includes comprehensive model training capabilities for custom bio ge
 - [typo-js](https://github.com/cfinke/Typo.js) for excellent spell checking capabilities
 - [Hunspell](http://hunspell.github.io/) for comprehensive dictionary support
 - [Next.js](https://nextjs.org) team for the excellent framework
+- [MLX](https://github.com/ml-explore/mlx) for Apple Silicon optimized training

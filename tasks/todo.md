@@ -44,7 +44,6 @@ This is a Next.js 15 application that provides AI-powered text autocomplete func
 ```
 actions/
 ├── ai-text.ts              # Main AI completion logic
-├── ai-text-streaming.ts    # Streaming completion support
 └── ai-vision.ts            # Image processing capabilities
 
 components/

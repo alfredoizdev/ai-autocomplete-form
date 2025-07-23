@@ -13,7 +13,7 @@ This guide will help you set up and run the AI Bio Autocomplete app. Even if you
 ### Hardware Requirements
 - **Minimum**: 8GB RAM, 20GB disk space
 - **Recommended**: 16GB+ RAM, 50GB disk space
-- **For Training**: Apple Silicon Mac with 32GB+ RAM
+- **For Training**: Apple Silicon Mac with 16GB+ RAM (32GB+ recommended)
 
 ## 🚀 Quick Setup (15 minutes)
 
@@ -72,12 +72,12 @@ npm run dev           # Starts frontend
 #### Option B: Trained Mode (Best Quality)
 Uses fine-tuned Llama model for high-quality completions
 ```bash
-./start_trained.sh    # Starts MLX server with LookingFor model
+./start_trained.sh    # Starts MLX server with HIGH-QUALITY model
 # In new terminal:
 npm run dev          # Starts frontend
 ```
 
-Note: The trained mode uses the Llama-3.2-3B model fine-tuned on the LookingFor dataset (15k+ examples, 1500 iterations) for best quality. Falls back to the faster 1B model if 3B is not available.
+Note: The trained mode uses the HIGH-QUALITY Llama-3.2-3B model fine-tuned on grammar-filtered LookingFor dataset (4.5k+ examples, 2000 iterations, learning rate 1e-5) for superior quality. Falls back to standard models if not available.
 
 ### Step 7: Open the App
 Navigate to http://localhost:3000 in your browser
@@ -93,7 +93,7 @@ Navigate to http://localhost:3000 in your browser
 
 ### Modes Explained
 - **Hybrid Mode**: Searches similar bios + generates new content (balanced approach)
-- **Trained Mode**: Uses fine-tuned 3B model (best quality, 100-150ms) or 1B model (faster, 50-100ms)
+- **Trained Mode**: Uses HIGH-QUALITY fine-tuned 3B model (best quality, 100-150ms, grammar-filtered dataset)
 
 ### Keyboard Shortcuts
 - `TAB` - Accept AI suggestion

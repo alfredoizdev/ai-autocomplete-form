@@ -17,27 +17,29 @@ Train a custom AI model to get faster, more personalized bio suggestions.
 
 ## 🚀 Quick Training (Recommended)
 
-### Step 1: Prepare Data
+### Step 1: Prepare High-Quality Data
 
-Choose your dataset:
 ```bash
-# Option A: Original bio.json dataset
-./prepare_training_data.sh
-
-# Option B: LookingFor CSV dataset (15k+ examples)
-./prepare_lookingfor_data.sh
+# Prepare grammar-filtered high-quality data
+./prepare_hq_data_fast.sh
 ```
-This converts bio examples into training format (~5 minutes).
+This filters the LookingFor dataset for grammatically correct examples:
+- Reduces ~15k examples to ~4.5k high-quality ones
+- Ensures proper sentence structure and punctuation
+- Creates natural split points for better completions
+- Takes ~2-3 minutes to process
 
 ### Step 2: Start Training
 ```bash
-./start_training.sh
+# Train with optimized parameters
+./start_training_mlx_community.sh
 ```
-This trains a Llama-3.2 model with your data:
-- **1B Model**: ~30-45 minutes for 1000 iterations
-- **3B Model**: ~2-3 hours for 1500 iterations (recommended)
-
-Note: The default configuration now uses the LookingFor dataset with the 3B model for superior quality.
+This trains a HIGH-QUALITY Llama-3.2-3B model:
+- **Learning rate**: 1e-5 (optimized for quality)
+- **Iterations**: 2000 (thorough training)
+- **Layers**: 24 (increased from 16)
+- **Time**: ~3-4 hours on Apple Silicon
+- **Output**: `models/lookingfor-llama3-3b-hq-lora/`
 
 ### Step 3: Use Your Model
 ```bash
@@ -48,20 +50,23 @@ npm run dev
 ## 📊 Understanding the Process
 
 ### Training Data Format
-The LookingFor dataset format ensures high quality:
+The HIGH-QUALITY dataset format ensures superior results:
+- **Grammar filtering**: Only grammatically correct sentences included
 - **One sentence per example**: Each bio sentence becomes a separate training pair
 - **Smart splitting**: Natural breaks at conjunctions, prepositions, key phrases
 - **Quality filtering**: Minimum 8 words, maximum 500 words total
 - **Proper punctuation**: Prompts end without punctuation, completions end with punctuation
+- **Dataset size**: ~4.5k examples (filtered from 15k+ for quality)
 
 ### What Happens During Training
 
 1. **Data Preparation**
    - Splits bios into prompt → completion pairs
+   - Applies grammar filtering using language_tool_python
    - Each training example is exactly ONE complete sentence
    - Minimum 8 words per sentence requirement
    - Creates natural breaking points at conjunctions, prepositions
-   - Outputs to `python/mlx_training/bio_mlx_improved/` or `python/mlx_training/lookingfor_mlx/`
+   - Outputs to `python/mlx_training/lookingfor_hq/`
 
 2. **Model Training**
    - Base models:
@@ -70,9 +75,10 @@ The LookingFor dataset format ensures high quality:
    - Applies LoRA (efficient fine-tuning)
    - Saves checkpoints every 100 steps
    - Final models saved to:
-     - `models/lookingfor-llama3-3b-lora/` (3B LookingFor dataset)
+     - `models/lookingfor-llama3-3b-hq-lora/` (HIGH-QUALITY 3B, 2000 iterations)
+     - `models/lookingfor-llama3-3b-lora/` (Standard 3B, 1500 iterations)
      - `models/lookingfor-llama3-lora/` (1B LookingFor dataset)
-     - `models/bio-llama3-lora/` (bio.json dataset)
+     - `models/bio-sentence-llama3-lora/` (bio.json dataset)
 
 3. **Progress Monitoring**
    ```
@@ -81,7 +87,8 @@ The LookingFor dataset format ensures high quality:
    Iteration 200: Train loss 1.424, Val loss 1.512
    ```
    - Loss should decrease (lower is better)
-   - 3B model: 1500 iterations (recommended)
+   - HIGH-QUALITY 3B model: 2000 iterations (best quality)
+   - Standard 3B model: 1500 iterations
    - 1B model: 1000 iterations
    - Validation loss of ~1.5 indicates good convergence
 
@@ -89,11 +96,12 @@ The LookingFor dataset format ensures high quality:
 
 ### Adjusting Training Parameters
 
-Edit `start_training.sh` to customize:
+Edit `start_training_mlx_community.sh` to customize:
 ```bash
-LEARNING_RATE=5e-5      # Lower = more stable
+LEARNING_RATE=1e-5      # Optimized for quality (was 5e-5)
 BATCH_SIZE=4            # Lower = less memory
-NUM_ITERATIONS=1000     # More = better quality
+NUM_ITERATIONS=2000     # More = better quality (was 1500)
+NUM_LAYERS=24           # Increased from 16 for better learning
 ```
 
 ### Memory Settings
@@ -113,31 +121,36 @@ LORA_RANK=16
 
 For full control:
 ```bash
-cd python
-source venv/bin/activate
+cd python/mlx_training
+source ../venv/bin/activate
 
-# Prepare data (choose one)
-python mlx_training/prepare_bio_mlx_improved.py      # For bio.json
-python mlx_training/prepare_lookingfor_mlx.py       # For LookingFor CSV
+# Prepare high-quality data
+python prepare_lookingfor_mlx_fast.py
 
-# Train model
+# Train model with optimized parameters
 python -m mlx_lm lora \
-  --model mlx-community/Llama-3.2-1B-Instruct-4bit \
+  --model mlx-community/Llama-3.2-3B-Instruct-4bit \
   --train \
-  --data ../python/mlx_training/lookingfor_mlx \
+  --data lookingfor_hq \
   --batch-size 4 \
-  --num-layers 16 \
-  --iters 1000 \
-  --adapter-path ../models/my-custom-model
+  --learning-rate 1e-5 \
+  --iters 2000 \
+  --val-batches 50 \
+  --save-every 200 \
+  --adapter-path "adapters/llama3.2-3b-lookingfor-hq" \
+  --num-layers 24 \
+  --steps-per-report 10 \
+  --steps-per-eval 100
 ```
 
 ## 📈 Training Tips
 
 ### For Better Quality
-- Add more diverse bio examples to `data/bio.json` or `data/LookingFor_20000.csv`
-- Ensure examples follow sentence-based format (one sentence per training example)
-- Train for more iterations (1500-2000)
-- Use lower learning rate (2e-5)
+- Use grammar-filtered data with `prepare_hq_data_fast.sh`
+- Train for 2000 iterations (as configured in the script)
+- Use optimized learning rate of 1e-5
+- Increase num_layers to 24 for better learning capacity
+- Ensure examples are grammatically correct before training
 
 ### For Faster Training
 - Reduce batch size to 2
@@ -147,10 +160,13 @@ python -m mlx_lm lora \
 ### Monitoring Training
 ```bash
 # Watch checkpoint creation
-watch -n 10 ls -la models/bio-llama3-lora-new/
+watch -n 10 ls -la python/mlx_training/adapters/llama3.2-3b-lookingfor-hq/
 
 # Check GPU usage (Activity Monitor on Mac)
 # MLX automatically uses Apple Silicon GPU
+
+# View training progress
+tail -f python/mlx_training/training.log
 ```
 
 ## 🎯 Testing Your Model
@@ -218,22 +234,26 @@ mv models/bio-llama3-lora models/v1-1000-iters
 
 ### Using Different Base Models
 ```bash
-# Best quality (default for LookingFor dataset)
+# HIGH-QUALITY model (default, best results)
+MODEL_NAME="mlx-community/Llama-3.2-3B-Instruct-4bit"
+NUM_ITERATIONS=2000
+LEARNING_RATE=1e-5
+
+# Standard quality model
 MODEL_NAME="mlx-community/Llama-3.2-3B-Instruct-4bit"
 NUM_ITERATIONS=1500
+LEARNING_RATE=5e-5
 
 # Faster training and inference
 MODEL_NAME="mlx-community/Llama-3.2-1B-Instruct-4bit"
 NUM_ITERATIONS=1000
-
-# Alternative models
-MODEL_NAME="mlx-community/Qwen2.5-1.5B-Instruct-4bit"
+LEARNING_RATE=5e-5
 ```
 
 ### Resume Training
 ```bash
-# In start_training.sh, add:
---resume-adapter-path models/bio-llama3-lora/0000500_adapters.safetensors
+# In start_training_mlx_community.sh, add:
+--resume-adapter-path adapters/llama3.2-3b-lookingfor-hq/0000500_adapters.safetensors
 ```
 
 ## 📚 Next Steps

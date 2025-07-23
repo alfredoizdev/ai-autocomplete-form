@@ -11,10 +11,10 @@ This guide explains how to run the AI Bio Autocomplete app in different modes.
 - **Requirements**: Ollama running
 
 ### 2. Trained Mode  
-- **Best for**: Fastest response times
-- **How it works**: Uses fine-tuned Llama model
-- **Response time**: 50-100ms
-- **Requirements**: Trained MLX model
+- **Best for**: Highest quality completions with fast response times
+- **How it works**: Uses HIGH-QUALITY fine-tuned Llama-3.2-3B model
+- **Response time**: 100-150ms
+- **Requirements**: Trained MLX model (4.5k+ grammar-filtered examples)
 
 ## 🚀 Starting the App
 
@@ -45,7 +45,7 @@ npm run dev
 What happens:
 1. Sets `AUTOCOMPLETE_MODE=trained` automatically
 2. Starts MLX server on port 8003
-3. Loads your fine-tuned model
+3. Loads HIGH-QUALITY Llama-3.2-3B model (grammar-filtered, 2000 iterations)
 4. Shows real-time logs
 
 ## 📊 Monitoring Services
@@ -171,9 +171,9 @@ docker-compose ps
 
 | Feature | Hybrid Mode | Trained Mode |
 |---------|------------|--------------|
-| Quality | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
+| Quality | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
 | Speed | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
-| Variety | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ |
+| Variety | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
 | Setup | Easy | Requires training |
 
 ## 🆘 Troubleshooting

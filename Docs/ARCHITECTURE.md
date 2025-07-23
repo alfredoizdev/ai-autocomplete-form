@@ -22,8 +22,8 @@ Understanding how the AI Bio Autocomplete system works.
 │  │  Hybrid API    │  │  MLX Server    │  │   Ollama     │ │
 │  │  Port 8001     │  │  Port 8003     │  │  Port 11434  │ │
 │  │                │  │                │  │              │ │
-│  │ Vector Search  │  │ Fine-tuned     │  │ Gemma3 12B   │ │
-│  │ + AI Gen       │  │ Llama 3B/1B    │  │ Generation   │ │
+│  │ Vector Search  │  │ HIGH-QUALITY   │  │ Gemma3 12B   │ │
+│  │ + AI Gen       │  │ Llama 3.2-3B   │  │ Generation   │ │
 │  └───────┬────────┘  └────────────────┘  └──────┬───────┘ │
 │          │                                        │          │
 │          ▼                                        │          │
@@ -35,7 +35,7 @@ Understanding how the AI Bio Autocomplete system works.
 │                                                              │
 │  Training Data:                                             │
 │  • bio.json (5k examples)                                   │
-│  • LookingFor_20000.csv (19k examples → 15k training)      │
+│  • LookingFor_20000.csv (19k examples → 4.5k HQ training)  │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -75,7 +75,6 @@ useKickDetection       // Content filtering
 
 **Server Actions:**
 - `ai-text.ts` - Mode routing and API calls
-- `ai-text-streaming.ts` - Real-time streaming
 - `ai-vision.ts` - Image analysis
 
 ### Backend Services
@@ -87,17 +86,18 @@ useKickDetection       // Content filtering
 - Response filtering
 
 **MLX Model Server (8003):**
-- Model loading (prioritizes larger models for quality)
+- Model loading (prioritizes HIGH-QUALITY model)
 - Fast inference:
-  - 3B models: 100-150ms
+  - HIGH-QUALITY 3B: 100-150ms (best)
+  - Standard 3B: 100-150ms
   - 1B models: 50-100ms
-- Grammar correction
-- Batch processing
-- Supports multiple models (in priority order):
-  - LookingFor Llama-3.2-3B (1500 iterations, best quality)
-  - LookingFor Llama-3.2-1B (1000 iterations, faster)
-  - Bio Llama-3.2-3B (legacy)
-  - Phi-3 (legacy)
+- Grammar correction built-in
+- Batch processing support
+- Model priority order:
+  1. HIGH-QUALITY Llama-3.2-3B (2000 iterations, grammar-filtered)
+  2. Standard Llama-3.2-3B (1500 iterations)
+  3. Llama-3.2-1B (1000 iterations, faster)
+  4. Legacy bio models
 
 ## 📊 Data Flow
 
@@ -165,8 +165,9 @@ Operation          Target    Actual
 Vector Search      <100ms    ~80ms
 AI Generation      <500ms    ~350ms
 Hybrid Total       <200ms    ~150ms
-MLX 3B Inference   <150ms    ~120ms
-MLX 1B Inference   <100ms    ~70ms
+MLX HQ 3B         <150ms    ~120ms
+MLX Std 3B        <150ms    ~130ms
+MLX 1B            <100ms    ~70ms
 Spell Check        <50ms     ~20ms
 Kick Detection     <10ms     ~3ms
 ```
@@ -239,9 +240,11 @@ Load Balancer
 
 ### Why MLX for Training?
 - Apple Silicon optimization
-- Memory efficiency
-- Fast inference
+- Memory efficiency with LoRA
+- Fast inference (100-150ms)
 - Easy deployment
+- Grammar-filtered training data
+- 2000 iterations for quality
 
 ## 🔮 Future Architecture
 

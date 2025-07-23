@@ -110,26 +110,31 @@ pip install mlx mlx-lm
 ### Training fails immediately
 ```bash
 # Check you have training data
-ls python/mlx_training/bio_mlx_improved/
+ls python/mlx_training/lookingfor_hq/
 
 # If missing, prepare it:
-./prepare_training_data.sh
+./prepare_hq_data_fast.sh
 ```
 
 ### "Out of memory" during training
 ```bash
-# Edit start_training.sh
-BATCH_SIZE=1  # Reduce from 4
-LORA_RANK=8   # Reduce from 16
+# Edit start_training_mlx_community.sh
+BATCH_SIZE=2  # Reduce from 4
+NUM_LAYERS=16  # Reduce from 24
 ```
 
 ### Model not loading
 ```bash
-# Check model exists
-ls models/bio-sentence-llama3-lora/
+# Check HIGH-QUALITY model exists
+ls models/lookingfor-llama3-3b-hq-lora/
 
-# If missing, use fallback or train new model
-./start_training.sh
+# Check fallback models
+ls models/lookingfor-llama3-3b-lora/
+ls models/lookingfor-llama3-lora/
+
+# If all missing, train new model
+./prepare_hq_data_fast.sh
+./start_training_mlx_community.sh
 ```
 
 ## 💻 Frontend Issues
@@ -194,6 +199,16 @@ curl http://localhost:8003/           # MLX server
 curl http://localhost:3000/           # Frontend
 ```
 
+### Verify model quality
+```bash
+# Test HIGH-QUALITY model
+curl -X POST http://localhost:8003/api/autocomplete/mlx \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "We are looking for"}'
+
+# Should return grammatically correct completion with proper punctuation
+```
+
 ### View all logs
 ```bash
 # In separate terminals:
@@ -246,5 +261,12 @@ Remember: Most issues are from:
 2. Wrong directory
 3. Virtual environment not activated
 4. Ports already in use
+5. Model not trained or wrong path
 
 Start there and you'll solve 90% of problems!
+
+### Latest Model Information
+- **HIGH-QUALITY model**: `models/lookingfor-llama3-3b-hq-lora/`
+- **Training**: 2000 iterations, learning rate 1e-5
+- **Dataset**: 4.5k grammar-filtered examples
+- **Scripts**: Only 4 essential scripts (start_hybrid.sh, start_trained.sh, prepare_hq_data_fast.sh, start_training_mlx_community.sh)

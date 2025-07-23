@@ -10,9 +10,10 @@ Technical documentation for the AI Bio Autocomplete backend services.
 - **Start**: `./start_hybrid.sh`
 
 ### 2. MLX Model Server (Port 8003)
-- **Purpose**: Fine-tuned model inference
+- **Purpose**: HIGH-QUALITY fine-tuned model inference
 - **Docs**: Built-in health endpoints
 - **Start**: `./start_trained.sh`
+- **Model**: Llama-3.2-3B with grammar-filtered training (4.5k+ examples)
 
 ## 📡 API Endpoints
 
@@ -90,8 +91,8 @@ Generate completion using fine-tuned model.
 Response:
 ```json
 {
-  "completion": "enjoy dinners, dancing, and good conversation",
-  "elapsed_ms": 67.89,
+  "completion": "enjoy dinners, dancing, and good conversation.",
+  "elapsed_ms": 123.45,
   "model_name": "llama3.2-mlx-finetuned"
 }
 ```
@@ -135,10 +136,13 @@ MAX_RETRIES = 3               # Ollama retry attempts
 
 Edit `python/mlx_server/mlx_model_server.py`:
 ```python
-# Model loading priority
-1. models/bio-sentence-llama3-lora-continued/
-2. models/bio-sentence-llama3-lora/
-3. Base model fallback
+# Model loading priority (in order)
+1. models/lookingfor-llama3-3b-hq-lora/      # HIGH-QUALITY (2000 iterations)
+2. models/lookingfor-llama3-3b-lora/         # Standard 3B (1500 iterations)
+3. models/lookingfor-llama3-lora/            # 1B model (faster)
+4. models/bio-sentence-llama3-lora-continued/ # Legacy bio model
+5. models/bio-sentence-llama3-lora/          # Legacy bio model
+6. Base model fallback
 
 # Generation defaults
 DEFAULT_MAX_TOKENS = 50
@@ -148,11 +152,7 @@ DEFAULT_TEMPERATURE = 0.7
 ## 📊 Performance Tuning
 
 ### Caching
-The frontend caches responses for 5 minutes:
-```typescript
-// In actions/ai-text-streaming.ts
-const CACHE_DURATION = 5 * 60 * 1000;
-```
+The frontend uses smart caching to improve performance and reduce API calls.
 
 ### Debouncing
 Prevent too many API calls:
@@ -239,10 +239,11 @@ tail -f python/mlx_server/mlx_server.log
 ```
 
 ### Metrics to Track
-- Response times (target: <150ms hybrid, <100ms MLX)
+- Response times (target: <150ms hybrid, 100-150ms MLX)
 - Cache hit rate (target: >80%)
 - Error rate (target: <1%)
 - Model load time
+- Grammar accuracy (HIGH-QUALITY model)
 
 ## 🔄 Deployment
 
