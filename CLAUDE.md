@@ -50,11 +50,9 @@ npm run dev
 #### Option 3: Train Your Own Model
 
 ```bash
-# Prepare data and start training
-./prepare_training_data.sh  # For bio.json data
-# OR
-./prepare_lookingfor_data.sh  # For LookingFor CSV data
-./start_training.sh
+# Prepare high-quality data and start training
+./prepare_hq_data_fast.sh  # Prepares grammar-filtered high-quality data
+./start_training_mlx_community.sh  # Trains with optimized parameters
 ```
 
 ### Training Data Format Requirements

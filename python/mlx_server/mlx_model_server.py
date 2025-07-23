@@ -196,14 +196,22 @@ async def load_model():
     print("Loading MLX model...")
     
     # Check if we have a fine-tuned adapter
-    # First check for the new 3B LookingFor model
+    # First check for the new high-quality 3B LookingFor model
+    lookingfor_3b_hq_adapter_dir = Path(__file__).parent.parent.parent / "models" / "lookingfor-llama3-3b-hq-lora"
     lookingfor_3b_adapter_dir = Path(__file__).parent.parent.parent / "models" / "lookingfor-llama3-3b-lora"
     lookingfor_1b_adapter_dir = Path(__file__).parent.parent.parent / "models" / "lookingfor-llama3-lora"
     llama_continued_dir = Path(__file__).parent.parent.parent / "models" / "bio-sentence-llama3-lora-continued"
     llama_adapter_dir = Path(__file__).parent.parent.parent / "models" / "bio-sentence-llama3-lora"
     phi_adapter_dir = Path(__file__).parent / "models" / "bio-phi3-lora"
     
-    if lookingfor_3b_adapter_dir.exists() and (lookingfor_3b_adapter_dir / "adapters.safetensors").exists():
+    if lookingfor_3b_hq_adapter_dir.exists() and (lookingfor_3b_hq_adapter_dir / "adapters.safetensors").exists():
+        print(f"Loading HIGH-QUALITY LookingFor Llama-3.2-3B model from {lookingfor_3b_hq_adapter_dir}")
+        adapter_path = str(lookingfor_3b_hq_adapter_dir)
+        # Load Llama 3B base model with adapter
+        model, tokenizer = load("mlx-community/Llama-3.2-3B-Instruct-4bit", 
+                               adapter_path=adapter_path)
+        print("✅ HIGH-QUALITY LookingFor Llama-3.2-3B model loaded successfully (2000 iterations, grammar-filtered)")
+    elif lookingfor_3b_adapter_dir.exists() and (lookingfor_3b_adapter_dir / "adapters.safetensors").exists():
         print(f"Loading LookingFor Llama-3.2-3B model from {lookingfor_3b_adapter_dir}")
         adapter_path = str(lookingfor_3b_adapter_dir)
         # Load Llama 3B base model with adapter
