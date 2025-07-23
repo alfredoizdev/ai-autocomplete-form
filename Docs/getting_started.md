@@ -69,15 +69,15 @@ Best quality with vector search + AI generation
 npm run dev           # Starts frontend
 ```
 
-#### Option B: Trained Mode (Fastest)
-Uses fine-tuned Llama model for 50-100ms responses
+#### Option B: Trained Mode (Best Quality)
+Uses fine-tuned Llama model for high-quality completions
 ```bash
 ./start_trained.sh    # Starts MLX server with LookingFor model
 # In new terminal:
 npm run dev          # Starts frontend
 ```
 
-Note: The trained mode uses the Llama-3.2-1B model fine-tuned on the LookingFor dataset (15k+ examples)
+Note: The trained mode uses the Llama-3.2-3B model fine-tuned on the LookingFor dataset (15k+ examples, 1500 iterations) for best quality. Falls back to the faster 1B model if 3B is not available.
 
 ### Step 7: Open the App
 Navigate to http://localhost:3000 in your browser
@@ -92,8 +92,8 @@ Navigate to http://localhost:3000 in your browser
 5. **Safety Filter**: Automatically detects prohibited content
 
 ### Modes Explained
-- **Hybrid Mode**: Searches similar bios + generates new content (best quality)
-- **Trained Mode**: Uses fine-tuned model (fastest response)
+- **Hybrid Mode**: Searches similar bios + generates new content (balanced approach)
+- **Trained Mode**: Uses fine-tuned 3B model (best quality, 100-150ms) or 1B model (faster, 50-100ms)
 
 ### Keyboard Shortcuts
 - `TAB` - Accept AI suggestion

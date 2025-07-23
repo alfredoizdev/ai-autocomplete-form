@@ -23,7 +23,7 @@ Understanding how the AI Bio Autocomplete system works.
 │  │  Port 8001     │  │  Port 8003     │  │  Port 11434  │ │
 │  │                │  │                │  │              │ │
 │  │ Vector Search  │  │ Fine-tuned     │  │ Gemma3 12B   │ │
-│  │ + AI Gen       │  │ Llama 1B/3B    │  │ Generation   │ │
+│  │ + AI Gen       │  │ Llama 3B/1B    │  │ Generation   │ │
 │  └───────┬────────┘  └────────────────┘  └──────┬───────┘ │
 │          │                                        │          │
 │          ▼                                        │          │
@@ -87,13 +87,16 @@ useKickDetection       // Content filtering
 - Response filtering
 
 **MLX Model Server (8003):**
-- Model loading (prioritizes LookingFor model)
-- Fast inference (50-100ms)
+- Model loading (prioritizes larger models for quality)
+- Fast inference:
+  - 3B models: 100-150ms
+  - 1B models: 50-100ms
 - Grammar correction
 - Batch processing
-- Supports multiple models:
-  - LookingFor Llama-3.2-1B (default)
-  - Bio Llama-3.2-3B
+- Supports multiple models (in priority order):
+  - LookingFor Llama-3.2-3B (1500 iterations, best quality)
+  - LookingFor Llama-3.2-1B (1000 iterations, faster)
+  - Bio Llama-3.2-3B (legacy)
   - Phi-3 (legacy)
 
 ## 📊 Data Flow
@@ -162,7 +165,8 @@ Operation          Target    Actual
 Vector Search      <100ms    ~80ms
 AI Generation      <500ms    ~350ms
 Hybrid Total       <200ms    ~150ms
-MLX Inference      <100ms    ~70ms
+MLX 3B Inference   <150ms    ~120ms
+MLX 1B Inference   <100ms    ~70ms
 Spell Check        <50ms     ~20ms
 Kick Detection     <10ms     ~3ms
 ```

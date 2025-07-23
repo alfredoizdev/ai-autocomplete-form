@@ -33,9 +33,11 @@ This converts bio examples into training format (~5 minutes).
 ```bash
 ./start_training.sh
 ```
-This trains a Llama-3.2 model with your data (2-4 hours).
+This trains a Llama-3.2 model with your data:
+- **1B Model**: ~30-45 minutes for 1000 iterations
+- **3B Model**: ~2-3 hours for 1500 iterations (recommended)
 
-Note: The default configuration now uses the LookingFor dataset which provides higher quality sentence-based training examples.
+Note: The default configuration now uses the LookingFor dataset with the 3B model for superior quality.
 
 ### Step 3: Use Your Model
 ```bash
@@ -62,20 +64,26 @@ The LookingFor dataset format ensures high quality:
    - Outputs to `python/mlx_training/bio_mlx_improved/` or `python/mlx_training/lookingfor_mlx/`
 
 2. **Model Training**
-   - Uses Llama-3.2-1B as base model (4-bit quantized)
+   - Base models:
+     - Llama-3.2-3B-Instruct-4bit (recommended for quality)
+     - Llama-3.2-1B-Instruct-4bit (faster alternative)
    - Applies LoRA (efficient fine-tuning)
    - Saves checkpoints every 100 steps
    - Final models saved to:
+     - `models/lookingfor-llama3-3b-lora/` (3B LookingFor dataset)
+     - `models/lookingfor-llama3-lora/` (1B LookingFor dataset)
      - `models/bio-llama3-lora/` (bio.json dataset)
-     - `models/lookingfor-llama3-lora/` (LookingFor dataset)
 
 3. **Progress Monitoring**
    ```
-   Iteration 100: Train loss 2.145, Learning rate 5.00e-05
-   Iteration 200: Train loss 1.823, Learning rate 5.00e-05
+   # Example from 3B model training:
+   Iteration 100: Train loss 1.605, Learning rate 5.00e-05
+   Iteration 200: Train loss 1.424, Val loss 1.512
    ```
    - Loss should decrease (lower is better)
-   - Training completes at iteration 1000
+   - 3B model: 1500 iterations (recommended)
+   - 1B model: 1000 iterations
+   - Validation loss of ~1.5 indicates good convergence
 
 ## ⚙️ Customization
 
@@ -155,13 +163,16 @@ curl -X POST http://localhost:8003/api/autocomplete/mlx \
   -d '{"prompt": "I am a fun loving couple who"}'
 ```
 
-Expected response:
+Expected response times:
 ```json
 {
   "completion": "enjoys meeting new people and exploring new experiences.",
-  "elapsed_ms": 73.45,
+  "elapsed_ms": 123.45,
   "model_name": "llama3.2-mlx-finetuned"
 }
+```
+- **3B Model**: 100-150ms per completion
+- **1B Model**: 50-100ms per completion
 ```
 
 ## 🚨 Common Issues
@@ -207,10 +218,15 @@ mv models/bio-llama3-lora models/v1-1000-iters
 
 ### Using Different Base Models
 ```bash
-# Larger model (better quality, slower)
+# Best quality (default for LookingFor dataset)
 MODEL_NAME="mlx-community/Llama-3.2-3B-Instruct-4bit"
+NUM_ITERATIONS=1500
 
-# Smaller model (faster, less quality)
+# Faster training and inference
+MODEL_NAME="mlx-community/Llama-3.2-1B-Instruct-4bit"
+NUM_ITERATIONS=1000
+
+# Alternative models
 MODEL_NAME="mlx-community/Qwen2.5-1.5B-Instruct-4bit"
 ```
 

@@ -10,6 +10,7 @@ A sophisticated AI-powered bio autocomplete system built with Next.js 15, React 
 - **Smart Feature Coordination** - Prevents conflicts between autocomplete, spell check, and other features
 - **Mobile-Optimized** - 16px fonts, responsive design, and touch-friendly interface
 - **Streaming Responses** - Character-by-character display for 60-80% faster perceived latency
+- **Fine-tuned Models** - Optional Llama-3.2 models (3B/1B) trained on 15k+ bio examples
 
 ## Prerequisites
 
@@ -78,12 +79,26 @@ Before you begin, ensure you have the following installed:
 
 ## Running the Full Stack
 
-### Quick Start (All Services)
-```bash
-# Start all backend services with one command
-./start_all_servers.sh
+### Quick Start - Choose Your Mode
 
-# Then in another terminal, start Next.js
+#### Option A: Hybrid Mode (Vector Search + AI)
+```bash
+./start_hybrid.sh
+# Then in another terminal:
+npm run dev
+```
+
+#### Option B: Trained Model Mode (Fine-tuned Llama)
+```bash
+./start_trained.sh
+# Then in another terminal:
+npm run dev
+```
+
+#### Option C: Start All Services
+```bash
+./start_all_servers.sh
+# Then in another terminal:
 npm run dev
 ```
 
@@ -102,12 +117,12 @@ cd python && python api/api_server.py
 ```
 The API server will run on `http://localhost:8001`
 
-#### 3. **Start Trained Model Server** (Terminal 3 - Optional):
+#### 3. **Start MLX Model Server** (Terminal 3 - Optional):
 ```bash
-cd python
-python -m uvicorn api.trained_model_server:app --port 8002
+cd python/mlx_server
+python mlx_model_server.py
 ```
-The trained model server will run on `http://localhost:8002`
+The MLX server will run on `http://localhost:8003` with Llama-3.2 models
 
 #### 4. **Start Next.js Development Server** (Terminal 4):
 ```bash

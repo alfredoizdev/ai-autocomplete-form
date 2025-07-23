@@ -28,6 +28,7 @@ This is a sophisticated Next.js 15 application with React 19 that provides AI-po
 ### Quick Start - Choose Your Mode
 
 #### Option 1: Hybrid Mode (Vector Search + AI)
+
 ```bash
 # Uses ChromaDB vector search + Ollama for best quality
 ./start_hybrid.sh
@@ -37,6 +38,7 @@ npm run dev
 ```
 
 #### Option 2: Trained Model Mode (Fine-tuned Llama 3.2)
+
 ```bash
 # Uses your locally trained MLX model for fastest speed
 ./start_trained.sh
@@ -46,6 +48,7 @@ npm run dev
 ```
 
 #### Option 3: Train Your Own Model
+
 ```bash
 # Prepare data and start training
 ./prepare_training_data.sh  # For bio.json data
@@ -59,20 +62,23 @@ npm run dev
 When preparing new training data for fine-tuning, follow these specific requirements:
 
 #### Data Format
+
 - **Input format**: CSV file with bio text in the first column
 - **Output format**: JSONL files with prompt-completion pairs
 - **Each training example must be exactly ONE complete sentence**
 - **Multi-sentence bios are split into separate training examples**
 
 #### Quality Requirements
+
 1. **Minimum length**: 8 words per sentence (shorter sentences are discarded)
 2. **Maximum length**: 500 words per prompt-completion pair
-3. **Sentence structure**: 
+3. **Sentence structure**:
    - Each prompt must NOT end with punctuation (.!?)
    - Each completion MUST end with proper punctuation
    - Combined prompt + completion forms one grammatically correct sentence
 
 #### Processing Steps
+
 1. **Load CSV data** - Handle quotes and encoding issues
 2. **Split into sentences** - Each bio is split into individual sentences
 3. **Create smart splits** - Find natural break points within each sentence:
@@ -84,6 +90,7 @@ When preparing new training data for fine-tuning, follow these specific requirem
 5. **Create train/valid/test splits** - 80%/10%/10% ratio
 
 #### To Process New Training Data
+
 ```bash
 # 1. Place your CSV file in data/ directory (e.g., data/new_data.csv)
 
@@ -102,9 +109,13 @@ cp prepare_lookingfor_data.sh prepare_newdata.sh
 ```
 
 #### Example Training Data Format
+
 After processing, each JSONL line contains:
+
 ```json
-{"text": "<|user|>\nComplete this bio: Looking for fun loving people<|end|>\n<|assistant|>\nthat we can have fun with in and out of the bedroom.<|end|>"}
+{
+  "text": "<|user|>\nComplete this bio: Looking for fun loving people<|end|>\n<|assistant|>\nthat we can have fun with in and out of the bedroom.<|end|>"
+}
 ```
 
 This creates a natural sentence completion task where the model learns to complete partial bio sentences in a coherent way.
@@ -116,11 +127,14 @@ This creates a natural sentence completion task where the model learns to comple
   - Pull model: `ollama pull gemma3:12b`
   - Verify: `ollama list`
 - **Python API Server**: Port 8001 (hybrid autocomplete)
-  - Start: `./start_hybrid.sh` (recommended) or `./start_api_server.sh`
+  - Start: `./start_hybrid.sh` (recommended)
 - **MLX Model Server**: Port 8003 (fine-tuned Llama models)
   - Start: `./start_trained.sh` (recommended) or manually
-  - Models: Llama-3.2-1B-Instruct fine-tuned on LookingFor dataset (default)
-  - Also supports: Llama-3.2-3B-Instruct fine-tuned on bio data
+  - Models (in priority order):
+    - Llama-3.2-3B-Instruct fine-tuned on LookingFor dataset (default - best quality)
+    - Llama-3.2-1B-Instruct fine-tuned on LookingFor dataset (faster alternative)
+    - Llama-3.2-3B-Instruct fine-tuned on bio dataset
+    - Legacy Phi-3 models
 - **Docker services** (optional): `docker-compose up -d` (legacy Weaviate)
 
 ## Architecture Overview
@@ -234,6 +248,7 @@ data/          # Training data
 ## Key Features
 
 ### 1. Hybrid AI Autocomplete
+
 - Vector search (ChromaDB) + LLM generation (Ollama)
 - 100-150ms response times (60-80% faster with streaming)
 - Smart caching with 5-minute TTL
@@ -241,6 +256,7 @@ data/          # Training data
 - 3-4 word trigger threshold
 
 ### 2. Advanced Spell Checking
+
 - typo-js with Hunspell dictionaries
 - 80+ contraction handling
 - Custom dictionary with persistence
@@ -248,6 +264,7 @@ data/          # Training data
 - Performance optimized (800ms debounce)
 
 ### 3. Kick.com Detection v2
+
 - 40+ obfuscation patterns
 - Phonetic variation detection
 - Zero-width character support
@@ -255,17 +272,20 @@ data/          # Training data
 - Sub-5ms performance
 
 ### 4. Text Feature Coordination
+
 - Prevents conflicts between features
 - Adaptive locking system
 - Memory management
 - Seamless multi-feature operation
 
 ### 5. Fine-tuned Models (Optional)
-- Llama-3.2-1B-Instruct with LoRA adapters (default - LookingFor dataset)
+
+- Llama-3.2-3B-Instruct with LoRA adapters (default - LookingFor dataset, 1500 iterations)
+- Llama-3.2-1B-Instruct with LoRA adapters (LookingFor dataset, faster option)
 - Llama-3.2-3B-Instruct with LoRA adapters (bio dataset)
 - Trained on high-quality sentence-based bio data
 - MLX server on port 8003 (Apple Silicon optimized)
-- 50-100ms inference time
+- 100-150ms inference time (3B model) / 50-100ms (1B model)
 - Legacy GPT-2/DistilGPT2 models still available on port 8002
 
 ## Performance Metrics
@@ -274,7 +294,7 @@ data/          # Training data
 - Optimized mode: 50-100ms
 - Vector search: ~100ms
 - LLM generation: 200-500ms
-- Fine-tuned models: 80-120ms
+- Fine-tuned models: 50-100ms (1B) / 100-150ms (3B)
 - Cache hit rate: 90%
 - Kick detection: <5ms
 
@@ -305,7 +325,8 @@ The codebase has undergone significant improvements:
 6. **5-Hook Architecture**: Sophisticated system for feature coordination
 7. **40+ Kick Patterns**: Enhanced detection with phonetic and zero-width support
 8. **LookingFor Dataset**: New 15k+ training examples from LookingFor_20000.csv
-9. **Multiple Model Support**: MLX server prioritizes LookingFor model, falls back to bio models
+9. **Multiple Model Support**: MLX server prioritizes models in order: 3B LookingFor → 1B LookingFor → 3B bio → Phi-3
+10. **Enhanced 3B Model**: Trained with 1500 iterations for superior quality
 
 ## Important Workflow Notes
 
@@ -322,15 +343,18 @@ The codebase has undergone significant improvements:
 Comprehensive documentation has been created to help junior developers understand and run this project:
 
 ### Getting Started
+
 - **[Junior Developer Guide](./Docs/JUNIOR_DEVELOPER_GUIDE.md)** - Complete setup guide for beginners
 - **[Hybrid Mode Guide](./Docs/HYBRID_MODE_GUIDE.md)** - Understanding and operating hybrid mode
 - **[Local LLM Training Guide](./Docs/LOCAL_LLM_TRAINING_GUIDE.md)** - Step-by-step model training
 
 ### Reference
+
 - **[Architecture Diagrams](./Docs/ARCHITECTURE_DIAGRAM.md)** - Visual system architecture
 - **[Troubleshooting Guide](./Docs/TROUBLESHOOTING_GUIDE.md)** - Common issues and solutions
 
 ### Quick Links for Beginners
+
 1. Start here: [Junior Developer Guide](./Docs/JUNIOR_DEVELOPER_GUIDE.md)
 2. Run hybrid mode: [Hybrid Mode Guide](./Docs/HYBRID_MODE_GUIDE.md)
 3. Train your model: [Local LLM Training Guide](./Docs/LOCAL_LLM_TRAINING_GUIDE.md)
