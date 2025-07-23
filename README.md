@@ -282,8 +282,12 @@ ai-train-llm/
 │   ├── docker-compose.yml           # Docker services (optional)
 │   └── tsconfig.json                # TypeScript configuration
 └── [Scripts]
-    ├── start_all_servers.sh         # Start all backend services
-    └── start_api_server.sh          # Start main API server only
+    ├── start_hybrid.sh              # Start hybrid mode (vector + AI)
+    ├── start_trained.sh             # Start trained model mode
+    ├── start_training.sh            # Train your own model
+    ├── prepare_training_data.sh     # Prepare bio data for training
+    ├── start_all_servers.sh         # Legacy: Start all services
+    └── start_api_server.sh          # Start API server only
 ```
 
 ## Available Scripts

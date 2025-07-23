@@ -25,14 +25,31 @@ This is a sophisticated Next.js 15 application with React 19 that provides AI-po
 - `npm run start` - Start production server
 - `npm run lint` - Run ESLint checks
 
-### Quick Start
+### Quick Start - Choose Your Mode
 
+#### Option 1: Hybrid Mode (Vector Search + AI)
 ```bash
-# Start all backend services
-./start_all_servers.sh
+# Uses ChromaDB vector search + Ollama for best quality
+./start_hybrid.sh
 
-# Then start Next.js
+# Then in a new terminal
 npm run dev
+```
+
+#### Option 2: Trained Model Mode (Fine-tuned Llama 3.2)
+```bash
+# Uses your locally trained MLX model for fastest speed
+./start_trained.sh
+
+# Then in a new terminal
+npm run dev
+```
+
+#### Option 3: Train Your Own Model
+```bash
+# Prepare data and start training
+./prepare_training_data.sh
+./start_training.sh
 ```
 
 ### External Services
@@ -42,10 +59,11 @@ npm run dev
   - Pull model: `ollama pull gemma3:12b`
   - Verify: `ollama list`
 - **Python API Server**: Port 8001 (hybrid autocomplete)
-  - Start: `./start_api_server.sh`
-- **Trained Model Server**: Port 8002 (fine-tuned models, optional)
-  - Start: `cd python && python -m uvicorn api.trained_model_server:app --port 8002`
-- **Docker services** (optional): `docker-compose up -d` (Weaviate + transformers)
+  - Start: `./start_hybrid.sh` (recommended) or `./start_api_server.sh`
+- **MLX Model Server**: Port 8003 (fine-tuned Llama models)
+  - Start: `./start_trained.sh` (recommended) or manually
+  - Models: Llama-3.2-3B-Instruct fine-tuned on bio data
+- **Docker services** (optional): `docker-compose up -d` (legacy Weaviate)
 
 ## Architecture Overview
 
@@ -59,6 +77,7 @@ npm run dev
 - **FastAPI** for Python backend services
 - **ChromaDB 0.4.24** for vector search
 - **Transformers/PyTorch** for model training
+- **MLX** for Apple Silicon optimized training and inference
 
 ### Key Files and Patterns
 
@@ -85,9 +104,10 @@ npm run dev
 **Backend Services:**
 
 - `python/api/api_server.py` - Main API server (port 8001)
-- `python/api/trained_model_server.py` - Fine-tuned models (port 8002)
+- `python/api/trained_model_server.py` - Fine-tuned models (port 8002 - legacy)
 - `python/vector_db/` - ChromaDB vector search implementation
 - `python/mlx_training/` - Model training scripts
+- `python/mlx_server/mlx_model_server.py` - MLX server for Llama models (port 8003)
 
 ### Environment Configuration
 
@@ -95,11 +115,13 @@ The app requires `.env.local` with:
 
 ```
 OLLAMA_PATH_API=http://127.0.0.1:11434/api
-# Optional: Enable fine-tuned model integration
-NEXT_PUBLIC_USE_FINETUNED_MODEL=true
+# Set the autocomplete mode: 'hybrid' or 'trained'
+AUTOCOMPLETE_MODE=hybrid
 # Optional: OpenAI API key for fallback
 NEXT_PUBLIC_OPENAI_API_KEY=your-key-here
 ```
+
+Note: The mode is automatically set by the startup scripts (`start_hybrid.sh` or `start_trained.sh`)
 
 ### Project Structure
 
@@ -180,10 +202,11 @@ data/          # Training data
 - Seamless multi-feature operation
 
 ### 5. Fine-tuned Models (Optional)
-- GPT-2 and DistilGPT2 variants
-- Trained on 5000+ bio examples
-- Separate server on port 8002
-- 80-120ms inference time
+- Llama-3.2-3B-Instruct with LoRA adapters
+- Trained on high-quality sentence-based bio data
+- MLX server on port 8003 (Apple Silicon optimized)
+- 50-100ms inference time
+- Legacy GPT-2/DistilGPT2 models still available on port 8002
 
 ## Performance Metrics
 
@@ -214,19 +237,23 @@ npm run dev
 
 The codebase has undergone significant improvements:
 
-1. **Hybrid API Approach**: Python API server is tried first, with Ollama fallback
-2. **Streaming Support**: Real-time character-by-character display
-3. **Smart Caching**: 5-minute TTL cache reduces API calls by 90%
-4. **5-Hook Architecture**: Sophisticated system for feature coordination
-5. **40+ Kick Patterns**: Enhanced detection with phonetic and zero-width support
-6. **Fine-tuned Models**: Optional GPT-2 variants for faster, specialized inference
+1. **Mode-based Architecture**: Switch between 'hybrid' and 'trained' modes via environment variable
+2. **MLX Training Support**: Train Llama-3.2 models locally on Apple Silicon
+3. **Improved Shell Scripts**: Easy mode switching with `start_hybrid.sh` and `start_trained.sh`
+4. **Sentence-based Training Data**: Higher quality bio completions with natural sentence structure
+5. **Smart Caching**: 5-minute TTL cache reduces API calls by 90%
+6. **5-Hook Architecture**: Sophisticated system for feature coordination
+7. **40+ Kick Patterns**: Enhanced detection with phonetic and zero-width support
 
 ## Important Workflow Notes
 
 - Always check `tasks/todo.md` for recent changes and architecture updates
-- The Python API server (port 8001) is the preferred autocomplete source
-- Fine-tuned model server (port 8002) is optional but provides faster inference
-- Use `./start_all_servers.sh` for quick backend setup
+- Choose your mode with startup scripts:
+  - `./start_hybrid.sh` - Best quality with vector search + AI
+  - `./start_trained.sh` - Fastest speed with fine-tuned model
+- The Python API server (port 8001) handles hybrid mode
+- MLX model server (port 8003) handles trained mode with Llama models
+- Legacy fine-tuned server (port 8002) still available for GPT-2 models
 
 ## Documentation for Junior Developers
 

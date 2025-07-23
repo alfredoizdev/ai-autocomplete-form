@@ -5,8 +5,8 @@ This guide will walk you through setting up and running the AI Bio Autocomplete 
 ## 🎯 What This Project Does
 
 This is an AI-powered text autocomplete application that helps users write personal bios. It has two modes:
-1. **Hybrid Mode**: Uses a vector database + Ollama AI (faster, simpler)
-2. **Local LLM Mode**: Uses a locally trained AI model (more customized)
+1. **Hybrid Mode**: Uses a vector database + Ollama AI (best quality, more variety)
+2. **Trained Mode**: Uses a locally trained Llama model (fastest speed, 50-100ms)
 
 ## 📋 Prerequisites
 
@@ -97,8 +97,8 @@ echo "OLLAMA_PATH_API=http://127.0.0.1:11434/api" > .env.local
 
 ### Step 7: Start Everything!
 ```bash
-# Use the master startup script
-./start_all_servers.sh
+# Use the hybrid mode startup script
+./start_hybrid.sh
 
 # In a new terminal, start the frontend
 npm run dev

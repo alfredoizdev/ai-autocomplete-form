@@ -31,7 +31,7 @@ This guide will teach you how to train your own custom AI model for bio autocomp
 ## 📚 Understanding the Training Process
 
 ### What is Fine-Tuning?
-- Starting with a pre-trained model (Phi-3)
+- Starting with a pre-trained model (Llama-3.2)
 - Teaching it your specific style with your data
 - Like teaching someone your writing style
 
@@ -48,28 +48,39 @@ Raw Bios → Data Preparation → Training → Fine-tuned Model → Deployment
 
 ## 🚀 Step-by-Step Training Guide
 
-### Step 1: Prepare Your Environment
+### Quick Method (Recommended)
+
 ```bash
-# Navigate to the MLX training directory
-cd python/mlx_server
+# Step 1: Prepare training data
+./prepare_training_data.sh
+
+# Step 2: Start training
+./start_training.sh
+
+# That's it! The scripts handle everything for you.
+```
+
+### Manual Method (For Customization)
+
+#### Step 1: Prepare Your Environment
+```bash
+# Navigate to the project root
+cd ai-train-llm
 
 # Ensure virtual environment is activated
-source ../venv/bin/activate
+cd python && source venv/bin/activate
 
 # Verify MLX is installed
 python -c "import mlx; print('MLX is ready!')"
 ```
 
-### Step 2: Prepare Training Data
+#### Step 2: Prepare Training Data
 
 The data preparation script converts your bio examples into training format:
 
 ```bash
-# Go to the mlx_training directory
-cd ../mlx_training
-
 # Run the preparation script
-python prepare_bio_mlx_improved.py
+python mlx_training/prepare_bio_mlx_improved.py
 
 # You should see:
 # ✅ Created 4000 training examples
@@ -82,51 +93,44 @@ python prepare_bio_mlx_improved.py
 - Creates natural breaking points
 - Ensures high-quality training data
 
-### Step 3: Copy Data to MLX Server
-```bash
-# Copy prepared data to MLX server directory
-cp bio_dataset/*.jsonl ../mlx_server/data/
+#### Step 3: Configure Training (Optional)
 
-# Verify files exist
-ls ../mlx_server/data/
-# Should show: train.jsonl, valid.jsonl, test.jsonl
+The `start_training.sh` script uses these defaults:
+```bash
+MODEL_NAME="mlx-community/Llama-3.2-1B-Instruct-4bit"
+LEARNING_RATE=5e-5
+BATCH_SIZE=4
+NUM_ITERATIONS=1000
+SAVE_EVERY=100
 ```
 
-### Step 4: Configure Training
-
-Check the configuration file:
+To customize, edit the script or run MLX directly:
 ```bash
-cd ../mlx_server
-cat config.yaml
-```
-
-Key settings explained:
-```yaml
-model: "mlx-community/Phi-3-mini-4k-instruct-4bit"  # Base model
-lora:
-  rank: 16              # Lower = less memory, Higher = more capacity
-training:
-  batch_size: 2         # Samples per training step
-  num_epochs: 3         # Times through the data
-  learning_rate: 5e-5   # How fast to learn
-```
-
-### Step 5: Start Training!
-```bash
-# Run the training script
-python train.py
+python -m mlx_lm.lora \
+    --model mlx-community/Llama-3.2-1B-Instruct-4bit \
+    --train \
+    --data ../python/mlx_training/bio_mlx_improved \
+    --batch-size 4 \
+    --lora-layers 16 \
+    --iters 1000 \
+    --learning-rate 5e-5 \
+    --adapter-path ../models/bio-llama3-lora
 ```
 
 **What You'll See:**
 ```
-Checking for model: mlx-community/Phi-3-mini-4k-instruct-4bit
-✅ Model is ready
-Starting MLX LoRA training...
+Configuration:
+  Model: mlx-community/Llama-3.2-1B-Instruct-4bit
+  Training data: python/mlx_training/bio_mlx_improved
+  Output: models/bio-llama3-lora-new
 
-Training Progress:
---------------------------------------------------
-Step 10/1000 | Loss: 2.45 | LR: 5e-5 | Time: 0.5s
-Step 20/1000 | Loss: 2.12 | LR: 5e-5 | Time: 0.5s
+Starting training...
+===================
+
+Loading pretrained model
+Training
+Iteration 10: Train loss 2.453, Learning rate 5.00e-05
+Iteration 20: Train loss 2.124, Learning rate 5.00e-05
 ...
 ```
 
@@ -136,61 +140,70 @@ Step 20/1000 | Loss: 2.12 | LR: 5e-5 | Time: 0.5s
 - Total time: 2-4 hours
 - Don't close the terminal!
 
-### Step 6: Monitor Training
+### Step 4: Monitor Training
 ```bash
 # In another terminal, watch the model directory
-watch -n 10 ls -la models/bio-phi3-lora/
+watch -n 10 ls -la models/bio-llama3-lora-new/
 ```
 
 You'll see checkpoint files appearing:
-- `checkpoint-100.safetensors`
-- `checkpoint-200.safetensors`
+- `0000100_adapters.safetensors`
+- `0000200_adapters.safetensors`
 - etc.
 
-### Step 7: Test Your Model
+### Step 5: Test Your Model
 
 After training completes:
 
 ```bash
-# Start the MLX model server
+# Use the convenient script
+./start_trained.sh
+
+# Or manually start the MLX server
+cd python/mlx_server
 python mlx_model_server.py
 ```
 
 Test with curl:
 ```bash
-curl -X POST http://localhost:8003/generate \
+curl -X POST http://localhost:8003/api/autocomplete/mlx \
   -H "Content-Type: application/json" \
   -d '{"prompt": "I am a fun loving person who"}'
 ```
 
 ## 🎮 Using Your Trained Model
 
-### Step 1: Enable in Frontend
+### Automatic Method
 ```bash
-# Edit .env.local
-echo "NEXT_PUBLIC_USE_FINETUNED_MODEL=true" >> .env.local
-```
+# Simply run:
+./start_trained.sh
 
-### Step 2: Start All Services
-```bash
-# Terminal 1: Ollama (still needed as fallback)
-ollama serve
-
-# Terminal 2: API Server
-cd python && python api/api_server.py
-
-# Terminal 3: MLX Model Server
-cd python/mlx_server && python mlx_model_server.py
-
-# Terminal 4: Frontend
+# Then in another terminal:
 npm run dev
 ```
 
-### Step 3: Verify It's Working
+The script automatically:
+- Sets `AUTOCOMPLETE_MODE=trained` in `.env.local`
+- Starts the MLX server on port 8003
+- Uses your trained model
+
+### Manual Method
+```bash
+# Step 1: Set mode in .env.local
+echo "AUTOCOMPLETE_MODE=trained" >> .env.local
+
+# Step 2: Start MLX Model Server
+cd python/mlx_server && python mlx_model_server.py
+
+# Step 3: Start Frontend
+npm run dev
+```
+
+### Verify It's Working
 - Open http://localhost:3000
 - Type a bio prompt
-- Check the browser console for "Using finetuned model"
-- Responses should be faster!
+- Check the browser console for "Trained model autocomplete"
+- Responses should be 50-100ms!
 
 ## 📊 Understanding Training Metrics
 
@@ -336,12 +349,13 @@ python mlx_model_server.py --port 8004 --model models/bio-phi3-lora-v2
 
 ## 📊 Comparing Models
 
-| Feature | Ollama (Gemma 3) | Fine-tuned (Phi-3) |
-|---------|------------------|-------------------|
+| Feature | Ollama (Gemma 3) | Fine-tuned (Llama 3.2) |
+|---------|------------------|----------------------|
 | Response Time | 200-500ms | 50-100ms |
-| Model Size | 12GB | 2GB + adapters |
+| Model Size | 12GB | 1-3GB + adapters |
 | Quality | General purpose | Bio-specific |
 | Setup Time | 5 minutes | 2-4 hours |
+| Hardware | Any | Apple Silicon optimized |
 
 ## 🚀 Production Deployment
 

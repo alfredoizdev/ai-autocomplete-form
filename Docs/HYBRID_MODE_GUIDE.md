@@ -54,8 +54,8 @@ User Types → Frontend → API Server → Vector Search + AI Generation → Res
 
 ### Method 1: Automatic Startup (Recommended)
 ```bash
-# This starts everything you need
-./start_all_servers.sh
+# This starts everything you need and sets AUTOCOMPLETE_MODE=hybrid
+./start_hybrid.sh
 
 # Then in a new terminal
 npm run dev
@@ -79,7 +79,12 @@ npm run dev
 
 ### Check Service Status
 ```bash
-# Run the status checker
+# Check if services are running
+lsof -i :8001  # API Server (should be running)
+lsof -i :8003  # MLX Server (should NOT be running in hybrid mode)
+lsof -i :11434 # Ollama (should be running)
+
+# Or run the status checker
 python python/check_status.py
 ```
 
@@ -119,9 +124,11 @@ This shows:
 # Required
 OLLAMA_PATH_API=http://127.0.0.1:11434/api
 
-# Optional
-NEXT_PUBLIC_USE_FINETUNED_MODEL=false  # Set to true for MLX model
+# Automatically set by start_hybrid.sh
+AUTOCOMPLETE_MODE=hybrid
 ```
+
+Note: The `start_hybrid.sh` script automatically sets the mode for you.
 
 ### API Server Settings
 
