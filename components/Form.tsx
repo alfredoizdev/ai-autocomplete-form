@@ -124,19 +124,6 @@ const Form = () => {
   }, [customDictionary]);
 
 
-  // Quick synchronous check for obvious kick patterns
-  const quickKickCheck = useCallback((text: string): boolean => {
-    if (!text) return false;
-    
-    // Quick patterns that catch obvious kick variations
-    const quickPatterns = [
-      /k[^a-z]{0,3}[kc]/i,     // k()k, k__k, k--k, k  k, etc.
-      /kick/i,                  // direct kick
-      /k[i1l!|][kc]/i,         // k1k, k!k, klk
-    ];
-    
-    return quickPatterns.some(pattern => pattern.test(text));
-  }, []);
 
   // Handle teaching word correction - memoized for performance
   const handleTeachCorrection = useCallback((misspelledWord: string, correctWord: string) => {
@@ -255,31 +242,28 @@ const Form = () => {
   // Reset kick warning when detection changes and manage autocomplete
   useEffect(() => {
     const isKickDetected = kickDetection?.detected || false;
+    const isLegitimateUsage = kickDetection?.hasLegitimateUsage || false;
     
     // Only update if the state actually needs to change
-    if (isKickDetected && !disableAutocomplete) {
+    if (isKickDetected && !isLegitimateUsage && !disableAutocomplete) {
+      // Only disable autocomplete if kick is detected AND it's not legitimate usage
       setShowKickWarning(true);
       setDisableAutocomplete(true);
       coordinator.lockFeature(TextFeature.AUTOCOMPLETE, 60000); // Lock for 1 minute
       coordinator.setActiveFeature(TextFeature.KICK_DETECTION);
-    } else if (!isKickDetected && disableAutocomplete) {
-      // Only re-enable autocomplete if text doesn't contain obvious kick patterns
-      // This prevents autocomplete from running during the debounce window
-      if (!quickKickCheck(promptValue)) {
-        setDisableAutocomplete(false);
-        if (coordinator.isFeatureActive(TextFeature.KICK_DETECTION)) {
-          coordinator.setActiveFeature(null);
-        }
+    } else if ((!isKickDetected || isLegitimateUsage) && disableAutocomplete) {
+      // Re-enable autocomplete if no kick detected OR it's legitimate usage
+      setDisableAutocomplete(false);
+      if (coordinator.isFeatureActive(TextFeature.KICK_DETECTION)) {
+        coordinator.setActiveFeature(null);
       }
-      // If quick check still finds kick patterns, keep autocomplete disabled
-      // The next detection cycle will handle it properly
     }
     
-    // Reset warning visibility when kick is detected
-    if (isKickDetected && !showKickWarning) {
+    // Reset warning visibility when kick is detected (but not for legitimate usage)
+    if (isKickDetected && !isLegitimateUsage && !showKickWarning) {
       setShowKickWarning(true);
     }
-  }, [kickDetection?.detected, disableAutocomplete, showKickWarning, promptValue, quickKickCheck, coordinator]);
+  }, [kickDetection?.detected, kickDetection?.hasLegitimateUsage, disableAutocomplete, showKickWarning, coordinator]);
 
   // Close popup when clicking outside
   useEffect(() => {
@@ -531,8 +515,8 @@ const Form = () => {
           <p className="text-red-500 text-sm mt-1">{errors.prompt.message}</p>
         )}
         
-        {/* Inline kick detection warning */}
-        {kickDetection && showKickWarning && (
+        {/* Inline kick detection warning - only show for non-legitimate usage */}
+        {kickDetection && kickDetection.detected && !kickDetection.hasLegitimateUsage && showKickWarning && (
           <InlineKickWarning 
             detection={kickDetection} 
             className="mt-2"
