@@ -1,47 +1,60 @@
-# MLX Bio Autocomplete Training
+# MLX Bio Autocomplete Server
 
-This directory contains the MLX-based training and serving infrastructure for the bio autocomplete model.
+This directory contains the MLX-based model serving infrastructure for the bio autocomplete feature.
 
 ## Overview
 
-We use Apple's MLX framework to fine-tune a Phi-3-mini model (3.8B parameters) for bio text completion. The model is optimized for Apple Silicon and provides fast inference on M1/M2/M3 Macs.
+The MLX server provides fast inference for fine-tuned Llama 3.2 models on Apple Silicon. It supports multiple models with automatic priority-based selection, optimized for bio text completion.
+
+## Current Model Hierarchy
+
+The server automatically selects the best available model in this order:
+
+1. **HIGH-QUALITY Llama-3.2-3B-Instruct** (Primary)
+   - Grammar-filtered LookingFor dataset
+   - 2000 iterations, learning rate 1e-5
+   - Location: `models/lookingfor-llama3-3b-hq-lora/`
+   - Best quality results
+
+2. **Standard Llama-3.2-3B-Instruct** 
+   - LookingFor dataset, 1500 iterations
+   - Location: `models/lookingfor-llama3-3b-lora/`
+
+3. **Llama-3.2-1B-Instruct** (Faster alternative)
+   - LookingFor dataset, smaller model
+   - Location: `models/lookingfor-llama3-lora/`
+
+4. **Bio-sentence models** (Legacy fallbacks)
+   - Older training approach
+   - Kept for backward compatibility
+
+5. **Phi-3 model** (Legacy)
+   - Original model, causes repetition issues
+   - Location: `mlx_server/models/bio-phi3-lora/`
 
 ## Directory Structure
 
 ```
 mlx_server/
-├── data/                    # Converted training data in MLX format
-│   ├── train.jsonl         # 2,922 training samples
-│   ├── valid.jsonl         # 365 validation samples
-│   └── test.jsonl          # 366 test samples
-├── models/                 # Trained model adapters
-│   └── bio-phi3-lora/     # LoRA adapter files
-├── config.yaml            # Training configuration
-├── convert_to_mlx_format.py  # Data conversion script
-├── train.py               # Training script
 ├── mlx_model_server.py    # FastAPI server (port 8003)
-├── test_mlx_server.py     # Server testing script
-└── requirements.txt       # Python dependencies
+├── benchmark_mlx.py       # Performance benchmarking
+├── debug_completion.py    # Debug tool for testing
+├── mlx_server.log        # Server logs
+├── config.yaml           # Legacy training config
+├── data/                 # Legacy training data
+└── requirements.txt      # Python dependencies
 ```
 
 ## Quick Start
 
-### 1. Training the Model
+### Starting the Server
 
 ```bash
-# From the mlx_server directory
-python train.py
-```
+# Use the provided startup script (recommended)
+./start_trained.sh
 
-This will:
-- Download the Phi-3-mini-4k-instruct model (first time only)
-- Fine-tune it with LoRA on your bio data
-- Save checkpoints every 100 steps
-- Complete in approximately 20-40 minutes on M1 Max
-
-### 2. Starting the Server
-
-```bash
+# Or start manually
+cd python/mlx_server
 python mlx_model_server.py
 ```
 
@@ -51,78 +64,104 @@ The server runs on port 8003 and provides:
 - `/health` - Health check
 - `/docs` - Interactive API documentation
 
-### 3. Testing the Server
+### Testing the Server
 
 ```bash
-python test_mlx_server.py
+# Debug a specific completion
+python debug_completion.py
+
+# Run performance benchmarks
+python benchmark_mlx.py
 ```
 
-## Training Configuration
+## API Usage
 
-Key parameters in `config.yaml`:
-- **Model**: Phi-3-mini-4k-instruct (4-bit quantized)
-- **LoRA Rank**: 16 (memory efficient)
-- **Batch Size**: 2 (with gradient accumulation of 4)
-- **Learning Rate**: 5e-5
-- **Max Steps**: 1000
+### Single Completion
+```python
+POST http://localhost:8003/api/autocomplete/mlx
+{
+    "prompt": "Looking for fun loving people",
+    "max_tokens": 50,
+    "temperature": 0.7,
+    "stop": [".", "!", "?", "\n"]
+}
+```
 
-## Memory Usage
-
-On M1 Max with 32GB RAM:
-- Training: ~12-16GB
-- Inference: ~6-8GB
-- Speed: 15-20 tokens/second
-
-## Integration with Next.js
-
-The MLX server can be integrated as an alternative to the hybrid autocomplete:
-
-1. Start the MLX server on port 8003
-2. Update `ai-text.ts` to check MLX endpoint when `USE_MLX_MODEL=true`
-3. Compare performance with existing hybrid system
-
-## Model Quality
-
-The fine-tuned model specializes in:
-- Bio-style text completions
-- Natural sentence flow
-- Domain-specific vocabulary
-- Appropriate tone and style
+### Response
+```json
+{
+    "completion": "that we can have fun with in and out of the bedroom",
+    "elapsed_ms": 125.4,
+    "model_name": "Llama-3.2-3B-hq (LoRA)"
+}
+```
 
 ## Performance Metrics
 
-### Training Results (M1 Max 32GB)
-- **Training Time**: 3.4 minutes for 1000 steps
-- **Final Validation Loss**: 2.457
-- **Test Loss**: 2.411
-- **Test Perplexity**: 11.146
-- **Training Speed**: ~6 iterations/second
-- **Peak Memory**: 3.2GB
+### HIGH-QUALITY Llama 3B Model (M1/M2/M3)
+- **Response Time**: 100-150ms average
+- **Memory Usage**: ~4-6GB
+- **Throughput**: 8-10 requests/second
+- **Quality**: Superior grammar and coherence
 
-### Inference Performance
-- **Single Request**: 340ms average (300-400ms range)
-- **Median Response**: 339.9ms
-- **95th Percentile**: 341.3ms
-- **Throughput**: 3.0 requests/second
-- **Batch Processing**: ~530ms per prompt in batch mode
+### Standard Llama 3B Model
+- **Response Time**: 100-150ms average
+- **Memory Usage**: ~4-6GB
+- **Quality**: Good, occasional grammar issues
 
-### Model Improvements Observed
-- Context-aware completions matching bio style
-- Clean output without special tokens
-- Consistent response times
-- Good handling of various prompt types
+### Llama 1B Model (Faster Option)
+- **Response Time**: 50-100ms average
+- **Memory Usage**: ~2-3GB
+- **Quality**: Decent, more concise responses
+
+## Integration with Next.js
+
+The MLX server integrates with the main app through:
+
+1. **Environment Variable**: `AUTOCOMPLETE_MODE=trained`
+2. **Action Handler**: `actions/ai-text.ts` checks mode and routes to MLX
+3. **Startup Script**: `./start_trained.sh` sets everything up
+
+## Model Features
+
+The fine-tuned models specialize in:
+- Bio-style text completions with lifestyle vocabulary
+- Natural sentence flow and completion
+- Grammar-aware predictions (HIGH-QUALITY model)
+- Fast response times on Apple Silicon
+- Consistent tone and style
+
+## Advanced Configuration
+
+### Custom Model Loading
+To use a specific model, modify the model loading priority in `mlx_model_server.py`.
+
+### Temperature Tuning
+- Lower (0.3-0.5): More predictable, common phrases
+- Medium (0.6-0.8): Balanced creativity (default: 0.7)
+- Higher (0.9-1.0): More creative, varied responses
+
+### Stop Tokens
+Default stop tokens: `[".", "!", "?", "\n"]`
+Customize based on your completion needs.
 
 ## Troubleshooting
 
-1. **Out of Memory**: Reduce batch size in config.yaml
-2. **Slow Training**: Normal on first run (downloading model)
-3. **Import Errors**: Ensure MLX is installed: `pip install mlx mlx-lm`
-4. **Temperature Issues**: Use make_sampler from mlx_lm.sample_utils
+1. **Model Not Found**: Ensure model files exist in the expected locations
+2. **Out of Memory**: Use the 1B model for lower memory usage
+3. **Slow First Request**: Model loading takes 5-10 seconds initially
+4. **Import Errors**: Run `pip install -r requirements.txt`
 
-## Next Steps
+## Training New Models
 
-1. ✅ Train the model with your bio data
-2. ✅ Test the server with various prompts
-3. ✅ Benchmark performance metrics
-4. Compare quality with hybrid autocomplete system on port 8001
-5. Choose the best performing system for production use
+To train your own model, use the scripts in `python/mlx_training/`:
+- `prepare_hq_data_fast.sh` - Prepare high-quality training data
+- `start_training_mlx_community.sh` - Train with optimized parameters
+
+## Recent Updates
+
+- Removed legacy training scripts (`train.py`, `convert_to_mlx_format.py`)
+- Updated to use Llama 3.2 models exclusively
+- Added HIGH-QUALITY grammar-filtered model as primary
+- Improved error handling and logging
+- Better integration with startup scripts

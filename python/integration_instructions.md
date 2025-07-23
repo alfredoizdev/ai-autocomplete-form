@@ -1,85 +1,228 @@
-# Integration Instructions
+# Python Services Integration Instructions
 
-## 1. Start the MLX Model Server
+## Overview
+
+The Python backend provides two main services for the bio autocomplete application:
+
+1. **Hybrid Autocomplete API** (Port 8001) - Combines vector search with LLM generation
+2. **MLX Model Server** (Port 8003) - Serves fine-tuned Llama models
+
+## Quick Start
+
+### Option 1: Hybrid Mode (Recommended for Quality)
 
 ```bash
-cd python/mlx_server
-python mlx_model_server.py
+# Start the hybrid autocomplete service
+./start_hybrid.sh
 ```
 
-This starts the MLX model server on port 8003 with fine-tuned Llama models.
+This starts:
+- FastAPI server on port 8001
+- ChromaDB vector search
+- Ollama integration for LLM generation
+- Combined suggestions for best quality
 
-## 2. Update Your TypeScript Code
+### Option 2: Trained Model Mode (Recommended for Speed)
 
-Add this to your `actions/ai-text.ts`:
+```bash
+# Start the MLX model server
+./start_trained.sh
+```
 
-```typescript
-// Updated ai-text.ts to use hybrid approach
-// Add this function to your existing ai-text.ts file
+This starts:
+- MLX server on port 8003
+- Fine-tuned Llama 3.2 models
+- Fast inference on Apple Silicon
+- Grammar-filtered high-quality completions
 
-export async function getHybridAutocomplete(input: string): Promise<string[]> {
-  try {
-    // Try vector search first
-    const vectorResponse = await fetch('http://localhost:8001/api/autocomplete', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: input })
-    });
-    
-    const vectorSuggestions = vectorResponse.ok 
-      ? (await vectorResponse.json()).suggestions 
-      : [];
-    
-    // Try MLX model
-    const mlxResponse = await fetch('http://localhost:8003/api/autocomplete', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: input, max_suggestions: 2 })
-    });
-    
-    const mlxSuggestions = mlxResponse.ok
-      ? (await mlxResponse.json()).suggestions
-      : [];
-    
-    // Combine suggestions
-    const allSuggestions = [...vectorSuggestions];
-    mlxSuggestions.forEach(s => {
-      if (!allSuggestions.includes(s)) {
-        allSuggestions.push(s);
-      }
-    });
-    
-    return allSuggestions.slice(0, 3);
-  } catch (error) {
-    console.error('Hybrid autocomplete error:', error);
-    return [];
-  }
+## Service Architecture
+
+### Hybrid API Server (api_server.py)
+
+```
+Port: 8001
+Endpoints:
+- GET /                               # Health check
+- POST /api/autocomplete              # Legacy vector-only endpoint
+- POST /api/autocomplete/hybrid       # Hybrid autocomplete (main endpoint)
+- GET /api/vector/stats               # Vector DB statistics
+```
+
+#### Request Format:
+```json
+{
+  "prompt": "Looking for fun loving people"
 }
-
 ```
 
-## 3. Update Your Form Component
+#### Response Format:
+```json
+{
+  "combined_suggestions": ["who enjoy life and good times"],
+  "exact_matches": [],
+  "llm_completions": ["who enjoy life and good times"],
+  "context_used": "couples looking for...",
+  "elapsed_ms": 125.4
+}
+```
 
-In your form component, update the autocomplete to use the hybrid approach:
+### MLX Model Server (mlx_model_server.py)
+
+```
+Port: 8003
+Endpoints:
+- GET /health                         # Health check
+- POST /api/autocomplete/mlx          # Single completion
+- POST /api/autocomplete/mlx/batch    # Batch completions
+- GET /docs                           # API documentation
+```
+
+#### Request Format:
+```json
+{
+  "prompt": "Looking for fun loving people",
+  "max_tokens": 50,
+  "temperature": 0.7,
+  "stop": [".", "!", "?", "\n"]
+}
+```
+
+#### Response Format:
+```json
+{
+  "completion": "that we can have fun with in and out of the bedroom",
+  "elapsed_ms": 125.4,
+  "model_name": "Llama-3.2-3B-hq (LoRA)"
+}
+```
+
+## Next.js Integration
+
+The integration is handled automatically through:
+
+### 1. Environment Configuration (.env.local)
+
+```bash
+# Set the autocomplete mode
+AUTOCOMPLETE_MODE=hybrid  # or 'trained'
+```
+
+### 2. Server Action (actions/ai-text.ts)
+
+The `askOllamaCompletationAction` function automatically routes based on mode:
 
 ```typescript
-// Replace the existing autocomplete call with:
-const suggestions = await getHybridAutocomplete(inputText);
+// Check which mode to use
+const mode = process.env.AUTOCOMPLETE_MODE || 'hybrid';
+
+if (mode === 'trained') {
+  // Use MLX model server
+  const response = await fetch('http://localhost:8003/api/autocomplete/mlx', ...);
+} else if (mode === 'hybrid') {
+  // Use hybrid API server
+  const response = await fetch('http://localhost:8001/api/autocomplete/hybrid', ...);
+}
 ```
 
-## 4. Test the Integration
+## Service Management
 
-1. Make sure all services are running:
-   - Vector search server on port 8001
-   - MLX model server on port 8003
-   - Ollama on port 11434
-   - Next.js app on port 3000
+### Starting Services
 
-2. Test autocomplete with various prompts
+```bash
+# Hybrid mode (vector search + AI)
+./start_hybrid.sh
 
-## Benefits of this Approach:
+# Trained model mode (fine-tuned Llama)
+./start_trained.sh
+```
 
-1. **Fast Response**: Vector search provides quick exact matches
-2. **Creative Completions**: MLX fine-tuned models add novel suggestions
-3. **Fallback Support**: If one service fails, the other still works
-4. **Best of Both Worlds**: Combines accuracy with creativity
+### Checking Service Status
+
+```bash
+# Check if services are running
+curl http://localhost:8001/  # Hybrid API
+curl http://localhost:8003/health  # MLX server
+
+# Check logs
+tail -f python/api_server.log
+tail -f python/mlx_server/mlx_server.log
+```
+
+### Stopping Services
+
+```bash
+# Find and kill the process
+ps aux | grep "api_server.py"
+ps aux | grep "mlx_model_server.py"
+kill <PID>
+```
+
+## Performance Comparison
+
+### Hybrid Mode (Port 8001)
+- **Response Time**: 100-150ms
+- **Quality**: Excellent (context-aware + LLM creativity)
+- **Features**: Vector similarity + AI generation
+- **Best For**: Production use with quality focus
+
+### Trained Mode (Port 8003)
+- **Response Time**: 50-150ms (model dependent)
+- **Quality**: Very good (grammar-filtered training)
+- **Features**: Direct model inference
+- **Best For**: Fast responses, offline capability
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Port Already in Use**
+   ```bash
+   lsof -i :8001  # or :8003
+   kill -9 <PID>
+   ```
+
+2. **ChromaDB Errors**
+   ```bash
+   rm -rf python/vector_db/chroma_db
+   python python/vector_db/setup_chromadb_improved.py
+   ```
+
+3. **Model Not Loading**
+   - Check model files exist in `models/` directory
+   - Verify MLX is installed: `pip install mlx mlx-lm`
+
+4. **Slow Performance**
+   - First request loads model (5-10s)
+   - Subsequent requests are fast
+   - Use 1B model for lower memory usage
+
+## Advanced Configuration
+
+### Custom Prompting
+
+Both services support custom system prompts through their respective configurations:
+
+- Hybrid: Modify prompt in `api_server.py`
+- MLX: Adjust generation parameters in requests
+
+### Scaling Considerations
+
+- Both services are single-instance by default
+- For production, consider:
+  - Load balancer for multiple instances
+  - Redis cache for common completions
+  - Model quantization for memory efficiency
+
+## Development Workflow
+
+1. **Choose your mode** based on requirements
+2. **Start the appropriate service** with startup script
+3. **Set AUTOCOMPLETE_MODE** in .env.local
+4. **Run Next.js app** with `npm run dev`
+5. **Monitor logs** for debugging
+
+The system automatically handles:
+- Service health checks
+- Fallback mechanisms
+- Error handling
+- Response formatting
