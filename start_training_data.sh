@@ -8,12 +8,12 @@ echo "======================================="
 echo ""
 
 # Configuration
-MODEL_NAME="mlx-community/Llama-3.2-1B-Instruct-4bit"
+MODEL_NAME="mlx-community/Llama-3.2-3B-Instruct-4bit"
 TRAINING_DATA_DIR="python/lookingfor_mlx"
-OUTPUT_DIR="models/lookingfor-llama3-lora"
+OUTPUT_DIR="models/lookingfor-llama3-3b-lora"
 LEARNING_RATE=5e-5
 BATCH_SIZE=4
-NUM_ITERATIONS=1000
+NUM_ITERATIONS=1500
 SAVE_EVERY=100
 
 echo "Configuration:"

@@ -23,7 +23,7 @@ Understanding how the AI Bio Autocomplete system works.
 │  │  Port 8001     │  │  Port 8003     │  │  Port 11434  │ │
 │  │                │  │                │  │              │ │
 │  │ Vector Search  │  │ Fine-tuned     │  │ Gemma3 12B   │ │
-│  │ + AI Gen       │  │ Llama Model    │  │ Generation   │ │
+│  │ + AI Gen       │  │ Llama 1B/3B    │  │ Generation   │ │
 │  └───────┬────────┘  └────────────────┘  └──────┬───────┘ │
 │          │                                        │          │
 │          ▼                                        │          │
@@ -32,6 +32,10 @@ Understanding how the AI Bio Autocomplete system works.
 │  │ Vector Store   │                                         │
 │  │  5000+ Bios    │                                         │
 │  └────────────────┘                                         │
+│                                                              │
+│  Training Data:                                             │
+│  • bio.json (5k examples)                                   │
+│  • LookingFor_20000.csv (19k examples → 15k training)      │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -83,10 +87,14 @@ useKickDetection       // Content filtering
 - Response filtering
 
 **MLX Model Server (8003):**
-- Model loading
-- Fast inference
+- Model loading (prioritizes LookingFor model)
+- Fast inference (50-100ms)
 - Grammar correction
 - Batch processing
+- Supports multiple models:
+  - LookingFor Llama-3.2-1B (default)
+  - Bio Llama-3.2-3B
+  - Phi-3 (legacy)
 
 ## 📊 Data Flow
 

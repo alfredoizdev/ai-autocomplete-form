@@ -70,12 +70,14 @@ npm run dev           # Starts frontend
 ```
 
 #### Option B: Trained Mode (Fastest)
-Uses pre-trained Llama model for 50-100ms responses
+Uses fine-tuned Llama model for 50-100ms responses
 ```bash
-./start_trained.sh    # Starts MLX server
+./start_trained.sh    # Starts MLX server with LookingFor model
 # In new terminal:
 npm run dev          # Starts frontend
 ```
+
+Note: The trained mode uses the Llama-3.2-1B model fine-tuned on the LookingFor dataset (15k+ examples)
 
 ### Step 7: Open the App
 Navigate to http://localhost:3000 in your browser

@@ -18,8 +18,14 @@ Train a custom AI model to get faster, more personalized bio suggestions.
 ## 🚀 Quick Training (Recommended)
 
 ### Step 1: Prepare Data
+
+Choose your dataset:
 ```bash
+# Option A: Original bio.json dataset
 ./prepare_training_data.sh
+
+# Option B: LookingFor CSV dataset (15k+ examples)
+./prepare_lookingfor_data.sh
 ```
 This converts bio examples into training format (~5 minutes).
 
@@ -29,6 +35,8 @@ This converts bio examples into training format (~5 minutes).
 ```
 This trains a Llama-3.2 model with your data (2-4 hours).
 
+Note: The default configuration now uses the LookingFor dataset which provides higher quality sentence-based training examples.
+
 ### Step 3: Use Your Model
 ```bash
 ./start_trained.sh
@@ -37,18 +45,29 @@ npm run dev
 
 ## 📊 Understanding the Process
 
+### Training Data Format
+The LookingFor dataset format ensures high quality:
+- **One sentence per example**: Each bio sentence becomes a separate training pair
+- **Smart splitting**: Natural breaks at conjunctions, prepositions, key phrases
+- **Quality filtering**: Minimum 8 words, maximum 500 words total
+- **Proper punctuation**: Prompts end without punctuation, completions end with punctuation
+
 ### What Happens During Training
 
 1. **Data Preparation**
    - Splits bios into prompt → completion pairs
-   - Creates natural breaking points
-   - Outputs to `python/mlx_training/bio_mlx_improved/`
+   - Each training example is exactly ONE complete sentence
+   - Minimum 8 words per sentence requirement
+   - Creates natural breaking points at conjunctions, prepositions
+   - Outputs to `python/mlx_training/bio_mlx_improved/` or `python/mlx_training/lookingfor_mlx/`
 
 2. **Model Training**
-   - Uses Llama-3.2-1B as base model
+   - Uses Llama-3.2-1B as base model (4-bit quantized)
    - Applies LoRA (efficient fine-tuning)
    - Saves checkpoints every 100 steps
-   - Final model in `models/bio-llama3-lora/`
+   - Final models saved to:
+     - `models/bio-llama3-lora/` (bio.json dataset)
+     - `models/lookingfor-llama3-lora/` (LookingFor dataset)
 
 3. **Progress Monitoring**
    ```
@@ -89,15 +108,17 @@ For full control:
 cd python
 source venv/bin/activate
 
-# Prepare data
-python mlx_training/prepare_bio_mlx_improved.py
+# Prepare data (choose one)
+python mlx_training/prepare_bio_mlx_improved.py      # For bio.json
+python mlx_training/prepare_lookingfor_mlx.py       # For LookingFor CSV
 
 # Train model
-python -m mlx_lm.lora \
+python -m mlx_lm lora \
   --model mlx-community/Llama-3.2-1B-Instruct-4bit \
   --train \
-  --data ../python/mlx_training/bio_mlx_improved \
+  --data ../python/mlx_training/lookingfor_mlx \
   --batch-size 4 \
+  --num-layers 16 \
   --iters 1000 \
   --adapter-path ../models/my-custom-model
 ```
@@ -105,7 +126,8 @@ python -m mlx_lm.lora \
 ## 📈 Training Tips
 
 ### For Better Quality
-- Add more diverse bio examples to `data/bio.json`
+- Add more diverse bio examples to `data/bio.json` or `data/LookingFor_20000.csv`
+- Ensure examples follow sentence-based format (one sentence per training example)
 - Train for more iterations (1500-2000)
 - Use lower learning rate (2e-5)
 
@@ -136,7 +158,7 @@ curl -X POST http://localhost:8003/api/autocomplete/mlx \
 Expected response:
 ```json
 {
-  "completion": "enjoys meeting new people and exploring...",
+  "completion": "enjoys meeting new people and exploring new experiences.",
   "elapsed_ms": 73.45,
   "model_name": "llama3.2-mlx-finetuned"
 }

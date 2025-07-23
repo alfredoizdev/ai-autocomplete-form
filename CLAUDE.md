@@ -48,7 +48,9 @@ npm run dev
 #### Option 3: Train Your Own Model
 ```bash
 # Prepare data and start training
-./prepare_training_data.sh
+./prepare_training_data.sh  # For bio.json data
+# OR
+./prepare_lookingfor_data.sh  # For LookingFor CSV data
 ./start_training.sh
 ```
 
@@ -117,7 +119,8 @@ This creates a natural sentence completion task where the model learns to comple
   - Start: `./start_hybrid.sh` (recommended) or `./start_api_server.sh`
 - **MLX Model Server**: Port 8003 (fine-tuned Llama models)
   - Start: `./start_trained.sh` (recommended) or manually
-  - Models: Llama-3.2-3B-Instruct fine-tuned on bio data
+  - Models: Llama-3.2-1B-Instruct fine-tuned on LookingFor dataset (default)
+  - Also supports: Llama-3.2-3B-Instruct fine-tuned on bio data
 - **Docker services** (optional): `docker-compose up -d` (legacy Weaviate)
 
 ## Architecture Overview
@@ -214,7 +217,8 @@ python/        # Backend services
 └── mlx_training/           # Model training
 
 data/          # Training data
-└── bio.json                # 5000+ bio examples
+├── bio.json                # 5000+ bio examples
+└── LookingFor_20000.csv    # 19k+ bio examples (LookingFor dataset)
 ```
 
 ## Important Notes
@@ -257,7 +261,8 @@ data/          # Training data
 - Seamless multi-feature operation
 
 ### 5. Fine-tuned Models (Optional)
-- Llama-3.2-3B-Instruct with LoRA adapters
+- Llama-3.2-1B-Instruct with LoRA adapters (default - LookingFor dataset)
+- Llama-3.2-3B-Instruct with LoRA adapters (bio dataset)
 - Trained on high-quality sentence-based bio data
 - MLX server on port 8003 (Apple Silicon optimized)
 - 50-100ms inference time
@@ -299,6 +304,8 @@ The codebase has undergone significant improvements:
 5. **Smart Caching**: 5-minute TTL cache reduces API calls by 90%
 6. **5-Hook Architecture**: Sophisticated system for feature coordination
 7. **40+ Kick Patterns**: Enhanced detection with phonetic and zero-width support
+8. **LookingFor Dataset**: New 15k+ training examples from LookingFor_20000.csv
+9. **Multiple Model Support**: MLX server prioritizes LookingFor model, falls back to bio models
 
 ## Important Workflow Notes
 
