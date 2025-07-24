@@ -195,17 +195,20 @@ async def call_ollama_with_context(prompt: str, contexts: List[str]) -> List[str
     messages = [
         {
             "role": "system",
-            "content": """You write seductive bio completions that make swingers desperately want to meet and play.
+            "content": """You write SHORT seductive bio completions (8-20 words ONLY).
 
-Write like you're seducing someone into your bed. Make them feel desired, excited, and eager to explore.
+CRITICAL: Your response MUST be between 8-20 words. Count the words! One sentence only.
 
-CRITICAL INSTRUCTION: You must output ONLY the completion text, NOT the original prompt. Never repeat what the user has already written.
+Write like you're seducing someone. Make them feel desired and eager.
+
+Output ONLY the completion text, NOT the original prompt.
 
 Rules for completion:
 - Creates anticipation and desire
 - Makes them imagine the pleasure ahead
 - Sounds confident, playful, and irresistibly naughty
-- Forms a complete, enticing sentence (8-20 words)
+- MUST be EXACTLY 8-20 words - NO MORE, NO LESS
+- Forms ONE complete sentence that ends with a period
 - Uses explicit language about pleasure, orgasms, and desires
 
 Examples of CORRECT completions (notice we only return the new part):
@@ -244,7 +247,7 @@ Be explicitly sexual. Make them want to message immediately. Output ONLY the con
                     "stream": False,
                     "temperature": 0.85,
                     "top_p": 0.95,
-                    "max_tokens": 100,
+                    "max_tokens": 25,
                     "stop": ["\n", "\n\n"]
                 }
             )
@@ -272,8 +275,21 @@ Be explicitly sexual. Make them want to message immediately. Output ONLY the con
                 # Strip the prompt from the response if it was repeated
                 content = strip_prompt_from_response(prompt, content)
                 
+                # Enforce 8-20 word limit strictly
+                if content:
+                    words = content.split()
+                    if len(words) > 20:
+                        # Take exactly first 20 words
+                        content = " ".join(words[:20])
+                        # Ensure it ends with proper punctuation
+                        if not content.endswith(('.', '!', '?')):
+                            content = content.rstrip('.,!?') + "."
+                    elif len(words) < 8:
+                        # Too short, reject it
+                        content = ""
+                
                 # Quality filter: ensure completion is meaningful and complete
-                if content and len(content.split()) >= 8:  # Minimum 8 words for complete thought
+                if content and 8 <= len(content.split()) <= 20:  # 8-20 words for complete thought
                     completions = [content]
                 else:
                     completions = []
@@ -288,7 +304,7 @@ Be explicitly sexual. Make them want to message immediately. Output ONLY the con
                             "stream": False,
                             "temperature": 0.9,
                             "top_p": 0.95,
-                            "max_tokens": 100,
+                            "max_tokens": 25,
                             "stop": ["\n", "\n\n"]
                         }
                     )
@@ -307,8 +323,21 @@ Be explicitly sexual. Make them want to message immediately. Output ONLY the con
                         # Strip the prompt from the response if it was repeated
                         content2 = strip_prompt_from_response(prompt, content2)
                         
+                        # Enforce 8-20 word limit strictly
+                        if content2:
+                            words = content2.split()
+                            if len(words) > 20:
+                                # Take exactly first 20 words
+                                content2 = " ".join(words[:20])
+                                # Ensure it ends with proper punctuation
+                                if not content2.endswith(('.', '!', '?')):
+                                    content2 = content2.rstrip('.,!?') + "."
+                            elif len(words) < 8:
+                                # Too short, reject it
+                                content2 = ""
+                        
                         # Quality filter for second completion too
-                        if content2 and content2 != content and len(content2.split()) >= 8:
+                        if content2 and content2 != content and 8 <= len(content2.split()) <= 20:
                             completions.append(content2)
                 
                 return completions
