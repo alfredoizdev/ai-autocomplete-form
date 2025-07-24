@@ -86,7 +86,7 @@ for i in {1..10}; do
         echo "Check python/api_server.log for errors"
         echo ""
         echo "Last 20 lines of log:"
-        tail -20 python/api_server.log
+        tail -20 python/api_server.log 2>/dev/null || echo "Log file not yet created"
         exit 1
     fi
     
@@ -95,7 +95,7 @@ for i in {1..10}; do
         echo "Check python/api_server.log for errors"
         echo ""
         echo "Last 20 lines of log:"
-        tail -20 python/api_server.log
+        tail -20 python/api_server.log 2>/dev/null || echo "Log file not yet created"
         exit 1
     fi
     echo -n "."
@@ -119,4 +119,9 @@ echo ""
 
 # Keep script running to show it's active
 echo "Press Ctrl+C to stop monitoring..."
+
+# Create the log file if it doesn't exist
+touch python/api_server.log 2>/dev/null
+
+# Now tail the log file
 tail -f python/api_server.log
