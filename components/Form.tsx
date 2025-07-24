@@ -487,11 +487,29 @@ const Form = () => {
                 zIndex: 2,
               }}
             >
-              <span style={{ visibility: "hidden" }}>{promptValue}</span>
-              <span style={{ color: "#9CA3AF" }}>
-                {needsSpaceBeforeSuggestion(promptValue) ? " " : ""}
-                {suggestion}
-              </span>
+              {(() => {
+                // Split the text into lines to only show the last line before suggestion
+                const lines = promptValue.split('\n');
+                const lastLine = lines[lines.length - 1];
+                const previousLines = lines.slice(0, -1);
+                
+                return (
+                  <>
+                    {/* Render all previous lines as hidden to maintain positioning */}
+                    {previousLines.length > 0 && (
+                      <span style={{ visibility: "hidden" }}>
+                        {previousLines.join('\n') + '\n'}
+                      </span>
+                    )}
+                    {/* Render last line + suggestion on same visual line */}
+                    <span style={{ visibility: "hidden" }}>{lastLine}</span>
+                    <span style={{ color: "#9CA3AF" }}>
+                      {needsSpaceBeforeSuggestion(promptValue) ? " " : ""}
+                      {suggestion}
+                    </span>
+                  </>
+                );
+              })()}
             </div>
           )}
         </div>
