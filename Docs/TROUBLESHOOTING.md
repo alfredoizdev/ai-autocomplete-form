@@ -1,106 +1,218 @@
 # Troubleshooting Guide
 
-Quick solutions to common problems.
+Don't panic! Most issues have simple fixes. This guide is organized by when problems occur.
 
-## 🚨 Setup Issues
+## 🏁 During Initial Setup
 
 ### "Command not found" errors
-```bash
-# Make sure you're in the project directory
-pwd  # Should show .../ai-train-llm
 
-# For Python commands, activate virtual environment first
-cd python && source venv/bin/activate
+**What it looks like:**
+```
+bash: npm: command not found
 ```
 
-### "Module not found" errors
+**Why this happens:** The required software isn't installed yet.
 
-**Python:**
-```bash
-cd python
-source venv/bin/activate
-pip install -r requirements.txt
+**Fix:**
+1. Make sure you've installed all requirements:
+   - Node.js from https://nodejs.org
+   - Python from https://python.org
+   - Git from https://git-scm.com
+
+2. Restart your terminal after installing
+
+3. Verify installations:
+   ```bash
+   node --version    # Should show v18.x.x or higher
+   python3 --version # Should show 3.9.x or higher
+   git --version     # Should show version info
+   ```
+
+### "Module not found" or "Cannot find package" errors
+
+**What it looks like:**
+```
+Error: Cannot find module 'react'
+ModuleNotFoundError: No module named 'fastapi'
 ```
 
-**Node.js:**
+**Why this happens:** Dependencies aren't installed yet.
+
+**Fix for Node.js errors:**
 ```bash
+# Make sure you're in the main project folder
+cd /path/to/ai-train-llm
+
+# Clean install
 rm -rf node_modules package-lock.json
 npm install
 ```
 
-### "Port already in use"
+**Fix for Python errors:**
 ```bash
-# Find what's using the port
-lsof -i :8001  # API server
-lsof -i :8003  # MLX server
-lsof -i :3000  # Frontend
+# Navigate to Python folder
+cd python
 
-# Kill the process
-kill -9 <PID>
+# Activate virtual environment
+source venv/bin/activate  # Mac/Linux
+venv\Scripts\activate     # Windows
 
-# Or kill by port
-lsof -ti:8001 | xargs kill
+# Install dependencies
+pip install -r requirements.txt
 ```
 
-## 🤖 Ollama Issues
+### "Port already in use" error
+
+**What it looks like:**
+```
+Error: listen EADDRINUSE: address already in use :::3000
+```
+
+**Why this happens:** Another program is using that port, or the app didn't shut down properly.
+
+**Quick fix:**
+```bash
+# See what's using the port
+lsof -i :3000  # For frontend
+lsof -i :8001  # For API server
+lsof -i :8003  # For MLX server
+
+# Stop it (replace PID with the number from above)
+kill -9 PID
+```
+
+**Nuclear option (stops all):**
+```bash
+pkill -f node
+pkill -f python
+```
+
+## 🚀 When Starting the App
 
 ### "Ollama is not running"
-```bash
-# Start Ollama (keep terminal open)
-ollama serve
 
-# Verify it's running
-curl http://localhost:11434/api/tags
+**What it looks like:**
+```
+Error: Ollama service not available at http://127.0.0.1:11434
 ```
 
-### "Model not found"
+**Why this happens:** Ollama needs to be running in the background.
+
+**Fix:**
+1. Open a new terminal window
+2. Run: `ollama serve`
+3. Keep this terminal open!
+4. You should see: "Ollama is running on http://127.0.0.1:11434"
+
+### "Model not found: gemma3:12b"
+
+**What it looks like:**
+```
+Error: model 'gemma3:12b' not found
+```
+
+**Why this happens:** The AI model hasn't been downloaded yet.
+
+**Fix:**
 ```bash
-# Download the model (7GB)
+# Download the model (this is 7GB, takes 10-15 minutes)
 ollama pull gemma3:12b
 
-# List installed models
+# Verify it's installed
 ollama list
+# Should show: gemma3:12b
 ```
 
-### Ollama using too much memory
-```bash
-# Set memory limit
-export OLLAMA_MAX_MEMORY=8GB
-ollama serve
+### "Cannot connect to backend" or "API server not responding"
+
+**What it looks like:**
+- Autocomplete doesn't work
+- Gray suggestions never appear
+- Browser console shows connection errors
+
+**Why this happens:** The backend server isn't running.
+
+**Fix:**
+1. Make sure you ran the startup script:
+   ```bash
+   ./start_hybrid.sh   # or ./start_trained.sh
+   ```
+
+2. Check if it's actually running:
+   ```bash
+   curl http://localhost:8001/
+   # Should return: {"status":"ok"}
+   ```
+
+3. If not, check the logs:
+   ```bash
+   tail -f python/api_server.log
+   ```
+
+## 🖥️ While Using the App
+
+### No gray suggestions appearing
+
+**Common causes and fixes:**
+
+1. **Haven't typed enough words**
+   - Need at least 5 words
+   - Try: "I am a fun loving person who"
+
+2. **Typing too fast**
+   - App waits 1.5 seconds after you stop
+   - Pause after typing
+
+3. **Backend not running**
+   - Check both terminals are still running
+   - Look for error messages
+
+4. **Wrong mode set**
+   ```bash
+   # Check current mode
+   cat .env.local
+   # Should show AUTOCOMPLETE_MODE=hybrid or trained
+   ```
+
+### Suggestions are very slow (30+ seconds)
+
+**Why this happens:** First suggestion loads the AI model.
+
+**Fix:**
+1. Wait for the first one - it gets faster!
+2. Check Activity Monitor (Mac) for high CPU usage
+3. Close other heavy applications
+4. Restart the backend services
+
+### "ChromaDB not initialized" error
+
+**What it looks like:**
+```
+Error: Collection 'bio_embeddings' not found
 ```
 
-## 🔧 API Server Issues
+**Why this happens:** The bio database wasn't set up.
 
-### API server won't start
+**Fix:**
 ```bash
-# Check logs
-tail -50 python/api_server.log
-
-# Common fixes:
-cd python
-source venv/bin/activate
-pip install chromadb fastapi uvicorn
-
-# Try manual start to see errors
-python api/api_server.py
-```
-
-### "ChromaDB not found"
-```bash
-# Initialize the database
 cd python
 source venv/bin/activate
 python vector_db/setup_chromadb.py
+# Should see: "ChromaDB setup completed successfully"
 ```
 
-### Slow API responses
-- First request is always slow (model loading)
-- Check CPU usage: `top` or Activity Monitor
-- Restart services if running for hours
+## 🧠 Training Issues (Mac Only)
 
-## 🧠 MLX/Training Issues
+### "MLX not found"
 
-### "MLX not found" (Mac only)
+**What it looks like:**
+```
+ModuleNotFoundError: No module named 'mlx'
+```
+
+**Why this happens:** MLX (Apple's ML framework) isn't installed.
+
+**Fix:**
 ```bash
 cd python
 source venv/bin/activate
@@ -108,165 +220,158 @@ pip install mlx mlx-lm
 ```
 
 ### Training fails immediately
-```bash
-# Check you have training data
-ls python/mlx_training/lookingfor_hq/
 
-# If missing, prepare it:
+**What it looks like:**
+```
+Error: No training data found in lookingfor_hq/
+```
+
+**Why this happens:** Training data hasn't been prepared.
+
+**Fix:**
+```bash
+# Prepare the data first
 ./prepare_hq_data_fast.sh
+
+# Should see: "Training data ready!"
+# Then try training again
+./start_training_mlx_community.sh
 ```
 
 ### "Out of memory" during training
-```bash
-# Edit start_training_mlx_community.sh
-BATCH_SIZE=2  # Reduce from 4
-NUM_LAYERS=16  # Reduce from 24
+
+**What it looks like:**
+```
+RuntimeError: MPS backend out of memory
 ```
 
-### Model not loading
+**Why this happens:** Training uses lots of memory.
+
+**Fix:**
+1. Close all other apps
+2. Edit `start_training_mlx_community.sh`:
+   ```bash
+   BATCH_SIZE=2    # Reduce from 4
+   NUM_LAYERS=16   # Reduce from 24
+   ```
+3. Restart your Mac and try again
+
+### Trained mode says "Model not found"
+
+**Why this happens:** No trained model exists yet.
+
+**Check for models:**
 ```bash
-# Check HIGH-QUALITY model exists
-ls models/lookingfor-llama3-3b-hq-lora/
+ls models/
+# Should show folders like: lookingfor-llama3-3b-hq-lora/
+```
 
-# Check fallback models
-ls models/lookingfor-llama3-3b-lora/
-ls models/lookingfor-llama3-lora/
-
-# If all missing, train new model
+**If empty, train a model:**
+```bash
 ./prepare_hq_data_fast.sh
 ./start_training_mlx_community.sh
 ```
 
-## 💻 Frontend Issues
+## 🌐 Browser Issues
 
-### "Cannot GET /"
+### Page shows "Cannot GET /"
+
+**Why this happens:** You're in the wrong folder or frontend isn't running.
+
+**Fix:**
 ```bash
-# Wrong terminal - make sure you're in project root
-cd /path/to/ai-train-llm
-npm run dev
-```
+# Make sure you're in the project root
+pwd
+# Should end with: /ai-train-llm
 
-### Autocomplete not working
-1. Check browser console (F12)
-2. Verify backend is running:
-   ```bash
-   curl http://localhost:8001/  # Hybrid
-   curl http://localhost:8003/  # Trained
-   ```
-3. Check mode in `.env.local`:
-   ```bash
-   cat .env.local  # Should show AUTOCOMPLETE_MODE
-   ```
+# Start the frontend
+npm run dev
+# Should see: Ready - started server on http://localhost:3000
+```
 
 ### Spell check not working
-- Clear browser cache and reload
-- Check dictionary files exist:
-  ```bash
-  ls public/dictionaries/en_US/
-  ```
 
-## 🔄 Mode Switching Issues
+**What it looks like:**
+- No red underlines on misspelled words
+- Clicking misspelled words does nothing
 
-### App stuck in wrong mode
+**Fix:**
+1. Hard refresh the page: `Cmd+Shift+R` (Mac) or `Ctrl+Shift+R` (Windows)
+2. Clear browser cache
+3. Check console for errors (F12)
+
+## 🔄 Switching Modes
+
+### App using wrong mode after switching
+
+**Why this happens:** Browser cached the old mode.
+
+**Fix:**
+1. Stop all services (Ctrl+C in terminals)
+2. Start the mode you want:
+   ```bash
+   ./start_hybrid.sh   # or ./start_trained.sh
+   ```
+3. Hard refresh browser: `Cmd+Shift+R`
+
+## 🆘 Emergency Fixes
+
+### "Nothing is working!"
+
+**The Nuclear Reset:**
 ```bash
-# Check current mode
-cat .env.local
+# 1. Stop everything
+pkill -f node
+pkill -f python
+pkill -f ollama
 
-# Force mode change
-echo "AUTOCOMPLETE_MODE=hybrid" > .env.local  # or 'trained'
-
-# Restart frontend
-# Ctrl+C in npm terminal, then:
-npm run dev
-```
-
-### Both servers running
-```bash
-# This is OK but wastes resources
-# Stop the one you don't need:
-lsof -ti:8001 | xargs kill  # Stop hybrid
-lsof -ti:8003 | xargs kill  # Stop trained
-```
-
-## 🐛 General Debugging
-
-### Check all services
-```bash
-# Quick health check
-curl http://localhost:11434/api/tags  # Ollama
-curl http://localhost:8001/           # API server
-curl http://localhost:8003/           # MLX server
-curl http://localhost:3000/           # Frontend
-```
-
-### Verify model quality
-```bash
-# Test HIGH-QUALITY model
-curl -X POST http://localhost:8003/api/autocomplete/mlx \
-  -H "Content-Type: application/json" \
-  -d '{"prompt": "We are looking for"}'
-
-# Should return grammatically correct completion with proper punctuation
-```
-
-### View all logs
-```bash
-# In separate terminals:
-tail -f python/api_server.log
-tail -f python/mlx_server/mlx_server.log
-# Frontend logs show in browser console
-```
-
-### Reset everything
-```bash
-# Stop all services (Ctrl+C in all terminals)
-
-# Clear Python cache
-find . -type d -name __pycache__ -exec rm -r {} +
-
-# Clear Node cache  
+# 2. Clear all caches
 rm -rf .next node_modules
+rm -rf python/__pycache__
 
-# Reinstall
+# 3. Reinstall everything
 npm install
-cd python && pip install -r requirements.txt
+cd python && pip install -r requirements.txt && cd ..
 
-# Start fresh
-./start_hybrid.sh
-npm run dev
+# 4. Start fresh
+ollama serve  # In terminal 1
+./start_hybrid.sh  # In terminal 2
+npm run dev  # In terminal 3
 ```
 
-## 📞 Getting Help
+### Check if anything is actually running
 
-If these solutions don't work:
+**Quick health check script:**
+```bash
+echo "Checking services..."
+echo -n "Ollama: "
+curl -s http://localhost:11434 && echo "✓ Running" || echo "✗ Not running"
+echo -n "API Server: "
+curl -s http://localhost:8001 && echo "✓ Running" || echo "✗ Not running"
+echo -n "MLX Server: "
+curl -s http://localhost:8003 && echo "✓ Running" || echo "✗ Not running"
+echo -n "Frontend: "
+curl -s http://localhost:3000 && echo "✓ Running" || echo "✗ Not running"
+```
 
-1. **Check logs** for specific error messages
-2. **Search issues** on GitHub
-3. **Open new issue** with:
-   - Your OS and hardware
-   - Exact error message
-   - What you tried
-   - Relevant log snippets
+## 💡 Golden Rules
 
-## 💡 Pro Tips
+1. **Read the error message** - It usually tells you what's wrong
+2. **Check the logs** - They have more details
+3. **One terminal per service** - Don't close them!
+4. **Patience with first run** - Things need to warm up
+5. **When in doubt, restart** - Solves many mysterious issues
 
-- Always check logs first
-- Keep terminals open while running
-- Restart services if acting weird
-- First response is slow (normal)
-- Use Activity Monitor (Mac) or Task Manager (Windows) to check resources
+## 📚 Still Stuck?
 
-Remember: Most issues are from:
-1. Services not running
-2. Wrong directory
-3. Virtual environment not activated
-4. Ports already in use
-5. Model not trained or wrong path
+If nothing here helps:
 
-Start there and you'll solve 90% of problems!
+1. Take a screenshot of the error
+2. Copy the error message
+3. Note what you were doing when it happened
+4. Check the project's GitHub issues
+5. Open a new issue with all this info
 
-### Latest Model Information
-- **HIGH-QUALITY model**: `models/lookingfor-llama3-3b-hq-lora/`
-- **Training**: 2000 iterations, learning rate 1e-5
-- **Dataset**: 4.5k grammar-filtered examples
-- **Scripts**: Only 4 essential scripts (start_hybrid.sh, start_trained.sh, prepare_hq_data_fast.sh, start_training_mlx_community.sh)
+---
+
+*Remember: Every developer faces these issues. You're not alone, and it's not your fault! The fact that you're troubleshooting means you're learning.*

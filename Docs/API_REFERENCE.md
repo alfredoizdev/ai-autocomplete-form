@@ -1,267 +1,211 @@
-# API Reference
+# API Reference - Backend Services
 
-Technical documentation for the AI Bio Autocomplete backend services.
+This guide is for developers who want to understand or modify how the backend works.
 
-## 🌐 Available Servers
+## 🤔 What's an API?
+
+An API (Application Programming Interface) is how the frontend (what you see) talks to the backend (the AI brain). Think of it like a waiter taking your order to the kitchen.
+
+When you type in the text box:
+1. Frontend sends your text to the API
+2. API processes it (searches/generates)
+3. API sends back suggestions
+4. Frontend shows them as gray text
+
+## 🌐 The Two Backend Services
 
 ### 1. Hybrid API Server (Port 8001)
-- **Purpose**: Vector search + AI generation
-- **Docs**: http://localhost:8001/docs
-- **Start**: `./start_hybrid.sh`
+**What it does**: Combines database search with AI generation
+- **When it runs**: When you use `./start_hybrid.sh`
+- **Interactive docs**: http://localhost:8001/docs
+- **Best for**: General use, variety in suggestions
 
 ### 2. MLX Model Server (Port 8003)
-- **Purpose**: HIGH-QUALITY fine-tuned model inference
-- **Docs**: Built-in health endpoints
-- **Start**: `./start_trained.sh`
-- **Model**: Llama-3.2-3B with grammar-filtered training (4.5k+ examples)
+**What it does**: Uses your custom-trained model for suggestions
+- **When it runs**: When you use `./start_trained.sh`
+- **Requires**: A trained model (see Training Guide)
+- **Best for**: Consistent style, faster responses
 
-## 📡 API Endpoints
+## 📡 Main API Endpoints
 
-### Hybrid API Server
+### Testing if Services are Running
 
-#### `GET /`
-Health check endpoint.
+**Check Hybrid API:**
 ```bash
 curl http://localhost:8001/
+# Should return: {"status":"ok"}
 ```
 
-#### `POST /api/autocomplete`
-Vector search only (fast exact matches).
-```json
-{
-  "prompt": "I am looking for"
-}
+**Check MLX Server:**
+```bash
+curl http://localhost:8003/
+# Should return: {"status":"ok","model_loaded":true}
 ```
 
-#### `POST /api/autocomplete/hybrid`
-**Main endpoint** - Vector search + AI generation.
+### The Main Endpoints You'll Use
+
+#### Hybrid Mode - Get Suggestions
+**Endpoint**: `POST http://localhost:8001/api/autocomplete/hybrid`
+
+**What you send:**
 ```json
 {
   "prompt": "We are a fun couple who"
 }
 ```
 
-Response:
+**What you get back:**
 ```json
 {
   "combined_suggestions": [
     "enjoys meeting new people for friendship and fun",
-    "likes to explore new experiences together",
-    "is looking for like-minded couples"
+    "likes to explore new experiences together"
   ],
-  "exact_matches": [...],
-  "llm_completions": [...],
-  "context_used": 5,
   "elapsed_ms": 145.23
 }
 ```
 
-#### `GET /api/stats`
-Database statistics.
+#### Trained Mode - Get Suggestions
+**Endpoint**: `POST http://localhost:8003/api/autocomplete/mlx`
+
+**What you send:**
 ```json
 {
-  "total_bios": 5000,
-  "db_path": "chroma_db",
-  "last_updated": "2024-01-20"
+  "prompt": "Looking for couples who"
 }
 ```
 
-### MLX Model Server
-
-#### `GET /`
-Health check with model status.
-```json
-{
-  "status": "ok",
-  "model_loaded": true,
-  "adapter_loaded": true
-}
-```
-
-#### `POST /api/autocomplete/mlx`
-Generate completion using fine-tuned model.
-```json
-{
-  "prompt": "Looking for couples who",
-  "max_tokens": 50,
-  "temperature": 0.7
-}
-```
-
-Response:
+**What you get back:**
 ```json
 {
   "completion": "enjoy dinners, dancing, and good conversation.",
-  "elapsed_ms": 123.45,
-  "model_name": "llama3.2-mlx-finetuned"
+  "elapsed_ms": 98.76
 }
 ```
 
-## 🔧 Frontend Integration
+### 🎮 Try It Yourself!
 
-### Server Actions (`actions/ai-text.ts`)
+With the backend running, you can test these endpoints:
 
-The frontend automatically selects the right endpoint based on mode:
-
-```typescript
-// Mode detection
-const mode = process.env.AUTOCOMPLETE_MODE || 'hybrid';
-
-if (mode === 'trained') {
-  // Calls MLX server on port 8003
-  const response = await fetch('http://localhost:8003/api/autocomplete/mlx', ...);
-} else {
-  // Calls hybrid API on port 8001
-  const response = await fetch('http://localhost:8001/api/autocomplete/hybrid', ...);
-}
-```
-
-## ⚙️ Configuration
-
-### Hybrid API Server
-
-Edit `python/api/api_server.py`:
-```python
-# Vector search settings
-NUM_SIMILAR_BIOS = 10          # Similar bios to retrieve
-MIN_SUGGESTION_LENGTH = 8      # Minimum words per suggestion
-
-# AI generation settings  
-OLLAMA_MODEL = "gemma3:12b"   # Model to use
-TEMPERATURES = [0.7, 0.9]     # Generation variety
-MAX_RETRIES = 3               # Ollama retry attempts
-```
-
-### MLX Model Server
-
-Edit `python/mlx_server/mlx_model_server.py`:
-```python
-# Model loading priority (in order)
-1. models/lookingfor-llama3-3b-hq-lora/      # HIGH-QUALITY (2000 iterations)
-2. models/lookingfor-llama3-3b-lora/         # Standard 3B (1500 iterations)
-3. models/lookingfor-llama3-lora/            # 1B model (faster)
-4. models/bio-sentence-llama3-lora-continued/ # Legacy bio model
-5. models/bio-sentence-llama3-lora/          # Legacy bio model
-6. Base model fallback
-
-# Generation defaults
-DEFAULT_MAX_TOKENS = 50
-DEFAULT_TEMPERATURE = 0.7
-```
-
-## 📊 Performance Tuning
-
-### Caching
-The frontend uses smart caching to improve performance and reduce API calls.
-
-### Debouncing
-Prevent too many API calls:
-```typescript
-// In hooks/useFormAutocomplete.tsx
-const DEBOUNCE_DELAY = 1500;  // Wait 1.5s after typing
-const MIN_WORDS_FOR_SUGGESTION = 5;
-```
-
-### Connection Pooling
-Both servers use connection pooling for database/model access.
-
-## 🚨 Error Responses
-
-All endpoints return consistent error format:
-```json
-{
-  "detail": "Error message",
-  "status_code": 500
-}
-```
-
-Common status codes:
-- `200` - Success
-- `422` - Invalid request data
-- `500` - Server error
-- `503` - Service unavailable (model not loaded)
-
-## 🔐 Security
-
-### CORS Configuration
-Both servers allow requests from:
-- `http://localhost:3000` (development)
-- Configure for production in server files
-
-### Rate Limiting
-Not implemented by default. For production:
-```python
-from slowapi import Limiter
-limiter = Limiter(key_func=get_remote_address)
-app.state.limiter = limiter
-
-@app.post("/api/autocomplete/hybrid")
-@limiter.limit("10/minute")
-async def autocomplete(...):
-```
-
-## 🧪 Testing Endpoints
-
-### Quick Tests
+**Test Hybrid Mode:**
 ```bash
-# Test hybrid API
 curl -X POST http://localhost:8001/api/autocomplete/hybrid \
   -H "Content-Type: application/json" \
-  -d '{"prompt": "We are looking for"}'
+  -d '{"prompt": "I am looking for"}'
+```
 
-# Test MLX model
+**Test Trained Mode:**
+```bash
 curl -X POST http://localhost:8003/api/autocomplete/mlx \
   -H "Content-Type: application/json" \
-  -d '{"prompt": "Fun couple seeking"}'
+  -d '{"prompt": "We enjoy"}'
 ```
 
-### Load Testing
-```bash
-# Install hey
-brew install hey
+## 🔧 How the Frontend Uses These APIs
 
-# Test hybrid endpoint
-hey -n 100 -c 10 -m POST \
-  -H "Content-Type: application/json" \
-  -d '{"prompt": "Test prompt"}' \
-  http://localhost:8001/api/autocomplete/hybrid
+The app automatically picks the right API based on which mode you're running:
+
+- **Hybrid mode** → Uses port 8001
+- **Trained mode** → Uses port 8003
+
+This happens automatically when you use the startup scripts!
+
+## ⚙️ Customizing API Behavior
+
+### Want Different Suggestions?
+
+For **Hybrid Mode**, you can adjust these settings in `python/api/api_server.py`:
+- `NUM_SIMILAR_BIOS = 10` - How many similar examples to find
+- `MIN_SUGGESTION_LENGTH = 8` - Minimum words in suggestions
+
+For **Trained Mode**, the behavior is determined by your trained model.
+
+### Response Speed vs Quality
+
+The app is optimized for the best balance, but you can adjust:
+- **Faster**: Reduce the number of suggestions generated
+- **Better**: Increase the AI "temperature" for more creative responses
+
+Details in the [Configuration Guide](./CONFIGURATION.md).
+
+## 🚨 Understanding API Errors
+
+If something goes wrong, the API returns clear error messages:
+
+**Success (200)**: Everything worked!
+```json
+{"combined_suggestions": ["..."], "elapsed_ms": 123}
 ```
 
-## 📈 Monitoring
+**Server Error (500)**: Something broke on our end
+```json
+{"detail": "Model failed to generate response"}
+```
 
-### Logs
+**Service Unavailable (503)**: Backend not ready yet
+```json
+{"detail": "Model still loading, please wait"}
+```
+
+## 🧪 API Playground
+
+Want to explore the APIs interactively?
+
+1. Make sure Hybrid mode is running
+2. Open http://localhost:8001/docs
+3. Try out the endpoints with the "Try it out" button!
+
+This interactive documentation lets you:
+- Test endpoints without writing code
+- See all available options
+- Understand request/response formats
+
+## 📊 Performance Tips
+
+### Making APIs Faster
+1. **Use caching** - The frontend already does this
+2. **Batch requests** - Send multiple prompts at once (future feature)
+3. **Optimize prompts** - Shorter prompts = faster responses
+
+### Monitoring Performance
+Watch the logs to see response times:
 ```bash
-# API server logs
+# See each request and how long it took
 tail -f python/api_server.log
-
-# MLX server logs  
-tail -f python/mlx_server/mlx_server.log
 ```
 
-### Metrics to Track
-- Response times (target: <150ms hybrid, 100-150ms MLX)
-- Cache hit rate (target: >80%)
-- Error rate (target: <1%)
-- Model load time
-- Grammar accuracy (HIGH-QUALITY model)
-
-## 🔄 Deployment
-
-### Production Checklist
-1. Set production CORS origins
-2. Enable HTTPS (use reverse proxy)
-3. Add rate limiting
-4. Set up logging aggregation
-5. Configure health checks
-6. Use process manager (PM2/systemd)
-
-### Environment Variables
-```bash
-# Production .env
-OLLAMA_PATH_API=http://ollama-server:11434/api
-AUTOCOMPLETE_MODE=hybrid
-LOG_LEVEL=info
-WORKERS=4
+Look for lines like:
+```
+INFO: Autocomplete request processed in 145.23ms
 ```
 
-Need help? Check the [Troubleshooting Guide](./TROUBLESHOOTING.md).
+## 🚀 Advanced Usage
+
+### Building Your Own Frontend?
+
+The APIs are standard REST endpoints, so you can use them from:
+- React/Vue/Angular apps
+- Mobile apps
+- Command line tools
+- Any programming language!
+
+Example in JavaScript:
+```javascript
+const response = await fetch('http://localhost:8001/api/autocomplete/hybrid', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ prompt: 'We are looking for' })
+});
+const data = await response.json();
+console.log(data.combined_suggestions);
+```
+
+## 📚 Next Steps
+
+- **Just want to use the app?** You don't need to worry about APIs!
+- **Building something new?** Use the playground at http://localhost:8001/docs
+- **Having issues?** Check the [Troubleshooting Guide](./TROUBLESHOOTING.md)
+
+---
+
+*Remember: APIs are just how different parts of the app talk to each other. The startup scripts handle all the complexity for you!*

@@ -1,204 +1,177 @@
-# Running the App
+# Running the App - Operating Guide
 
-This guide explains how to run the AI Bio Autocomplete app in different modes.
+Already set up? Great! This guide explains how to run the app day-to-day and understand the different modes.
 
-## 🎯 Available Modes
+## 🎯 Understanding the Two Modes
 
-### 1. Hybrid Mode (Recommended)
-- **Best for**: High-quality suggestions with variety
-- **How it works**: Combines vector search with AI generation
-- **Response time**: 100-150ms
-- **Requirements**: Ollama running
+Think of the app like a restaurant with two chefs:
 
-### 2. Trained Mode  
-- **Best for**: Highest quality completions with fast response times
-- **How it works**: Uses HIGH-QUALITY fine-tuned Llama-3.2-3B model
-- **Response time**: 100-150ms
-- **Requirements**: Trained MLX model (4.5k+ grammar-filtered examples)
+### 🔄 Hybrid Mode (The Research Chef)
+This mode is like a chef who:
+- Looks through a cookbook of 5,000+ recipes (vector search)
+- Then creates something new inspired by what they found (AI generation)
+- Takes a bit longer but creates more varied dishes
 
-## 🚀 Starting the App
+**Perfect for**: General use, trying different styles, exploring possibilities
 
-### Hybrid Mode
+### 🚀 Trained Mode (The Specialist Chef)  
+This mode is like a chef who:
+- Has practiced making one type of cuisine perfectly (fine-tuned model)
+- Doesn't need to look at recipes - it's all in their head
+- Faster and more consistent, but less variety
+
+**Perfect for**: Consistent style, faster responses, production use
+
+## 🚀 Quick Start Commands
+
+### Starting Hybrid Mode (Recommended First)
+Open two terminal windows:
+
+**Terminal 1 - Backend:**
 ```bash
-# Terminal 1: Start backend services
 ./start_hybrid.sh
+```
+You'll see: `INFO: Application startup complete` when ready
 
-# Terminal 2: Start frontend
+**Terminal 2 - Frontend:**
+```bash
 npm run dev
 ```
+You'll see: `Ready in X seconds - http://localhost:3000`
 
-What happens:
-1. Sets `AUTOCOMPLETE_MODE=hybrid` automatically
-2. Starts API server on port 8001
-3. Checks that Ollama is running
-4. Shows real-time logs
+### Starting Trained Mode
+First, make sure you have a trained model (see [Training Guide](./TRAINING_GUIDE.md)).
 
-### Trained Mode
+**Terminal 1 - AI Model:**
 ```bash
-# Terminal 1: Start MLX server  
 ./start_trained.sh
+```
+You'll see: `Model loaded successfully` when ready
 
-# Terminal 2: Start frontend
+**Terminal 2 - Frontend:**
+```bash
 npm run dev
 ```
 
-What happens:
-1. Sets `AUTOCOMPLETE_MODE=trained` automatically
-2. Starts MLX server on port 8003
-3. Loads HIGH-QUALITY Llama-3.2-3B model (grammar-filtered, 2000 iterations)
-4. Shows real-time logs
+## 🔍 What's Actually Happening?
 
-## 📊 Monitoring Services
+### When You Start Hybrid Mode:
+1. **Checks Ollama** - Makes sure your AI model (Gemma) is available
+2. **Starts API Server** - Launches the Python backend on port 8001
+3. **Loads Database** - Connects to the bio examples database
+4. **Sets Mode** - Tells the frontend to use hybrid autocomplete
 
-### Check What's Running
+### When You Start Trained Mode:
+1. **Loads Custom Model** - Loads your fine-tuned Llama model into memory
+2. **Starts MLX Server** - Launches the model server on port 8003
+3. **Optimizes for Speed** - Prepares model for fast inference
+4. **Sets Mode** - Tells the frontend to use the trained model
+
+## 📊 Checking If Everything's Working
+
+### Quick Health Check
+Visit these URLs in your browser:
+- **Frontend**: http://localhost:3000 (should show the app)
+- **Hybrid API**: http://localhost:8001/docs (should show API documentation)
+- **Ollama**: http://localhost:11434 (should show "Ollama is running")
+
+### Watching the Logs (See What's Happening)
+Keep these running in separate terminals to see real-time activity:
+
+**Watch API requests (Hybrid mode):**
 ```bash
-# Check all services
-lsof -i :8001  # API Server (hybrid)
-lsof -i :8003  # MLX Server (trained)
-lsof -i :11434 # Ollama
-lsof -i :3000  # Frontend
-```
-
-### View Logs
-```bash
-# API server logs (hybrid mode)
 tail -f python/api_server.log
+```
+You'll see each autocomplete request as you type!
 
-# MLX server logs (trained mode)
+**Watch model server (Trained mode):**
+```bash
 tail -f python/mlx_server/mlx_server.log
 ```
 
-### API Documentation
-- Hybrid Mode: http://localhost:8001/docs
-- Frontend: http://localhost:3000
-
-## 🛠️ Manual Mode Control
-
-If you prefer manual control over automatic scripts:
-
-### Manual Hybrid Mode
+### Is Something Not Working?
+Run this diagnostic command:
 ```bash
-# Set mode
-echo "AUTOCOMPLETE_MODE=hybrid" >> .env.local
-
-# Start Ollama
-ollama serve
-
-# Start API server
-cd python
-source venv/bin/activate  
-python api/api_server.py
-
-# Start frontend
-npm run dev
+# Shows all running services
+ps aux | grep -E "python|node|ollama" | grep -v grep
 ```
 
-### Manual Trained Mode
+## 🔄 Switching Between Modes
+
+Want to try the other mode? It's easy:
+
+1. **Stop current services**: Press `Ctrl+C` in both terminal windows
+2. **Start the other mode**: Run the other startup script
+3. **Refresh your browser**: The app will automatically use the new mode
+
+The startup scripts handle all the configuration for you!
+
+## ⚙️ Adjusting Settings (Optional)
+
+### Making Suggestions Appear Faster/Slower
+Edit `.env.local` and add:
 ```bash
-# Set mode
-echo "AUTOCOMPLETE_MODE=trained" >> .env.local
+# Faster suggestions (may be less accurate)
+DEBOUNCE_DELAY=500
 
-# Start MLX server
-cd python/mlx_server
-source ../venv/bin/activate
-python mlx_model_server.py
-
-# Start frontend  
-npm run dev
+# Slower suggestions (more time to think)
+DEBOUNCE_DELAY=3000
 ```
 
-## ⚙️ Configuration
+### Want More/Fewer Suggestions?
+The app is configured for optimal performance, but advanced users can modify settings in:
+- `python/api/api_server.py` - Backend settings
+- `hooks/useFormAutocomplete.tsx` - Frontend behavior
 
-### Environment Variables
-```bash
-# Required
-OLLAMA_PATH_API=http://127.0.0.1:11434/api
+For detailed configuration options, see the [Configuration Guide](./CONFIGURATION.md).
 
-# Mode selection (set by scripts)
-AUTOCOMPLETE_MODE=hybrid    # or 'trained'
-```
+## 🚦 Running in Production
 
-### Performance Tuning
-
-**Hybrid Mode** (`python/api/api_server.py`):
-```python
-NUM_SIMILAR_BIOS = 10        # Vector search results
-MIN_COMPLETION_LENGTH = 8    # Min words in suggestion
-TEMPERATURES = [0.7, 0.9]    # AI creativity levels
-```
-
-**Frontend** (`hooks/useFormAutocomplete.tsx`):
-```javascript
-DEBOUNCE_DELAY = 1500       # Typing delay (ms)
-MIN_WORDS = 5               # Words before suggestions
-```
-
-## 🔄 Switching Modes
-
-To switch between modes:
-
-1. **Stop current services** (Ctrl+C in terminals)
-2. **Run the other startup script**
-3. **Restart frontend** if needed
-
-The scripts automatically update your `.env.local` file.
-
-## 🚦 Production Deployment
-
-### Using PM2
+### For Personal Use (Always On)
+Use PM2 to keep the app running even after reboot:
 ```bash
 # Install PM2
 npm install -g pm2
 
-# Start services
-pm2 start ./start_hybrid.sh --name "bio-backend"
-pm2 start npm --name "bio-frontend" -- start
-
-# Monitor
-pm2 monit
+# Start and save
+pm2 start ./start_hybrid.sh --name "ai-bio-backend"
+pm2 start npm --name "ai-bio-frontend" -- start
+pm2 save
+pm2 startup
 ```
 
-### Using Docker
-```bash
-# Build and run
-docker-compose up -d
+### For Team/Public Use
+See the [Development Guide](./DEVELOPMENT_GUIDE.md) for Docker deployment options.
 
-# Check status
-docker-compose ps
-```
+## 📈 Mode Comparison Chart
 
-## 📈 Performance Comparison
+| Aspect | Hybrid Mode | Trained Mode |
+|--------|-------------|--------------|
+| **Setup Difficulty** | ⭐ Easy | ⭐⭐⭐ Requires training |
+| **Response Quality** | ⭐⭐⭐⭐⭐ Excellent | ⭐⭐⭐⭐ Very Good |
+| **Speed** | ⭐⭐⭐⭐ Fast (150ms) | ⭐⭐⭐⭐⭐ Very Fast (100ms) |
+| **Variety** | ⭐⭐⭐⭐⭐ High | ⭐⭐⭐ Moderate |
+| **Best For** | Exploring, variety | Consistency, speed |
 
-| Feature | Hybrid Mode | Trained Mode |
-|---------|------------|--------------|
-| Quality | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
-| Speed | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
-| Variety | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
-| Setup | Easy | Requires training |
+## 🆘 Quick Fixes
 
-## 🆘 Troubleshooting
+**App not responding?**
+1. Check both terminals are still running
+2. Refresh your browser
+3. Check [Troubleshooting Guide](./TROUBLESHOOTING.md)
 
-### Services Won't Start
-```bash
-# Kill any stuck processes
-pkill -f "python.*api_server"
-pkill -f "python.*mlx_model_server"
+**Want to stop everything?**
+Press `Ctrl+C` in all terminal windows
 
-# Clear ports
-lsof -ti:8001 | xargs kill
-lsof -ti:8003 | xargs kill
-```
+**Want it to start automatically?**
+Use the PM2 commands above
 
-### Slow Responses
-- First response is always slower (model loading)
-- Check if other apps are using CPU/memory
-- Restart services if they've been running long
+## 📚 Next Steps
 
-### Mode Not Switching
-```bash
-# Manually check/set mode
-cat .env.local
-echo "AUTOCOMPLETE_MODE=hybrid" > .env.local
-```
+- **New to AI?** Learn how it works in our [Architecture Guide](./ARCHITECTURE.md)
+- **Want to train a model?** Follow the [Training Guide](./TRAINING_GUIDE.md)
+- **Having issues?** Check the [Troubleshooting Guide](./TROUBLESHOOTING.md)
 
-Need more help? See the [Troubleshooting Guide](./TROUBLESHOOTING.md).
+---
+
+*Pro tip: Keep the log terminal open while using the app - it's fascinating to watch the AI think!*
