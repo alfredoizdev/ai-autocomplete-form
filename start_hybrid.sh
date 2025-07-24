@@ -55,24 +55,52 @@ fi
 
 # Check if API server is already running
 if lsof -Pi :8001 -sTCP:LISTEN -t >/dev/null ; then
-    echo "⚠️  API Server is already running on port 8001"
-    echo ""
-else
-    echo "Starting API Server on port 8001..."
-    cd python && source venv/bin/activate && nohup python -m uvicorn api.api_server:app --host 0.0.0.0 --port 8001 > api_server.log 2>&1 &
-    cd ..
+    echo "✅ API Server is already running on port 8001"
     
-    # Wait for server to start
-    sleep 3
-    
+    # Kill and restart to ensure fresh state with telemetry disabled
+    echo "Restarting API Server with fresh configuration..."
+    lsof -ti:8001 | xargs kill 2>/dev/null
+    sleep 2
+fi
+
+echo "Starting API Server on port 8001..."
+cd python && source venv/bin/activate && ANONYMIZED_TELEMETRY=False nohup python -m uvicorn api.api_server:app --host 0.0.0.0 --port 8001 > api_server.log 2>&1 &
+API_PID=$!
+cd ..
+
+# Wait for server to start and be ready
+echo "Waiting for API Server to initialize..."
+for i in {1..10}; do
+    sleep 1
     if lsof -Pi :8001 -sTCP:LISTEN -t >/dev/null ; then
-        echo "✅ API Server started successfully"
-    else
-        echo "❌ Failed to start API Server"
+        # Server is listening, now check if it's responding
+        if curl -s http://localhost:8001/ > /dev/null 2>&1; then
+            echo "✅ API Server started successfully"
+            break
+        fi
+    fi
+    
+    # Check if the process is still running
+    if ! kill -0 $API_PID 2>/dev/null; then
+        echo "❌ API Server process died unexpectedly"
         echo "Check python/api_server.log for errors"
+        echo ""
+        echo "Last 20 lines of log:"
+        tail -20 python/api_server.log
         exit 1
     fi
-fi
+    
+    if [ $i -eq 10 ]; then
+        echo "❌ API Server failed to start within 10 seconds"
+        echo "Check python/api_server.log for errors"
+        echo ""
+        echo "Last 20 lines of log:"
+        tail -20 python/api_server.log
+        exit 1
+    fi
+    echo -n "."
+done
+echo ""
 
 echo ""
 echo "🎉 Hybrid mode is ready!"

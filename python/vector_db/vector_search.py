@@ -1,11 +1,12 @@
+import os
+
+# Disable ChromaDB telemetry to avoid warning messages - MUST be set before importing chromadb
+os.environ["ANONYMIZED_TELEMETRY"] = "False"
+
 import chromadb
 from chromadb.utils import embedding_functions
 import re
 from typing import List, Optional
-import os
-
-# Disable ChromaDB telemetry to avoid warning messages
-os.environ["ANONYMIZED_TELEMETRY"] = "False"
 
 class BioVectorSearch:
     def __init__(self, chroma_path: str = "./chroma_db"):

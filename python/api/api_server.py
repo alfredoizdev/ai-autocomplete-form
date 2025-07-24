@@ -9,6 +9,13 @@ import os
 from typing import List, Optional
 from contextlib import asynccontextmanager
 
+# Disable ChromaDB telemetry to avoid warning messages - MUST be set before importing chromadb
+os.environ["ANONYMIZED_TELEMETRY"] = "False"
+
+# Suppress urllib3 SSL warning for LibreSSL
+import warnings
+warnings.filterwarnings("ignore", message="urllib3 v2 only supports OpenSSL")
+
 # Add parent directory to path to import vector_db module
 sys.path.append(str(Path(__file__).parent.parent))
 
