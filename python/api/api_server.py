@@ -250,7 +250,7 @@ Be explicitly sexual. Make them want to message immediately. Output ONLY the con
                         "temperature": 0.85,
                         "top_p": 0.95,
                         "num_predict": 30,
-                        "stop": ["\n", "\n\n", ".", "!", "?", ". ", "! ", "? "]
+                        "stop": ["\n", "\n\n"]
                     }
                 }
             )
@@ -309,7 +309,7 @@ Be explicitly sexual. Make them want to message immediately. Output ONLY the con
                                 "temperature": 0.9,
                                 "top_p": 0.95,
                                 "num_predict": 30,
-                                "stop": ["\n", "\n\n", ".", "!", "?", ". ", "! ", "? "]
+                                "stop": ["\n", "\n\n"]
                             }
                         }
                     )
@@ -417,12 +417,18 @@ async def hybrid_autocomplete(request: AutocompleteRequest):
                 not suggestion.endswith(" is") and
                 not is_incomplete and
                 suggestion.strip()[-1] not in [',', ':']):  # Must end properly
+                # Ensure exact matches also end with proper punctuation
+                if suggestion and not suggestion.endswith(('.', '!', '?')):
+                    suggestion = suggestion.rstrip('.,!?') + "."
                 combined.append(suggestion)
                 seen.add(suggestion_lower)
         
         # Add LLM completions
         for completion in llm_completions:
             if completion.lower() not in seen and len(combined) < 5:
+                # Ensure LLM completions end with proper punctuation
+                if completion and not completion.endswith(('.', '!', '?')):
+                    completion = completion.rstrip('.,!?') + "."
                 combined.append(completion)
                 seen.add(completion.lower())
         
