@@ -59,8 +59,8 @@ if lsof -Pi :8001 -sTCP:LISTEN -t >/dev/null ; then
     echo ""
 else
     echo "Starting API Server on port 8001..."
-    cd python/api && source ../venv/bin/activate && nohup python api_server.py > ../api_server.log 2>&1 &
-    cd ../..
+    cd python && source venv/bin/activate && nohup python -m uvicorn api.api_server:app --host 0.0.0.0 --port 8001 > api_server.log 2>&1 &
+    cd ..
     
     # Wait for server to start
     sleep 3

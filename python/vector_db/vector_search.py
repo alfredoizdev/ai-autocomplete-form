@@ -2,6 +2,10 @@ import chromadb
 from chromadb.utils import embedding_functions
 import re
 from typing import List, Optional
+import os
+
+# Disable ChromaDB telemetry to avoid warning messages
+os.environ["ANONYMIZED_TELEMETRY"] = "False"
 
 class BioVectorSearch:
     def __init__(self, chroma_path: str = "./chroma_db"):
@@ -9,13 +13,15 @@ class BioVectorSearch:
         # Initialize ChromaDB client
         self.client = chromadb.PersistentClient(path=chroma_path)
         
-        # Use default embedding function
-        self.embedding_function = embedding_functions.DefaultEmbeddingFunction()
+        # Use sentence transformer embedding function (same as setup)
+        self.embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction(
+            model_name="all-MiniLM-L6-v2"
+        )
         
         # Get the collection
         try:
             self.collection = self.client.get_collection(
-                name="bio_embeddings",
+                name="bio_embeddings_v2",
                 embedding_function=self.embedding_function
             )
             print(f"Loaded collection with {self.collection.count()} items")

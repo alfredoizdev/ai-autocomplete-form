@@ -1,0 +1,15 @@
+# Add this to your ~/.zshrc to disable automatic venv activation
+
+# Disable python venv auto-activation
+export VIRTUAL_ENV_DISABLE_PROMPT=1
+export PIPENV_VERBOSITY=-1
+
+# If you're using pyenv-virtualenv, disable auto-activation
+export PYENV_VIRTUALENV_DISABLE_PROMPT=1
+
+# If using direnv, you can disable it for this project
+# Add to .envrc in project root:
+# layout python-venv
+
+# To manually activate when needed:
+# source python/venv/bin/activate

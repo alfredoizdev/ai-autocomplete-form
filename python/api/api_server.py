@@ -27,8 +27,9 @@ async def lifespan(app: FastAPI):
     global vector_search
     try:
         print("Initializing vector search...")
-        # Use the correct path to the vector_db directory
-        vector_search = BioVectorSearch(chroma_path="../vector_db/chroma_db")
+        # Use absolute path to the chroma_db directory
+        chroma_path = str(Path(__file__).parent.parent / "chroma_db")
+        vector_search = BioVectorSearch(chroma_path=chroma_path)
         print("Vector search initialized successfully")
     except Exception as e:
         print(f"Failed to initialize vector search: {e}")
@@ -245,10 +246,12 @@ Be explicitly sexual. Make them want to message immediately. Output ONLY the con
                     "model": "gemma3:12b",
                     "messages": messages,
                     "stream": False,
-                    "temperature": 0.85,
-                    "top_p": 0.95,
-                    "max_tokens": 25,
-                    "stop": ["\n", "\n\n"]
+                    "options": {
+                        "temperature": 0.85,
+                        "top_p": 0.95,
+                        "num_predict": 30,
+                        "stop": ["\n", "\n\n", ".", "!", "?", ". ", "! ", "? "]
+                    }
                 }
             )
             
@@ -302,10 +305,12 @@ Be explicitly sexual. Make them want to message immediately. Output ONLY the con
                             "model": "gemma3:12b",
                             "messages": messages,
                             "stream": False,
-                            "temperature": 0.9,
-                            "top_p": 0.95,
-                            "max_tokens": 25,
-                            "stop": ["\n", "\n\n"]
+                            "options": {
+                                "temperature": 0.9,
+                                "top_p": 0.95,
+                                "num_predict": 30,
+                                "stop": ["\n", "\n\n", ".", "!", "?", ". ", "! ", "? "]
+                            }
                         }
                     )
                     
