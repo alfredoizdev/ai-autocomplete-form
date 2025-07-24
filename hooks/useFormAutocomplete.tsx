@@ -203,9 +203,11 @@ const useFormAutocomplete = (options: UseFormAutocompleteOptions = {}) => {
   const [previousTextSnapshot, setPreviousTextSnapshot] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const measureRef = useRef<HTMLTextAreaElement>(null);
+  const hasRecentlyClearedRef = useRef(false);
+  const clearTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Simple state reset function for when textarea is emptied
-  const resetAutocompleteState = () => {
+  const resetAutocompleteState = useCallback(() => {
     setSuggestion("");
     setLastAcceptedWordCount(0);
     setLastAcceptedPosition(0);
@@ -217,8 +219,21 @@ const useFormAutocomplete = (options: UseFormAutocompleteOptions = {}) => {
       lastAutocompleteRequest.abort();
       setLastAutocompleteRequest(null);
     }
+    // Mark that we've recently cleared
+    hasRecentlyClearedRef.current = true;
+    
+    // Clear any existing timeout
+    if (clearTimeoutRef.current) {
+      clearTimeout(clearTimeoutRef.current);
+    }
+    
+    // Reset the flag after 2 seconds (conservative buffer)
+    clearTimeoutRef.current = setTimeout(() => {
+      hasRecentlyClearedRef.current = false;
+    }, 2000);
+    
     // Chat history will be managed server-side based on text changes
-  };
+  }, [lastAutocompleteRequest]);
 
   // Check if text is truly empty (handles whitespace-only content)
   const isTextEmpty = (text: string): boolean => {
@@ -316,7 +331,7 @@ const useFormAutocomplete = (options: UseFormAutocompleteOptions = {}) => {
   
   // Smart debounce: 200ms after spell check, 1500ms normally (1.5 seconds for less aggressive autocomplete)
   const debounceDelay = justReplacedSpellCheckWord ? 200 : 1500;
-  const [debouncedPrompt] = useDebounce(promptValue, debounceDelay);
+  const [debouncedPrompt, { cancel: cancelDebounce }] = useDebounce(promptValue, debounceDelay);
 
   // Calculate textarea height based on content
   const calculateHeight = (text: string) => {
@@ -342,6 +357,7 @@ const useFormAutocomplete = (options: UseFormAutocompleteOptions = {}) => {
     // If text is completely empty, reset everything
     if (isTextEmpty(promptValue)) {
       resetAutocompleteState();
+      cancelDebounce?.(); // Cancel pending debounce to prevent stale autocomplete
       setPreviousTextLength(0);
       setPreviousTextSnapshot("");
       return;
@@ -351,6 +367,7 @@ const useFormAutocomplete = (options: UseFormAutocompleteOptions = {}) => {
     if (previousTextLength > 0 && currentLength < previousTextLength * 0.5) {
       console.log("Major text deletion detected, resetting autocomplete state");
       resetAutocompleteState();
+      cancelDebounce?.(); // Cancel pending debounce
     }
     
     // Detect significant content change (not just appending)
@@ -363,13 +380,14 @@ const useFormAutocomplete = (options: UseFormAutocompleteOptions = {}) => {
       if (previousPrefix !== currentPrefix) {
         console.log("Significant text change detected, resetting autocomplete state");
         resetAutocompleteState();
+        cancelDebounce?.(); // Cancel pending debounce
       }
     }
     
     // Update tracking variables for next comparison
     setPreviousTextLength(currentLength);
     setPreviousTextSnapshot(promptValue);
-  }, [promptValue, previousTextLength, previousTextSnapshot, resetAutocompleteState]);
+  }, [promptValue, previousTextLength, previousTextSnapshot, resetAutocompleteState, cancelDebounce]);
 
   // ResizeObserver to monitor textarea size changes
   useLayoutEffect(() => {
@@ -439,6 +457,12 @@ const useFormAutocomplete = (options: UseFormAutocompleteOptions = {}) => {
 
   // Word-based autocomplete logic - simple and effective
   useEffect(() => {
+    // Skip if we recently cleared the form to prevent stale autocomplete
+    if (hasRecentlyClearedRef.current) {
+      setSuggestion("");
+      return;
+    }
+    
     // Skip if autocomplete is disabled (e.g., when kick detection is active)
     if (disableAutocomplete) {
       setSuggestion("");
@@ -453,6 +477,12 @@ const useFormAutocomplete = (options: UseFormAutocompleteOptions = {}) => {
 
     // Use prompt value directly for immediate autocomplete after spell check
     const textToCheck = immediateAutocomplete ? promptValue : debouncedPrompt;
+    
+    // Skip if debouncedPrompt has a value but current prompt is empty (stale debounce)
+    if (textToCheck && !promptValue) {
+      setSuggestion("");
+      return;
+    }
     
     // Get current cursor position from the actual textarea element
     const cursorPos = textareaRef.current?.selectionStart ?? textareaRef.current?.selectionEnd ?? textToCheck.length;
