@@ -16,14 +16,37 @@ from functools import partial
 
 def clean_text(text: str) -> str:
     """Clean and normalize text."""
-    # Fix encoding issues
+    # Fix encoding issues and Unicode characters
     replacements = {
         'â€™': "'", 'â€œ': '"', 'â€': '"', 'â€"': '—',
         'â€"': '–', 'â€¦': '...', 'Ã©': 'é', 'Ã¨': 'è',
-        'Ã ': 'à', 'Ã§': 'ç', 'Ã±': 'ñ', 'Ã¼': 'ü'
+        'Ã ': 'à', 'Ã§': 'ç', 'Ã±': 'ñ', 'Ã¼': 'ü',
+        '\u2019': "'",  # right single quotation mark
+        '\u2018': "'",  # left single quotation mark
+        '\u201c': '"',  # left double quotation mark
+        '\u201d': '"',  # right double quotation mark
+        '\u2014': '—',  # em dash
+        '\u2013': '–',  # en dash
+        '\u2026': '...', # horizontal ellipsis
+        '\u00a0': ' ',  # non-breaking space
+        '\u200b': '',   # zero width space
+        '\u200c': '',   # zero width non-joiner
+        '\u200d': '',   # zero width joiner
+        '\u00e9': 'é',  # é with acute
+        '\u00e8': 'è',  # è with grave
+        '\u00e0': 'à',  # à with grave
+        '\u00e7': 'ç',  # ç with cedilla
+        '\u00f1': 'ñ',  # ñ with tilde
+        '\u00fc': 'ü',  # ü with diaeresis
     }
     for old, new in replacements.items():
         text = text.replace(old, new)
+    
+    # Also decode any remaining unicode escapes
+    try:
+        text = text.encode().decode('unicode-escape')
+    except:
+        pass
     
     # Normalize whitespace
     text = ' '.join(text.split())
@@ -187,10 +210,10 @@ def process_dataset_fast(input_file: str, output_dir: str):
     # Save datasets
     for name, data in [('train', train_data), ('valid', valid_data), ('test', test_data)]:
         output_file = os.path.join(output_dir, f'{name}.jsonl')
-        with open(output_file, 'w') as f:
+        with open(output_file, 'w', encoding='utf-8') as f:
             for item in data:
                 # Only save the text field for training
-                f.write(json.dumps({'text': item['text']}) + '\n')
+                f.write(json.dumps({'text': item['text']}, ensure_ascii=False) + '\n')
         print(f"Saved {len(data)} examples to {output_file}")
     
     # Save quality statistics
@@ -203,6 +226,6 @@ def process_dataset_fast(input_file: str, output_dir: str):
 if __name__ == "__main__":
     # Process the LookingFor dataset with improved quality
     process_dataset_fast(
-        "../../data/LookingFor_20000.csv",
+        "../../data/newBios20000.csv",
         "lookingfor_hq"
     )

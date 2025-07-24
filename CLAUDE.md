@@ -383,3 +383,51 @@ All documentation is located in the `Docs/` folder:
 - MLX server now prioritizes HIGH-QUALITY model first
 - Located at: `models/lookingfor-llama3-3b-hq-lora/`
 - Trained with grammar-filtered dataset for superior output quality
+
+## Additional Development Tools
+
+### Python Environment Setup
+- Virtual environment located at `python/venv/`
+- Two requirements files:
+  - `python/requirements.txt` - Main dependencies (ChromaDB, FastAPI, MLX)
+  - `python/mlx_server/requirements.txt` - MLX server specific dependencies
+- Hugging Face token required for model downloads (see `python/.env.example`)
+
+### Status Check Utility
+Run `python python/check_status.py` to verify:
+- Service availability (API servers, Ollama, Docker)
+- Database existence and stats
+- MLX installation status
+- Training data preparation
+- Quick start commands
+
+### Vector Database Utilities
+Located in `python/vector_db/`:
+- `setup_chromadb.py` / `setup_chromadb_improved.py` - Database initialization
+- `check_chromadb_status.py` - Verify database health
+- `analyze_bio_lengths.py` - Analyze training data statistics
+- `clean_bio_data.py` - Data preprocessing utility
+- `vector_search.py` - Direct vector search testing
+
+### Training Data
+Multiple datasets available:
+- `data/bio.json` - 5000+ examples
+- `data/lookingfor_20000.json` - Converted from CSV
+- `data/newBios20000.csv` - Original CSV data
+- `data/bio_cleaned.json` - Preprocessed version
+- Conversion utility: `convert_csv_to_json.py` (root directory)
+
+### Model Storage Structure
+Trained models in `models/`:
+- `lookingfor-llama3-3b-hq-lora/` - HIGH-QUALITY grammar-filtered model
+- `lookingfor-llama3-3b-lora/` - Standard model with checkpoint history
+- `bio-sentence-llama3-lora/` - Bio dataset trained model
+- Each model includes checkpoints saved during training
+
+### MLX Configuration
+Default config at `python/mlx_server/config.yaml`:
+- Uses Phi-3-mini-4k-instruct-4bit by default
+- Optimized for M1 Max with 32GB RAM
+- LoRA rank 16, alpha 32 for memory efficiency
+- Batch size 2 with gradient accumulation
+- Mixed precision and gradient checkpointing enabled
