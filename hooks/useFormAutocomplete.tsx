@@ -295,10 +295,9 @@ const useFormAutocomplete = (options: UseFormAutocompleteOptions = {}) => {
           // Smart word count adjustment after spell check
           const currentWordCount = getWordCountAtCursor(currentText, cursorPos);
           if (currentWordCount >= 5) {
-            // Adjust last accepted position to current cursor position
-            // This allows autocomplete to resume naturally after spell check
-            setLastAcceptedPosition(cursorPos);
-            // Force autocomplete re-evaluation
+            // DO NOT update lastAcceptedPosition here - this is the bug!
+            // We should only update it when user actually accepts a suggestion
+            // Just force autocomplete re-evaluation
             setForceAutocompleteCheck(prev => prev + 1);
           }
         }
@@ -345,14 +344,14 @@ const useFormAutocomplete = (options: UseFormAutocompleteOptions = {}) => {
   const debounceDelay = justReplacedSpellCheckWord ? 200 : 1500;
   
   // Create a debounced function that triggers autocomplete
-  const triggerAutocomplete = useCallback((text: string) => {
+  const triggerAutocomplete = useCallback(() => {
     // Skip if recently cleared
     if (hasRecentlyClearedRef.current) {
       setSuggestion("");
       return;
     }
     
-    // Set flag to use this text for autocomplete
+    // Set flag to trigger autocomplete check
     setForceAutocompleteCheck(prev => prev + 1);
   }, []);
   
@@ -364,7 +363,7 @@ const useFormAutocomplete = (options: UseFormAutocompleteOptions = {}) => {
   // Trigger debounced autocomplete when prompt changes
   useEffect(() => {
     if (promptValue && !isTextEmpty(promptValue)) {
-      debouncedTrigger(promptValue);
+      debouncedTrigger();
     }
   }, [promptValue, debouncedTrigger]);
 
