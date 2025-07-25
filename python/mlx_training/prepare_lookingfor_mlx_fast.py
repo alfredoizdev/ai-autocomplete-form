@@ -16,11 +16,23 @@ from functools import partial
 
 def clean_text(text: str) -> str:
     """Clean and normalize text."""
+    # First, try to fix mojibake (UTF-8 interpreted as Latin-1)
+    try:
+        text = text.encode('latin-1').decode('utf-8', errors='ignore')
+    except:
+        pass
+    
     # Fix encoding issues and Unicode characters
     replacements = {
+        # Common UTF-8 mojibake patterns
         'â€™': "'", 'â€œ': '"', 'â€': '"', 'â€"': '—',
         'â€"': '–', 'â€¦': '...', 'Ã©': 'é', 'Ã¨': 'è',
         'Ã ': 'à', 'Ã§': 'ç', 'Ã±': 'ñ', 'Ã¼': 'ü',
+        'â': "'", 'â': '-', 'âs': "'s", 'ât': "'t",
+        'âm': "'m", 'âre': "'re", 'âve': "'ve", 'âll': "'ll",
+        'ÃF': 'IF', 'Ã': 'I',  # Common mojibake for capital I
+        'â¢': '•', 'â': '', 'Â': ' ',
+        # Unicode characters
         '\u2019': "'",  # right single quotation mark
         '\u2018': "'",  # left single quotation mark
         '\u201c': '"',  # left double quotation mark
@@ -38,15 +50,15 @@ def clean_text(text: str) -> str:
         '\u00e7': 'ç',  # ç with cedilla
         '\u00f1': 'ñ',  # ñ with tilde
         '\u00fc': 'ü',  # ü with diaeresis
+        '\ufeff': '',   # BOM
+        '\u00ad': '',   # soft hyphen
     }
     for old, new in replacements.items():
         text = text.replace(old, new)
     
-    # Also decode any remaining unicode escapes
-    try:
-        text = text.encode().decode('unicode-escape')
-    except:
-        pass
+    # Fix common em-dash patterns
+    text = re.sub(r'—([a-zA-Z])', r'— \1', text)  # Add space after em-dash if missing
+    text = re.sub(r'([a-zA-Z])—', r'\1 —', text)  # Add space before em-dash if missing
     
     # Normalize whitespace
     text = ' '.join(text.split())
@@ -92,18 +104,46 @@ def find_quality_splits_fast(text: str) -> List[Tuple[str, str, float]]:
     # Return top 3 splits to avoid processing too many
     return splits[:3]
 
+def has_encoding_issues(text: str) -> bool:
+    """Check if text still contains encoding issues."""
+    # Characters that indicate encoding problems
+    problematic_chars = ['â', 'Ã', 'Â', 'ï»¿', '¿', '½', '¦', '§', '¤', '¬']
+    
+    # Check for any problematic characters
+    for char in problematic_chars:
+        if char in text:
+            return True
+    
+    # Check for common mojibake patterns
+    mojibake_patterns = [
+        r'Ã[A-Za-z]',  # Common UTF-8 mojibake
+        r'â€[™œ"]',    # Smart quote mojibake
+        r'â[a-z]',     # Common apostrophe mojibake
+        r'Â[^\s]',     # Non-breaking space mojibake
+    ]
+    
+    for pattern in mojibake_patterns:
+        if re.search(pattern, text):
+            return True
+    
+    return False
+
 def validate_split_fast(prompt: str, completion: str) -> bool:
     """Fast validation with essential checks only."""
     if not prompt or not completion:
+        return False
+    
+    # Check for encoding issues
+    if has_encoding_issues(prompt) or has_encoding_issues(completion):
         return False
     
     prompt_words = prompt.split()
     completion_words = completion.split()
     
     # Length requirements
-    if len(prompt_words) < 5 or len(prompt_words) > 200:
+    if len(prompt_words) < 5 or len(prompt_words) > 50:
         return False
-    if len(completion_words) < 4 or len(completion_words) > 200:
+    if len(completion_words) < 4 or len(completion_words) > 50:
         return False
     
     # Total must be substantial
@@ -224,8 +264,20 @@ def process_dataset_fast(input_file: str, output_dir: str):
     print(f"  Max: {max(qualities):.3f}")
 
 if __name__ == "__main__":
-    # Process the LookingFor dataset with improved quality
-    process_dataset_fast(
-        "../../data/newBios20000.csv",
-        "lookingfor_hq"
-    )
+    import sys
+    
+    # Default values
+    input_file = "../../data/newBios20000.csv"
+    output_dir = "lookingfor_hq"
+    
+    # Check for command line arguments
+    if len(sys.argv) > 1:
+        input_file = sys.argv[1]
+    if len(sys.argv) > 2:
+        output_dir = sys.argv[2]
+    
+    print(f"Processing: {input_file}")
+    print(f"Output directory: {output_dir}")
+    
+    # Process the dataset with improved quality
+    process_dataset_fast(input_file, output_dir)

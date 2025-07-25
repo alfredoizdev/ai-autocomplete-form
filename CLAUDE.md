@@ -69,7 +69,7 @@ When preparing new training data for fine-tuning, follow these specific requirem
 #### Quality Requirements
 
 1. **Minimum length**: 8 words per sentence (shorter sentences are discarded)
-2. **Maximum length**: 500 words per prompt-completion pair
+2. **Maximum length**: 50 words per prompt-completion pair
 3. **Sentence structure**:
    - Each prompt must NOT end with punctuation (.!?)
    - Each completion MUST end with proper punctuation
