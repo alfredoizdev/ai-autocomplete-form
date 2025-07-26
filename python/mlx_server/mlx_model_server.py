@@ -73,6 +73,29 @@ def strip_prompt_from_response(prompt: str, response: str) -> str:
     
     return response
 
+def fix_final_capitalization(completion: str, prompt: str) -> str:
+    """Fix capitalization issues in the final completion."""
+    import re
+    
+    # Fix standalone lowercase 'i' to 'I'
+    completion = re.sub(r'\bi\b', 'I', completion)
+    
+    # Fix "i'm", "i'll", "i've", "i'd" etc.
+    completion = re.sub(r'\bi\'', 'I\'', completion)
+    
+    # Only lowercase first letter if prompt ends with comma/colon AND 
+    # the completion starts with a continuation word
+    if prompt.rstrip().endswith((",", ":")):
+        words = completion.split()
+        if words:
+            first_word = words[0].lower()
+            continuation_words = {'and', 'but', 'or', 'who', 'which', 'that', 'where', 'when', 
+                                 'with', 'to', 'for', 'in', 'about', 'from'}
+            if first_word in continuation_words:
+                completion = completion[0].lower() + completion[1:] if len(completion) > 1 else completion
+    
+    return completion
+
 def fix_grammar_issues(prompt: str, completion: str) -> str:
     """Fix common grammar issues in completions."""
     print(f"DEBUG fix_grammar_issues called with prompt='{prompt}', completion='{completion}'", flush=True)
@@ -339,9 +362,8 @@ async def autocomplete(request: AutocompleteRequest):
                 completion = completion[:-1].strip()
             print(f"DEBUG: After ellipsis removal: '{completion}'", flush=True)
             
-            # Ensure proper capitalization based on prompt ending
-            if request.prompt.rstrip().endswith((",", ":")):
-                completion = completion[0].lower() + completion[1:] if len(completion) > 1 else completion.lower()
+            # Fix capitalization issues in completion
+            completion = fix_final_capitalization(completion, request.prompt)
         
         elapsed_ms = (time.time() - start_time) * 1000
         
